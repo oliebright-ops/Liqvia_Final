@@ -77,9 +77,7 @@ export interface TreasuryRawSnapshot {
   reportingPeriod: string | null;
   periodGranularity: PeriodGranularity;
   movements: CashMovementInput[];
-  receivables: Array<
-    ReceivableMetricInput & { id: string; counterparty: string }
-  >;
+  receivables: Array<ReceivableMetricInput & { id: string; counterparty: string }>;
   payables: Array<{
     id: string;
     counterparty: string;
@@ -112,9 +110,7 @@ export interface TreasuryRawSnapshot {
 export function buildTreasurySummary(raw: TreasuryRawSnapshot): SummaryReport {
   const cashPosition = computeCashPosition(raw.bankAccountIds, raw.movements, raw.asOfDate);
 
-  const horizonWeeks = clampForecastHorizon(
-    raw.forecastHorizonWeeks ?? DEFAULT_FORECAST_HORIZON,
-  );
+  const horizonWeeks = clampForecastHorizon(raw.forecastHorizonWeeks ?? DEFAULT_FORECAST_HORIZON);
 
   const forecastModel = buildForecastModel({
     asOfDate: raw.asOfDate,
@@ -267,8 +263,7 @@ export function computeBudgetExecutiveVariance(
     const mtdBudget = mtdLines.reduce((s, l) => s + l.budgetAmount, 0);
     const mtdActual = mtdLines.reduce((s, l) => s + l.actualAmount, 0);
     const mtdVariance = round2(mtdLines.reduce((s, l) => s + l.varianceAmount, 0));
-    const variancePct =
-      mtdBudget !== 0 ? round1((mtdVariance / Math.abs(mtdBudget)) * 100) : null;
+    const variancePct = mtdBudget !== 0 ? round1((mtdVariance / Math.abs(mtdBudget)) * 100) : null;
     return { mtdVariance, variancePct, period, hasData: true };
   }
 
@@ -279,9 +274,7 @@ export function computeBudgetExecutiveVariance(
   const latestPeriod = [...new Set(budgetVsActual.lines.map((l) => l.period))].sort().at(-1)!;
   const variance = round2(budgetVsActual.totalVariance);
   const variancePct =
-    budgetVsActual.totalBudget !== 0
-      ? round1((variance / budgetVsActual.totalBudget) * 100)
-      : null;
+    budgetVsActual.totalBudget !== 0 ? round1((variance / budgetVsActual.totalBudget) * 100) : null;
 
   return {
     mtdVariance: variance,

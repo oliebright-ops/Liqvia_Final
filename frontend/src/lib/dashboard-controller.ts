@@ -1,8 +1,4 @@
-import type {
-  DashboardTransactionRow,
-  SummaryReport,
-  WeeklyForecastLine,
-} from '@liqvia2/shared';
+import type { DashboardTransactionRow, SummaryReport, WeeklyForecastLine } from '@liqvia2/shared';
 import { formatCurrency, formatPercentChange } from '@liqvia2/shared';
 import type { TranslateFn } from './i18n';
 
@@ -132,9 +128,7 @@ function buildKpiCardViews(
       subtitle: kpiCards.cashPosition.hasData
         ? dash('acrossBankAccounts', { count: String(cash.accountCount) })
         : dash('uploadDataPrompt'),
-      changeBadge: kpiCards.cashPosition.hasData
-        ? formatPercentChange(cash.trend)
-        : undefined,
+      changeBadge: kpiCards.cashPosition.hasData ? formatPercentChange(cash.trend) : undefined,
       changeLabel: kpiCards.cashPosition.hasData ? dash('vsLastWeek') : undefined,
       primary: true,
     },
@@ -201,9 +195,7 @@ function mapTransactionRow(
     dateDisplay: formatTxnDate(txn.transactionDate, locale),
     amountDisplay: `${txn.direction === 'IN' ? '+' : '−'}${amount}`,
     statusLabel:
-      txn.status === 'cleared'
-        ? format('dashboard.txnCleared')
-        : format('dashboard.txnPending'),
+      txn.status === 'cleared' ? format('dashboard.txnCleared') : format('dashboard.txnPending'),
     statusVariant: txn.status,
   };
 }

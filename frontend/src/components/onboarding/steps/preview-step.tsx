@@ -120,8 +120,7 @@ export function PreviewStep({
                   key={`${u.templateType}-${i}`}
                   className="rounded-lg border border-slate-700 px-3 py-2 text-sm text-slate-300"
                 >
-                  {UPLOAD_TEMPLATES[u.templateType as UploadTemplateType]?.label ??
-                    u.templateType}{' '}
+                  {UPLOAD_TEMPLATES[u.templateType as UploadTemplateType]?.label ?? u.templateType}{' '}
                   — {u.fileName}
                 </li>
               ))}
@@ -135,9 +134,7 @@ export function PreviewStep({
       <OnboardingNav
         onBack={onBack}
         onNext={onFinish}
-        nextLabel={
-          finishing ? t('onboarding.nav.finishing') : t('onboarding.nav.finish')
-        }
+        nextLabel={finishing ? t('onboarding.nav.finishing') : t('onboarding.nav.finish')}
         nextLoading={finishing}
       />
     </div>

@@ -11,11 +11,7 @@ import { PrismaService } from '../prisma/prisma.service';
 import { TreasuryEngineService } from '../treasury/treasury-engine.service';
 import { AuthService } from '../auth/auth.service';
 import { AuthResponse, AuthUser } from '../auth/auth.types';
-import {
-  AddEntityDto,
-  OnboardingCreateCompanyDto,
-  SelectCompanyDto,
-} from './dto/onboarding.dto';
+import { AddEntityDto, OnboardingCreateCompanyDto, SelectCompanyDto } from './dto/onboarding.dto';
 
 const BCRYPT_ROUNDS = 10;
 const ADMIN_ROLES: UserRole[] = [UserRole.admin, UserRole.owner];
@@ -46,9 +42,7 @@ export class OnboardingService {
       isDemoMode: user.isDemoMode,
       companyId: user.companyId,
       companyName: user.company?.name ?? null,
-      onboardingCompleted: user.isDemoMode
-        ? true
-        : (user.company?.onboardingCompleted ?? false),
+      onboardingCompleted: user.isDemoMode ? true : (user.company?.onboardingCompleted ?? false),
       companyLinks,
     };
   }
@@ -84,9 +78,7 @@ export class OnboardingService {
       where: { id: DEFAULT_DEMO_COMPANY_ID },
     });
     if (!demo) {
-      throw new NotFoundException(
-        'Demo company not found. Run prisma:seed:demo first.',
-      );
+      throw new NotFoundException('Demo company not found. Run prisma:seed:demo first.');
     }
 
     const updated = await this.prisma.userProfile.update({
@@ -102,10 +94,7 @@ export class OnboardingService {
     return this.auth.buildAuthResponse(updated);
   }
 
-  async createCompany(
-    user: AuthUser,
-    dto: OnboardingCreateCompanyDto,
-  ): Promise<AuthResponse> {
+  async createCompany(user: AuthUser, dto: OnboardingCreateCompanyDto): Promise<AuthResponse> {
     if (user.companyId && !user.isDemoMode) {
       throw new ConflictException('You already have an active company workspace');
     }
@@ -349,20 +338,12 @@ export class OnboardingService {
         currency: company.currency,
         fiscalYearStart: company.fiscalYearStart,
         forecastHorizonWeeks: company.forecastHorizonWeeks,
-        openingCashBalance: company.openingCashBalance
-          ? Number(company.openingCashBalance)
-          : null,
+        openingCashBalance: company.openingCashBalance ? Number(company.openingCashBalance) : null,
       },
       users,
       uploads: batches,
       completedTemplateCount: completedTemplates.size,
-      recommendedTemplates: [
-        'trial_balance',
-        'bank_balances',
-        'ar_ageing',
-        'ap_ageing',
-        'budget',
-      ],
+      recommendedTemplates: ['trial_balance', 'bank_balances', 'ar_ageing', 'ap_ageing', 'budget'],
     };
   }
 
@@ -520,7 +501,11 @@ export class OnboardingService {
   }
 
   private resolvePhase(
-    user: { companyId: string | null; isDemoMode: boolean; company?: { onboardingCompleted: boolean } | null },
+    user: {
+      companyId: string | null;
+      isDemoMode: boolean;
+      company?: { onboardingCompleted: boolean } | null;
+    },
     linkCount: number,
   ): string {
     if (user.isDemoMode || user.company?.onboardingCompleted) {

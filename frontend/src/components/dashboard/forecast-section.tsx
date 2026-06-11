@@ -29,7 +29,10 @@ export function ForecastSection({
   return (
     <Card className="lg:col-span-2">
       <CardHeader className="flex-row items-center justify-between space-y-0 p-4 pb-2">
-        <Link href="/forecast" className="group min-w-0 flex-1 rounded-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary">
+        <Link
+          href="/forecast"
+          className="group min-w-0 flex-1 rounded-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+        >
           <CardTitle className="group-hover:text-primary">
             {format('dashboard.forecastTitleDynamic', { weeks: String(horizonWeeks) })}
           </CardTitle>
@@ -50,7 +53,10 @@ export function ForecastSection({
             actionHref="/uploads"
           />
         ) : (
-          <Link href="/forecast" className="block rounded-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary">
+          <Link
+            href="/forecast"
+            className="block rounded-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+          >
             <ForecastComposedChart
               lines={forecast}
               currency={currency}

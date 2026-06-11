@@ -39,9 +39,9 @@ Base URL: `http://localhost:3001/api` (development). All routes require auth unl
 
 Interactive docs are served by `@nestjs/swagger`:
 
-| URL | Description |
-| --- | --- |
-| http://localhost:3001/api/docs | Swagger UI |
+| URL                                 | Description         |
+| ----------------------------------- | ------------------- |
+| http://localhost:3001/api/docs      | Swagger UI          |
 | http://localhost:3001/api/docs/json | OpenAPI 3 JSON spec |
 
 Regenerated automatically from controller decorators and DTOs in `backend/src/dto/`.

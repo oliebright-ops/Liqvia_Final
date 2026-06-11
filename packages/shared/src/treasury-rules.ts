@@ -39,13 +39,7 @@ export function calcARCollectionSchedule(
   ];
 }
 
-export type TransactionCategoryKey =
-  | 'payroll'
-  | 'supplier'
-  | 'customer'
-  | 'tax'
-  | 'loan'
-  | 'other';
+export type TransactionCategoryKey = 'payroll' | 'supplier' | 'customer' | 'tax' | 'loan' | 'other';
 
 const CATEGORY_PATTERNS: Array<{ key: TransactionCategoryKey; pattern: RegExp }> = [
   { key: 'payroll', pattern: /payroll|salary|wages|pension/i },
@@ -55,7 +49,9 @@ const CATEGORY_PATTERNS: Array<{ key: TransactionCategoryKey; pattern: RegExp }>
   { key: 'loan', pattern: /loan|mortgage|interest|finance/i },
 ];
 
-export function categorizeTransaction(description: string | null | undefined): TransactionCategoryKey {
+export function categorizeTransaction(
+  description: string | null | undefined,
+): TransactionCategoryKey {
   const text = description ?? '';
   for (const { key, pattern } of CATEGORY_PATTERNS) {
     if (pattern.test(text)) return key;

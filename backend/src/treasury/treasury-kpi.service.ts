@@ -1,8 +1,5 @@
 import { Injectable } from '@nestjs/common';
-import {
-  computeBudgetVarianceAmount,
-  computeBudgetVariancePercent,
-} from '@liqvia2/shared';
+import { computeBudgetVarianceAmount, computeBudgetVariancePercent } from '@liqvia2/shared';
 import {
   BankBalanceInput,
   BudgetActualInput,

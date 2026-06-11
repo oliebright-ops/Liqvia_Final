@@ -47,7 +47,10 @@ function ResetPasswordForm() {
     return (
       <div className="space-y-4">
         <p className="text-sm text-cash-negative">{auth.resetLinkInvalid}</p>
-        <Link href="/forgot-password" className="block text-center text-sm font-medium text-primary hover:underline">
+        <Link
+          href="/forgot-password"
+          className="block text-center text-sm font-medium text-primary hover:underline"
+        >
           {auth.requestNewResetLink}
         </Link>
       </div>
@@ -58,7 +61,10 @@ function ResetPasswordForm() {
     return (
       <div className="space-y-4">
         <p className="text-sm text-muted-foreground">{auth.resetPasswordSuccess}</p>
-        <Link href="/login" className="block text-center text-sm font-medium text-primary hover:underline">
+        <Link
+          href="/login"
+          className="block text-center text-sm font-medium text-primary hover:underline"
+        >
           {auth.backToSignIn}
         </Link>
       </div>
@@ -109,7 +115,9 @@ export default function ResetPasswordPage() {
             <CardTitle>{auth.resetPasswordTitle}</CardTitle>
           </CardHeader>
           <CardContent>
-            <Suspense fallback={<p className="text-sm text-muted-foreground">{t.common.loading}</p>}>
+            <Suspense
+              fallback={<p className="text-sm text-muted-foreground">{t.common.loading}</p>}
+            >
               <ResetPasswordForm />
             </Suspense>
           </CardContent>

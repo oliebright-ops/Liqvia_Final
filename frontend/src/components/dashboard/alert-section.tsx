@@ -36,7 +36,10 @@ export function AlertSection({
     <Card className="flex flex-col">
       <CardHeader className="p-4 pb-2">
         <div className="flex items-center justify-between gap-2">
-          <Link href="/forecast" className="rounded-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary">
+          <Link
+            href="/forecast"
+            className="rounded-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+          >
             <CardTitle className="hover:text-primary">{dash.alertsTitle}</CardTitle>
           </Link>
           {liquidityStatus && (
@@ -60,7 +63,10 @@ export function AlertSection({
         ) : (
           <div className="space-y-3">
             {alerts.slice(0, 5).map((a, i) => (
-              <div key={i} className="flex items-start gap-2 rounded-lg border border-border/60 bg-muted/20 p-3">
+              <div
+                key={i}
+                className="flex items-start gap-2 rounded-lg border border-border/60 bg-muted/20 p-3"
+              >
                 <Badge variant={severityVariant(a.severity)} className="shrink-0 capitalize">
                   {alertSeverityLabel(format, a.severity)}
                 </Badge>

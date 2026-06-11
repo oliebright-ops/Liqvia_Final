@@ -10,11 +10,7 @@ import { notifyWorkspaceRefresh } from '@/lib/workspace-refresh';
 import { useAuth } from '@/lib/auth-context';
 import { AuthResponse, CompanyLink, OnboardingContext } from '@/lib/auth-types';
 import { useLanguage } from '@/lib/i18n';
-import {
-  ChartOfAccountView,
-  CompanySettings,
-  TeamMemberView,
-} from '@/lib/module-types';
+import { ChartOfAccountView, CompanySettings, TeamMemberView } from '@/lib/module-types';
 import {
   coaFormSchema,
   companyFormSchema,
@@ -120,7 +116,9 @@ function ProfileTab() {
             <label className="text-xs text-muted-foreground">{set.fieldName}</label>
             <input {...form.register('name')} className={fieldClass()} />
             {form.formState.errors.name && (
-              <p className="mt-1 text-xs text-cash-negative">{form.formState.errors.name.message}</p>
+              <p className="mt-1 text-xs text-cash-negative">
+                {form.formState.errors.name.message}
+              </p>
             )}
           </div>
           <p className="text-xs text-muted-foreground">{user?.email}</p>
@@ -209,7 +207,8 @@ function EntitiesTab() {
     setTimeout(() => setCreated(false), 2500);
   }
 
-  if (loading) return <p className="text-sm text-muted-foreground">{format('dashboard.loading')}</p>;
+  if (loading)
+    return <p className="text-sm text-muted-foreground">{format('dashboard.loading')}</p>;
 
   return (
     <div className="grid gap-6 lg:grid-cols-2">
@@ -232,7 +231,9 @@ function EntitiesTab() {
                   <div className="mt-1 flex items-center gap-2">
                     <Badge variant={roleBadgeVariant(link.role)}>{link.role}</Badge>
                     {link.role === 'viewer' && (
-                      <span className="text-xs text-muted-foreground">{set.entitiesViewerHint}</span>
+                      <span className="text-xs text-muted-foreground">
+                        {set.entitiesViewerHint}
+                      </span>
                     )}
                   </div>
                 </div>
@@ -284,21 +285,35 @@ function EntitiesTab() {
             </div>
             <div>
               <label className="text-xs text-muted-foreground">{set.field_forecastHorizon}</label>
-              <input type="number" {...form.register('forecastHorizonWeeks')} className={fieldClass()} />
+              <input
+                type="number"
+                {...form.register('forecastHorizonWeeks')}
+                className={fieldClass()}
+              />
             </div>
             <div className="sm:col-span-2">
               <label className="text-xs text-muted-foreground">{set.entitiesOpeningCash}</label>
-              <input type="number" {...form.register('openingCashBalance')} className={fieldClass()} />
+              <input
+                type="number"
+                {...form.register('openingCashBalance')}
+                className={fieldClass()}
+              />
             </div>
             <label className="flex items-center gap-2 text-sm sm:col-span-2">
-              <input type="checkbox" {...form.register('switchToNew')} className="rounded border-border" />
+              <input
+                type="checkbox"
+                {...form.register('switchToNew')}
+                className="rounded border-border"
+              />
               {set.entitiesSwitchAfterCreate}
             </label>
             <div className="sm:col-span-2">
               <Button type="submit" disabled={form.formState.isSubmitting}>
                 {set.entitiesAdd}
               </Button>
-              {created && <span className="ml-2 text-xs text-cash-positive">{set.entitiesCreated}</span>}
+              {created && (
+                <span className="ml-2 text-xs text-cash-positive">{set.entitiesCreated}</span>
+              )}
             </div>
           </form>
         </CardContent>
@@ -343,7 +358,8 @@ function CompanyTab() {
     notifyWorkspaceRefresh();
   }
 
-  if (loading) return <p className="text-sm text-muted-foreground">{format('dashboard.loading')}</p>;
+  if (loading)
+    return <p className="text-sm text-muted-foreground">{format('dashboard.loading')}</p>;
 
   return (
     <Card>
@@ -351,7 +367,10 @@ function CompanyTab() {
         <CardTitle>{set.tabCompany}</CardTitle>
       </CardHeader>
       <CardContent>
-        <form onSubmit={form.handleSubmit(onSubmit)} className="grid max-w-2xl gap-4 sm:grid-cols-2">
+        <form
+          onSubmit={form.handleSubmit(onSubmit)}
+          className="grid max-w-2xl gap-4 sm:grid-cols-2"
+        >
           <div>
             <label className="text-xs text-muted-foreground">{set.field_name}</label>
             <input {...form.register('name')} className={fieldClass()} disabled={!isAdmin} />
@@ -376,20 +395,39 @@ function CompanyTab() {
           </div>
           <div>
             <label className="text-xs text-muted-foreground">{set.field_fiscalYearStart}</label>
-            <input type="number" {...form.register('fiscalYearStart')} className={fieldClass()} disabled={!isAdmin} />
+            <input
+              type="number"
+              {...form.register('fiscalYearStart')}
+              className={fieldClass()}
+              disabled={!isAdmin}
+            />
           </div>
           <div>
             <label className="text-xs text-muted-foreground">{set.field_forecastHorizon}</label>
-            <input type="number" {...form.register('forecastHorizonWeeks')} className={fieldClass()} disabled={!isAdmin} />
+            <input
+              type="number"
+              {...form.register('forecastHorizonWeeks')}
+              className={fieldClass()}
+              disabled={!isAdmin}
+            />
           </div>
           <div>
             <label className="text-xs text-muted-foreground">{set.field_forecastLookback}</label>
-            <input type="number" {...form.register('forecastLookbackWeeks')} className={fieldClass()} disabled={!isAdmin} />
+            <input
+              type="number"
+              {...form.register('forecastLookbackWeeks')}
+              className={fieldClass()}
+              disabled={!isAdmin}
+            />
             <p className="mt-1 text-xs text-muted-foreground">{set.field_forecastLookbackHint}</p>
           </div>
           <div>
             <label className="text-xs text-muted-foreground">{set.field_periodGranularity}</label>
-            <select {...form.register('periodGranularity')} className={fieldClass()} disabled={!isAdmin}>
+            <select
+              {...form.register('periodGranularity')}
+              className={fieldClass()}
+              disabled={!isAdmin}
+            >
               <option value="monthly">{set.periodMonthly}</option>
               <option value="weekly">{set.periodWeekly}</option>
             </select>
@@ -431,7 +469,9 @@ function TeamTab() {
   });
 
   const load = useCallback(() => {
-    apiGet<TeamMemberView[]>('/settings/team').then(setMembers).catch(() => setMembers([]));
+    apiGet<TeamMemberView[]>('/settings/team')
+      .then(setMembers)
+      .catch(() => setMembers([]));
   }, []);
 
   useEffect(() => {
@@ -524,9 +564,7 @@ function TeamTab() {
           />
         </CardContent>
       </Card>
-      {isAdmin && (
-        <p className="text-xs text-muted-foreground">{set.teamRoleHint}</p>
-      )}
+      {isAdmin && <p className="text-xs text-muted-foreground">{set.teamRoleHint}</p>}
       {isAdmin && (
         <Card>
           <CardHeader>
@@ -534,9 +572,18 @@ function TeamTab() {
           </CardHeader>
           <CardContent>
             <form onSubmit={form.handleSubmit(onInvite)} className="grid gap-3 sm:grid-cols-2">
-              <input {...form.register('name')} placeholder={set.fieldName} className={fieldClass()} />
+              <input
+                {...form.register('name')}
+                placeholder={set.fieldName}
+                className={fieldClass()}
+              />
               <input {...form.register('email')} placeholder="Email" className={fieldClass()} />
-              <input {...form.register('password')} type="password" placeholder={set.fieldPassword} className={fieldClass()} />
+              <input
+                {...form.register('password')}
+                type="password"
+                placeholder={set.fieldPassword}
+                className={fieldClass()}
+              />
               <select {...form.register('role')} className={fieldClass()}>
                 <option value="member">Member</option>
                 <option value="viewer">Viewer</option>
@@ -659,8 +706,16 @@ function CoaTab() {
           </CardHeader>
           <CardContent>
             <form onSubmit={form.handleSubmit(onSubmit)} className="grid gap-3 sm:grid-cols-3">
-              <input {...form.register('code')} placeholder={set.colCode} className={fieldClass()} />
-              <input {...form.register('name')} placeholder={set.colAccountName} className={fieldClass()} />
+              <input
+                {...form.register('code')}
+                placeholder={set.colCode}
+                className={fieldClass()}
+              />
+              <input
+                {...form.register('name')}
+                placeholder={set.colAccountName}
+                className={fieldClass()}
+              />
               <select {...form.register('accountType')} className={fieldClass()}>
                 {['asset', 'liability', 'equity', 'revenue', 'expense'].map((v) => (
                   <option key={v} value={v}>

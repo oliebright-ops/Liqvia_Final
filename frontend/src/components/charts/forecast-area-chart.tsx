@@ -1,13 +1,6 @@
 'use client';
 
-import {
-  Area,
-  AreaChart,
-  ResponsiveContainer,
-  Tooltip,
-  XAxis,
-  YAxis,
-} from 'recharts';
+import { Area, AreaChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts';
 import { WeeklyForecastLine } from '@/lib/dashboard-types';
 import { CHART_COLORS, ChartTooltip, chartAxisStyle } from './chart-theme';
 

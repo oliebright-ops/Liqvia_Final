@@ -35,10 +35,7 @@ export function ForecastSummary({
     },
     {
       label: fc.netCashFlow,
-      value: formatMoney(
-        currency,
-        (model.projectedClosing ?? 0) - model.openingCash,
-      ),
+      value: formatMoney(currency, (model.projectedClosing ?? 0) - model.openingCash),
       negative: (model.projectedClosing ?? 0) < model.openingCash,
     },
     {

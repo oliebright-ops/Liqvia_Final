@@ -35,11 +35,7 @@ export const updateCompanySchema = z
 export type UpdateCompanyDto = z.infer<typeof updateCompanySchema>;
 
 export const updateHorizonSchema = z.object({
-  forecastHorizonWeeks: z
-    .number()
-    .int()
-    .min(FORECAST_HORIZON_MIN)
-    .max(FORECAST_HORIZON_MAX),
+  forecastHorizonWeeks: z.number().int().min(FORECAST_HORIZON_MIN).max(FORECAST_HORIZON_MAX),
 });
 
 export type UpdateHorizonDto = z.infer<typeof updateHorizonSchema>;

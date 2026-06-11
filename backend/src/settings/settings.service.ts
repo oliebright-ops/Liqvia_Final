@@ -39,9 +39,7 @@ export class SettingsService {
       forecastLookbackWeeks: company.forecastLookbackWeeks,
       reportingPeriod: company.reportingPeriod,
       periodGranularity: company.periodGranularity,
-      openingCashBalance: company.openingCashBalance
-        ? Number(company.openingCashBalance)
-        : null,
+      openingCashBalance: company.openingCashBalance ? Number(company.openingCashBalance) : null,
       onboardingCompleted: company.onboardingCompleted,
     };
   }

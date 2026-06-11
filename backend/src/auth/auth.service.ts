@@ -85,9 +85,7 @@ export class AuthService {
       where: { id: DEFAULT_DEMO_COMPANY_ID },
     });
     if (!demo) {
-      throw new NotFoundException(
-        'Demo company not found. Run prisma:seed:demo first.',
-      );
+      throw new NotFoundException('Demo company not found. Run prisma:seed:demo first.');
     }
 
     const passwordHash = await bcrypt.hash(randomBytes(32).toString('hex'), BCRYPT_ROUNDS);

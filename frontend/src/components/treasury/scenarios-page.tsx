@@ -85,9 +85,7 @@ export function ScenariosPage() {
                     min={0}
                     max={s.max}
                     value={vars[s.key as keyof typeof vars]}
-                    onChange={(e) =>
-                      setVars((v) => ({ ...v, [s.key]: Number(e.target.value) }))
-                    }
+                    onChange={(e) => setVars((v) => ({ ...v, [s.key]: Number(e.target.value) }))}
                     className="mt-2 w-full accent-primary"
                   />
                 </label>

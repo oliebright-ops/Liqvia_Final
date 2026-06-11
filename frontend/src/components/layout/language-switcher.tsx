@@ -19,10 +19,7 @@ export function LanguageSwitcher({
   if (variant === 'pills') {
     return (
       <div
-        className={cn(
-          'flex rounded-lg border border-border p-0.5 text-xs font-medium',
-          className,
-        )}
+        className={cn('flex rounded-lg border border-border p-0.5 text-xs font-medium', className)}
         role="group"
         aria-label={format('common.language')}
       >

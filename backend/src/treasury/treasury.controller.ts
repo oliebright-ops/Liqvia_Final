@@ -27,7 +27,9 @@ export class TreasuryController {
   ) {}
 
   @Get('rules')
-  @ApiOperation({ summary: 'Approved treasury rules (AR weights, AP priority, liquidity thresholds)' })
+  @ApiOperation({
+    summary: 'Approved treasury rules (AR weights, AP priority, liquidity thresholds)',
+  })
   getRules() {
     return this.rules.getApprovedRules();
   }
@@ -142,9 +144,7 @@ export class TreasuryController {
   @ApiOperation({ summary: 'Evaluate alerts from forecast and AR/AP context' })
   previewAlerts(@Body() body: AlertPreviewDto) {
     return {
-      alerts: this.alertRules.evaluate(
-        body as Parameters<AlertRulesService['evaluate']>[0],
-      ),
+      alerts: this.alertRules.evaluate(body as Parameters<AlertRulesService['evaluate']>[0]),
     };
   }
 }

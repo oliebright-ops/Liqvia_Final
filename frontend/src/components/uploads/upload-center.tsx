@@ -97,15 +97,12 @@ export function UploadCenter() {
     }
   }, []);
 
-  const showActiveView = useCallback(
-    (type: UploadTemplateType) => {
-      setViewMode('active');
-      setViewType(type);
-      setSelectedBatchId(null);
-      setBatchDetail(null);
-    },
-    [],
-  );
+  const showActiveView = useCallback((type: UploadTemplateType) => {
+    setViewMode('active');
+    setViewType(type);
+    setSelectedBatchId(null);
+    setBatchDetail(null);
+  }, []);
 
   const loadBatchDetail = useCallback(async (batchId: string, type: UploadTemplateType) => {
     setLoadingDetail(true);
@@ -251,7 +248,12 @@ export function UploadCenter() {
             ) : (
               <div className="flex flex-wrap items-center gap-2 rounded-lg border border-red-200 bg-red-50 px-4 py-3">
                 <span className="text-sm text-red-900">{t('upload.wipeConfirm')}</span>
-                <Button type="button" variant="outline" disabled={wiping} onClick={() => setWipeConfirm(false)}>
+                <Button
+                  type="button"
+                  variant="outline"
+                  disabled={wiping}
+                  onClick={() => setWipeConfirm(false)}
+                >
                   {t('upload.wipeCancel')}
                 </Button>
                 <Button type="button" disabled={wiping} onClick={confirmWipe}>
@@ -590,13 +592,7 @@ export function UploadCenter() {
   );
 }
 
-function DataTable({
-  rows,
-  keys,
-}: {
-  rows: Record<string, unknown>[];
-  keys: readonly string[];
-}) {
+function DataTable({ rows, keys }: { rows: Record<string, unknown>[]; keys: readonly string[] }) {
   return (
     <div className="max-h-[28rem] overflow-auto rounded-md border border-slate-200">
       <table className="min-w-full text-left text-sm">

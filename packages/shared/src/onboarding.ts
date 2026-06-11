@@ -39,13 +39,7 @@ export type OnboardingPhase =
 /** @deprecated Use OnboardingPhase */
 export type OnboardingStep = OnboardingPhase;
 
-export const SETUP_STEPS: OnboardingPhase[] = [
-  'company',
-  'team',
-  'upload',
-  'preview',
-  'done',
-];
+export const SETUP_STEPS: OnboardingPhase[] = ['company', 'team', 'upload', 'preview', 'done'];
 
 export const ONBOARDING_STEPS = SETUP_STEPS;
 

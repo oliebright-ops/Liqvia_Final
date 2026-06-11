@@ -5,7 +5,10 @@ export class ValidateUploadDto {
   @ApiProperty({ enum: UPLOAD_TEMPLATE_TYPES, example: 'ar_ageing' })
   templateType!: UploadTemplateType;
 
-  @ApiProperty({ description: 'Raw CSV file content', example: 'Customer Name,Invoice Number\nAcme,INV-1' })
+  @ApiProperty({
+    description: 'Raw CSV file content',
+    example: 'Customer Name,Invoice Number\nAcme,INV-1',
+  })
   csvContent!: string;
 
   @ApiPropertyOptional({ example: 'USD' })

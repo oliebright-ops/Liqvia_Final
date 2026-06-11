@@ -4,14 +4,14 @@ Manual bank statement lines until live bank feeds are integrated.
 
 ## Columns
 
-| Column                | Required | Notes                                      |
-| --------------------- | -------- | ------------------------------------------ |
+| Column                | Required | Notes                                         |
+| --------------------- | -------- | --------------------------------------------- |
 | Bank Account Name     | Yes      | Must match an existing account or creates one |
-| Account Number Masked | Yes      | Last 4 digits, e.g. `****4521`             |
-| Transaction Date      | Yes      | ISO date `YYYY-MM-DD`                      |
-| Description           | Yes      | Used for categorisation in dashboard views |
-| Amount                | Yes      | Positive number                            |
-| Direction             | Yes      | `IN` or `OUT`                              |
+| Account Number Masked | Yes      | Last 4 digits, e.g. `****4521`                |
+| Transaction Date      | Yes      | ISO date `YYYY-MM-DD`                         |
+| Description           | Yes      | Used for categorisation in dashboard views    |
+| Amount                | Yes      | Positive number                               |
+| Direction             | Yes      | `IN` or `OUT`                                 |
 
 ## Usage
 

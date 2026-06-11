@@ -48,7 +48,8 @@ export function useTreasurySummary(horizonWeeks?: number) {
     data: query.data ?? null,
     loading: query.isLoading,
     isFetching: query.isFetching,
-    error: query.error instanceof Error ? query.error.message : query.error ? 'Failed to load' : null,
+    error:
+      query.error instanceof Error ? query.error.message : query.error ? 'Failed to load' : null,
     refetch,
   };
 }

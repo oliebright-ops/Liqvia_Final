@@ -13,10 +13,10 @@ This guide covers running the Liqvia MVP locally, in CI, and in production.
 
 Each app has its own env file:
 
-| App      | Template                 | Local file (gitignored)   |
-| -------- | ------------------------ | ------------------------- |
-| Backend  | `backend/.env.example`   | `backend/.env`            |
-| Frontend | `frontend/.env.example`  | `frontend/.env.local`     |
+| App      | Template                | Local file (gitignored) |
+| -------- | ----------------------- | ----------------------- |
+| Backend  | `backend/.env.example`  | `backend/.env`          |
+| Frontend | `frontend/.env.example` | `frontend/.env.local`   |
 
 ```bash
 cp backend/.env.example backend/.env
@@ -25,15 +25,15 @@ cp frontend/.env.example frontend/.env.local
 
 **Backend** (`backend/.env`) — loaded automatically on startup:
 
-| Variable              | Notes                                                       |
-| --------------------- | ----------------------------------------------------------- |
-| `DATABASE_URL`        | Postgres connection string.                                 |
-| `SKIP_DB_MIGRATE`     | Set `true` to skip auto-migration on startup.               |
-| `PORT`                | Defaults to `3001`.                                         |
-| `CORS_ORIGIN`         | Frontend origin allowed for CORS.                           |
-| `CLERK_SECRET_KEY`    | Optional for MVP.                                           |
-| `OPENAI_API_KEY`      | Optional — AI CFO falls back to rule-based output if empty.   |
-| `OPENAI_MODEL`        | Defaults to `gpt-4o-mini`.                                  |
+| Variable           | Notes                                                       |
+| ------------------ | ----------------------------------------------------------- |
+| `DATABASE_URL`     | Postgres connection string.                                 |
+| `SKIP_DB_MIGRATE`  | Set `true` to skip auto-migration on startup.               |
+| `PORT`             | Defaults to `3001`.                                         |
+| `CORS_ORIGIN`      | Frontend origin allowed for CORS.                           |
+| `CLERK_SECRET_KEY` | Optional for MVP.                                           |
+| `OPENAI_API_KEY`   | Optional — AI CFO falls back to rule-based output if empty. |
+| `OPENAI_MODEL`     | Defaults to `gpt-4o-mini`.                                  |
 
 **Frontend** (`frontend/.env.local`) — loaded automatically by Next.js:
 

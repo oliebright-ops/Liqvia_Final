@@ -1,7 +1,5 @@
 import { accountClosingBalance, isBalanceAnchor } from './bank-ledger';
-import {
-  computeBudgetVarianceAmount,
-} from './budget-variance';
+import { computeBudgetVarianceAmount } from './budget-variance';
 import type { LiquidityStatus } from './treasury';
 import { categorizeTransaction, getLiquidityBand } from './treasury-rules';
 
@@ -160,18 +158,12 @@ export function computeBudgetVarianceMtd(
   const varianceAmount = round2(
     mtd.reduce(
       (s, l) =>
-        s +
-          computeBudgetVarianceAmount(
-            inferBudgetCategory(l),
-            l.budgetAmount,
-            l.actualAmount,
-          ),
+        s + computeBudgetVarianceAmount(inferBudgetCategory(l), l.budgetAmount, l.actualAmount),
       0,
     ),
   );
   const budgetBase = Math.abs(totalBudget);
-  const variancePct =
-    budgetBase !== 0 ? round1((varianceAmount / budgetBase) * 100) : null;
+  const variancePct = budgetBase !== 0 ? round1((varianceAmount / budgetBase) * 100) : null;
 
   return { varianceAmount, variancePct, period, hasData: true };
 }
@@ -192,7 +184,9 @@ export function computeArDue30Days(
     .reduce((s, r) => s + r.outstandingAmount, 0);
 
   const delayed90PlusDays = open
-    .filter((r) => daysBetween(r.dueDate, asOfDate) > 90 || daysBetween(r.invoiceDate, asOfDate) > 90)
+    .filter(
+      (r) => daysBetween(r.dueDate, asOfDate) > 90 || daysBetween(r.invoiceDate, asOfDate) > 90,
+    )
     .reduce((s, r) => s + r.outstandingAmount, 0);
 
   return {

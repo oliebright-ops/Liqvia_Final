@@ -77,9 +77,7 @@ export function CompanyStep({
             {t('onboarding.company.fiscalYear')}
             <select
               value={value.fiscalYearStart}
-              onChange={(e) =>
-                onChange({ ...value, fiscalYearStart: Number(e.target.value) })
-              }
+              onChange={(e) => onChange({ ...value, fiscalYearStart: Number(e.target.value) })}
               className={inputClass}
             >
               {FISCAL_MONTHS.map((m) => (
@@ -96,9 +94,7 @@ export function CompanyStep({
             {t('onboarding.company.forecastHorizon')}
             <select
               value={value.forecastHorizonWeeks}
-              onChange={(e) =>
-                onChange({ ...value, forecastHorizonWeeks: Number(e.target.value) })
-              }
+              onChange={(e) => onChange({ ...value, forecastHorizonWeeks: Number(e.target.value) })}
               className={inputClass}
             >
               {FORECAST_HORIZONS.map((w) => (

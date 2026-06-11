@@ -1,11 +1,7 @@
 'use client';
 
 import { useCallback, useEffect, useState } from 'react';
-import {
-  UPLOAD_TEMPLATES,
-  UploadTemplateType,
-  validateUpload,
-} from '@liqvia2/shared';
+import { UPLOAD_TEMPLATES, UploadTemplateType, validateUpload } from '@liqvia2/shared';
 import { apiGet, apiPost, apiUrl } from '@/lib/api';
 import { notifyWorkspaceRefresh } from '@/lib/workspace-refresh';
 import { useTranslations } from '@/lib/i18n';
@@ -69,9 +65,7 @@ export function UploadStep({
       const csvContent = await file.text();
       const validation = validateUpload(type, csvContent, { companyCurrency });
       if (!validation.valid) {
-        setMessage(
-          validation.errors[0]?.message ?? t('onboarding.upload.importError'),
-        );
+        setMessage(validation.errors[0]?.message ?? t('onboarding.upload.importError'));
         return;
       }
       const result = await apiPost<{ summary: string }>('/uploads/import', {
@@ -152,11 +146,7 @@ export function UploadStep({
         </p>
       )}
 
-      <OnboardingNav
-        onBack={onBack}
-        onNext={onNext}
-        nextLabel={t('onboarding.nav.nextPreview')}
-      />
+      <OnboardingNav onBack={onBack} onNext={onNext} nextLabel={t('onboarding.nav.nextPreview')} />
     </div>
   );
 }

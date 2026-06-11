@@ -40,7 +40,14 @@ export function BudgetBarChart({
     <ResponsiveContainer width="100%" height={260}>
       <BarChart data={data} margin={{ top: 8, right: 8, left: 0, bottom: 0 }}>
         <CartesianGrid stroke={CHART_COLORS.grid} strokeDasharray="3 3" vertical={false} />
-        <XAxis dataKey="label" {...chartAxisStyle} interval={0} angle={-25} textAnchor="end" height={56} />
+        <XAxis
+          dataKey="label"
+          {...chartAxisStyle}
+          interval={0}
+          angle={-25}
+          textAnchor="end"
+          height={56}
+        />
         <YAxis {...chartAxisStyle} tickFormatter={(v) => `${(v / 1000).toFixed(0)}k`} />
         <Tooltip
           content={({ active, payload, label }) => (
@@ -62,9 +69,7 @@ export function BudgetBarChart({
             <Cell
               key={`budget-${entry.label}`}
               fill={
-                isExpenseCategory(entry.category)
-                  ? EXPENSE_CHART_COLORS.budget
-                  : CHART_COLORS.muted
+                isExpenseCategory(entry.category) ? EXPENSE_CHART_COLORS.budget : CHART_COLORS.muted
               }
             />
           ))}

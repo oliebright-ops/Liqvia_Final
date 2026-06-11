@@ -15,7 +15,10 @@ export interface ActiveUploadData {
 export class UploadActiveDataService {
   constructor(private readonly prisma: PrismaService) {}
 
-  async getActiveData(companyId: string, templateType: UploadTemplateType): Promise<ActiveUploadData> {
+  async getActiveData(
+    companyId: string,
+    templateType: UploadTemplateType,
+  ): Promise<ActiveUploadData> {
     const headers = UPLOAD_TEMPLATES[templateType]?.headers ?? [];
     const asOfDate = new Date().toISOString().slice(0, 10);
 

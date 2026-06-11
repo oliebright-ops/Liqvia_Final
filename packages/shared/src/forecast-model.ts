@@ -5,10 +5,7 @@ import {
   LiquidityStatus,
   WeeklyForecastLine,
 } from './treasury';
-import {
-  buildRollingForecastAdjustments,
-  type WeeklyAmountRow,
-} from './rolling-budget';
+import { buildRollingForecastAdjustments, type WeeklyAmountRow } from './rolling-budget';
 
 const MS_PER_DAY = 1000 * 60 * 60 * 24;
 
@@ -106,12 +103,12 @@ export function resolveScheduleWeekIndex(
 }
 
 /** Schedule AR/AP by due date; overdue items land in week 1. */
-export function scheduleArApEntries(
-  input: ForecastModelInput,
-): { entries: ForecastArApEntry[]; arByWeek: number[]; apByWeek: number[] } {
-  const horizonWeeks = clampForecastHorizon(
-    input.horizonWeeks ?? DEFAULT_FORECAST_HORIZON,
-  );
+export function scheduleArApEntries(input: ForecastModelInput): {
+  entries: ForecastArApEntry[];
+  arByWeek: number[];
+  apByWeek: number[];
+} {
+  const horizonWeeks = clampForecastHorizon(input.horizonWeeks ?? DEFAULT_FORECAST_HORIZON);
   const forecastStart = startOfWeekUtc(input.asOfDate);
   const arByWeek = Array(horizonWeeks).fill(0);
   const apByWeek = Array(horizonWeeks).fill(0);
@@ -153,9 +150,7 @@ export function scheduleArApEntries(
 export function averageWeeklyNetBurn(
   weeks: Array<{ forecastInflows: number; forecastOutflows: number }>,
 ): number {
-  const burns = weeks
-    .map((w) => w.forecastOutflows - w.forecastInflows)
-    .filter((b) => b > 0);
+  const burns = weeks.map((w) => w.forecastOutflows - w.forecastInflows).filter((b) => b > 0);
   if (burns.length === 0) return 0;
   return burns.reduce((sum, b) => sum + b, 0) / burns.length;
 }
@@ -215,9 +210,7 @@ export function resolveExecutiveLiquidity(
 
 /** Single source of truth: N-week cash forecast from opening cash + AR/AP due dates. */
 export function buildForecastModel(input: ForecastModelInput): ForecastModelResult {
-  const horizonWeeks = clampForecastHorizon(
-    input.horizonWeeks ?? DEFAULT_FORECAST_HORIZON,
-  );
+  const horizonWeeks = clampForecastHorizon(input.horizonWeeks ?? DEFAULT_FORECAST_HORIZON);
   const { arByWeek, apByWeek, entries } = scheduleArApEntries({
     ...input,
     horizonWeeks,

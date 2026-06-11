@@ -3,11 +3,7 @@ import { ApiOperation, ApiTags } from '@nestjs/swagger';
 import { CurrentUser } from '../auth/current-user.decorator';
 import { SkipCompanyAccess } from '../auth/decorators';
 import { AuthUser } from '../auth/auth.types';
-import {
-  AddEntityDto,
-  OnboardingCreateCompanyDto,
-  SelectCompanyDto,
-} from './dto/onboarding.dto';
+import { AddEntityDto, OnboardingCreateCompanyDto, SelectCompanyDto } from './dto/onboarding.dto';
 import { OnboardingService } from './onboarding.service';
 
 @ApiTags('Onboarding')
@@ -44,7 +40,8 @@ export class OnboardingController {
 
   @Post('add-entity')
   @ApiOperation({
-    summary: 'Add a new entity and link the current user (existing accounts may manage multiple entities)',
+    summary:
+      'Add a new entity and link the current user (existing accounts may manage multiple entities)',
   })
   addEntity(@CurrentUser() user: AuthUser, @Body() body: AddEntityDto) {
     return this.onboarding.addEntity(user, body);

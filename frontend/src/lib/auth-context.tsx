@@ -1,26 +1,10 @@
 'use client';
 
-import {
-  createContext,
-  useCallback,
-  useContext,
-  useEffect,
-  useMemo,
-  useState,
-} from 'react';
+import { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { apiGet, apiPost } from './api';
-import {
-  AuthResponse,
-  AuthUser,
-  resolvePostAuthPath,
-} from './auth-types';
-import {
-  clearAuthSession,
-  getAccessToken,
-  getStoredUser,
-  setAuthSession,
-} from './auth-storage';
+import { AuthResponse, AuthUser, resolvePostAuthPath } from './auth-types';
+import { clearAuthSession, getAccessToken, getStoredUser, setAuthSession } from './auth-storage';
 import { notifyWorkspaceRefresh } from './workspace-refresh';
 
 interface AuthContextValue {
@@ -145,7 +129,18 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       applyAuthResponse,
       isAdmin: user?.role === 'admin' || user?.role === 'owner',
     }),
-    [user, loading, login, register, selectCompany, enterDemoMode, exploreDemo, logout, refreshUser, applyAuthResponse],
+    [
+      user,
+      loading,
+      login,
+      register,
+      selectCompany,
+      enterDemoMode,
+      exploreDemo,
+      logout,
+      refreshUser,
+      applyAuthResponse,
+    ],
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

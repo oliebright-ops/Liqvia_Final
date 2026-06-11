@@ -46,7 +46,7 @@ function resolveAlertParams(alert: DashboardAlert): DashboardAlert['params'] | u
       if (amount === undefined && !weekMatch) return undefined;
       return {
         amount,
-        weekIndex: weekMatch ? Number(weekMatch[1]) : alert.weekIndex ?? undefined,
+        weekIndex: weekMatch ? Number(weekMatch[1]) : (alert.weekIndex ?? undefined),
         closing,
       };
     }

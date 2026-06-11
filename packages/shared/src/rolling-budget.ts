@@ -1,19 +1,11 @@
-import {
-  computeBudgetVarianceAmount,
-  computeBudgetVariancePercent,
-} from './budget-variance';
+import { computeBudgetVarianceAmount, computeBudgetVariancePercent } from './budget-variance';
 import { startOfWeekUtc } from './forecast-model';
 import { clampForecastHorizon, DEFAULT_FORECAST_HORIZON } from './treasury';
 import { toIsoWeek } from './reporting-period';
 
 export const ROLLING_ACTUALS_WEEKS = 14;
 
-export type RollingBudgetCategory =
-  | 'revenue'
-  | 'payroll'
-  | 'expenses'
-  | 'capex'
-  | 'loan_repayment';
+export type RollingBudgetCategory = 'revenue' | 'payroll' | 'expenses' | 'capex' | 'loan_repayment';
 
 export interface WeeklyAmountRow {
   period: string;
@@ -60,10 +52,7 @@ export function getPastWeekPeriods(asOfDate: string, weeks = ROLLING_ACTUALS_WEE
 }
 
 /** Next N ISO week periods starting the week after asOfDate. */
-export function getFutureWeekPeriods(
-  asOfDate: string,
-  weeks = DEFAULT_FORECAST_HORIZON,
-): string[] {
+export function getFutureWeekPeriods(asOfDate: string, weeks = DEFAULT_FORECAST_HORIZON): string[] {
   const currentWeekStart = startOfWeekUtc(asOfDate);
   const periods: string[] = [];
   for (let i = 1; i <= weeks; i++) {
@@ -77,7 +66,10 @@ export function isInflowCategory(category: RollingBudgetCategory): boolean {
   return INFLOW_CATEGORIES.includes(category);
 }
 
-export function categoryToCashFlow(category: RollingBudgetCategory, amount: number): {
+export function categoryToCashFlow(
+  category: RollingBudgetCategory,
+  amount: number,
+): {
   inflow: number;
   outflow: number;
 } {

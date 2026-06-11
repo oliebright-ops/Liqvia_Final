@@ -1,11 +1,7 @@
 'use client';
 
 import { useCallback, useEffect, useRef, useState } from 'react';
-import {
-  clampForecastHorizon,
-  FORECAST_HORIZON_MAX,
-  FORECAST_HORIZON_MIN,
-} from '@liqvia2/shared';
+import { clampForecastHorizon, FORECAST_HORIZON_MAX, FORECAST_HORIZON_MIN } from '@liqvia2/shared';
 import { apiPatch } from '@/lib/api';
 import { useAuth } from '@/lib/auth-context';
 import { TranslateFn } from '@/lib/i18n';

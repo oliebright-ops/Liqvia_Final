@@ -32,10 +32,7 @@ export function TeamStep({
     );
 
   function addMember() {
-    onTeamChange([
-      ...teamMembers,
-      { name: '', email: '', password: '', role: 'member' },
-    ]);
+    onTeamChange([...teamMembers, { name: '', email: '', password: '', role: 'member' }]);
   }
 
   function updateMember(index: number, patch: Partial<OnboardingTeamMemberInput>) {
@@ -70,10 +67,7 @@ export function TeamStep({
         ) : (
           <div className="mt-3 space-y-4">
             {teamMembers.map((member, index) => (
-              <div
-                key={index}
-                className="rounded-lg border border-slate-700 bg-slate-800/50 p-4"
-              >
+              <div key={index} className="rounded-lg border border-slate-700 bg-slate-800/50 p-4">
                 <div className="mb-3 flex items-center justify-between">
                   <span className="text-xs font-medium uppercase tracking-wide text-slate-500">
                     #{index + 1}

@@ -20,7 +20,10 @@ export class FreeCashService {
 
     const [bankAccounts, movements, receivables, payables, weeklyActuals] = await Promise.all([
       this.prisma.bankAccount.findMany({ where: { companyId, deletedAt: null } }),
-      this.prisma.cashMovement.findMany({ where: { companyId }, orderBy: { movementDate: 'desc' } }),
+      this.prisma.cashMovement.findMany({
+        where: { companyId },
+        orderBy: { movementDate: 'desc' },
+      }),
       this.prisma.receivable.findMany({ where: { companyId, deletedAt: null } }),
       this.prisma.payable.findMany({ where: { companyId, deletedAt: null } }),
       this.prisma.weeklyActual.findMany({ where: { companyId } }),

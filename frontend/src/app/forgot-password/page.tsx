@@ -64,7 +64,10 @@ export default function ForgotPasswordPage() {
                     </a>
                   </div>
                 )}
-                <Link href="/login" className="block text-center text-sm font-medium text-primary hover:underline">
+                <Link
+                  href="/login"
+                  className="block text-center text-sm font-medium text-primary hover:underline"
+                >
                   {auth.backToSignIn}
                 </Link>
               </div>

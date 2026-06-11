@@ -25,7 +25,10 @@ export function RecentTransactions({
   return (
     <Card className="flex h-full flex-col">
       <CardHeader className="flex-row items-center justify-between space-y-0 p-4 pb-2">
-        <Link href="/bank-accounts" className="rounded-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary">
+        <Link
+          href="/bank-accounts"
+          className="rounded-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+        >
           <CardTitle className="hover:text-primary">{String(dash.recentTransactions)}</CardTitle>
         </Link>
       </CardHeader>

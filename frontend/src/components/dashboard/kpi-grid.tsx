@@ -9,13 +9,7 @@ import { InfoHint } from '@/components/ui/info-hint';
 import { KpiCard } from './kpi-card';
 
 /** Render-only KPI grid — all values pre-computed by the dashboard controller. */
-export function KpiGrid({
-  cards,
-  format,
-}: {
-  cards: KpiCardViewModel[];
-  format: TranslateFn;
-}) {
+export function KpiGrid({ cards, format }: { cards: KpiCardViewModel[]; format: TranslateFn }) {
   return (
     <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
       {cards.map((card) => (

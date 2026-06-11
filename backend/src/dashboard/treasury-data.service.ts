@@ -39,19 +39,26 @@ export class TreasuryDataService {
     const engineResult = await this.engine.generateForCompany(companyId, false, horizonWeeks);
     const asOfDate = engineResult.asOfDate;
 
-    const [bankAccounts, movements, receivables, payables, budgetVsActual, scenarioCount, weeklyActuals] =
-      await Promise.all([
-        this.prisma.bankAccount.findMany({ where: { companyId, deletedAt: null } }),
-        this.prisma.cashMovement.findMany({
-          where: { companyId },
-          orderBy: { movementDate: 'desc' },
-        }),
-        this.prisma.receivable.findMany({ where: { companyId, deletedAt: null } }),
-        this.prisma.payable.findMany({ where: { companyId, deletedAt: null } }),
-        this.budget.getBudgetVsActual(companyId),
-        this.prisma.scenario.count({ where: { companyId } }),
-        this.prisma.weeklyActual.findMany({ where: { companyId } }),
-      ]);
+    const [
+      bankAccounts,
+      movements,
+      receivables,
+      payables,
+      budgetVsActual,
+      scenarioCount,
+      weeklyActuals,
+    ] = await Promise.all([
+      this.prisma.bankAccount.findMany({ where: { companyId, deletedAt: null } }),
+      this.prisma.cashMovement.findMany({
+        where: { companyId },
+        orderBy: { movementDate: 'desc' },
+      }),
+      this.prisma.receivable.findMany({ where: { companyId, deletedAt: null } }),
+      this.prisma.payable.findMany({ where: { companyId, deletedAt: null } }),
+      this.budget.getBudgetVsActual(companyId),
+      this.prisma.scenario.count({ where: { companyId } }),
+      this.prisma.weeklyActual.findMany({ where: { companyId } }),
+    ]);
 
     const balances = bankAccounts.map((b) => {
       const accountMovements = movements

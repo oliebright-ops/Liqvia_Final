@@ -58,15 +58,9 @@ export function BudgetPage() {
   const lines = data?.budgetVsActual.lines ?? [];
   const currency = data?.currency ?? 'USD';
 
-  const categories = useMemo(
-    () => [...new Set(lines.map((l) => l.category))].sort(),
-    [lines],
-  );
+  const categories = useMemo(() => [...new Set(lines.map((l) => l.category))].sort(), [lines]);
   const periods = useMemo(() => [...new Set(lines.map((l) => l.period))].sort(), [lines]);
-  const years = useMemo(
-    () => uniqueSorted(lines.map((l) => budgetPeriodYear(l.period))),
-    [lines],
-  );
+  const years = useMemo(() => uniqueSorted(lines.map((l) => budgetPeriodYear(l.period))), [lines]);
   const quarters = useMemo(
     () => uniqueSorted(lines.map((l) => budgetPeriodQuarter(l.period))),
     [lines],

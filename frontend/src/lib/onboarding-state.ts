@@ -1,8 +1,4 @@
-import {
-  FISCAL_MONTHS,
-  OnboardingCompanyInput,
-  OnboardingTeamMemberInput,
-} from '@liqvia2/shared';
+import { FISCAL_MONTHS, OnboardingCompanyInput, OnboardingTeamMemberInput } from '@liqvia2/shared';
 
 export interface OnboardingWizardState {
   company: OnboardingCompanyInput;

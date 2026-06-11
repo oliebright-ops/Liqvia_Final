@@ -7,11 +7,7 @@ import {
 } from '@liqvia2/shared';
 import { PrismaService } from '../prisma/prisma.service';
 import { DashboardService } from '../dashboard/dashboard.service';
-import {
-  TreasuryAiContext,
-  analyzeUserQuery,
-  buildTreasuryContext,
-} from './ai-context';
+import { TreasuryAiContext, analyzeUserQuery, buildTreasuryContext } from './ai-context';
 
 @Injectable()
 export class AiDataService {
@@ -80,50 +76,52 @@ export class AiDataService {
         };
       });
 
-    const recentOutflows = cashTransactions
-      .filter((t) => t.direction === 'OUT')
-      .slice(0, 40);
+    const recentOutflows = cashTransactions.filter((t) => t.direction === 'OUT').slice(0, 40);
 
-    const recentInflows = cashTransactions
-      .filter((t) => t.direction === 'IN')
-      .slice(0, 20);
+    const recentInflows = cashTransactions.filter((t) => t.direction === 'IN').slice(0, 20);
 
-    const receivablesDetail = dashboard.kpis.overdueReceivables >= 0
-      ? (await this.prisma.receivable.findMany({
-          where: { companyId, deletedAt: null },
-          orderBy: { dueDate: 'asc' },
-          take: 30,
-        })).map((r) => {
-          const dueDate = r.dueDate.toISOString().slice(0, 10);
-          const daysOverdue = dueDate < asOfDate
-            ? Math.floor(
-                (new Date(asOfDate).getTime() - new Date(dueDate).getTime()) /
-                  (1000 * 60 * 60 * 24),
-              )
-            : 0;
-          return {
-            counterparty: r.customerName,
-            amount: Number(r.outstandingAmount),
-            invoiceDate: r.invoiceDate.toISOString().slice(0, 10),
-            dueDate,
-            daysOverdue,
-            status: daysOverdue > 0 ? 'overdue' : 'open',
-          };
-        })
-      : [];
+    const receivablesDetail =
+      dashboard.kpis.overdueReceivables >= 0
+        ? (
+            await this.prisma.receivable.findMany({
+              where: { companyId, deletedAt: null },
+              orderBy: { dueDate: 'asc' },
+              take: 30,
+            })
+          ).map((r) => {
+            const dueDate = r.dueDate.toISOString().slice(0, 10);
+            const daysOverdue =
+              dueDate < asOfDate
+                ? Math.floor(
+                    (new Date(asOfDate).getTime() - new Date(dueDate).getTime()) /
+                      (1000 * 60 * 60 * 24),
+                  )
+                : 0;
+            return {
+              counterparty: r.customerName,
+              amount: Number(r.outstandingAmount),
+              invoiceDate: r.invoiceDate.toISOString().slice(0, 10),
+              dueDate,
+              daysOverdue,
+              status: daysOverdue > 0 ? 'overdue' : 'open',
+            };
+          })
+        : [];
 
-    const payablesDetail = (await this.prisma.payable.findMany({
-      where: { companyId, deletedAt: null },
-      orderBy: { dueDate: 'asc' },
-      take: 30,
-    })).map((p) => {
+    const payablesDetail = (
+      await this.prisma.payable.findMany({
+        where: { companyId, deletedAt: null },
+        orderBy: { dueDate: 'asc' },
+        take: 30,
+      })
+    ).map((p) => {
       const dueDate = p.dueDate.toISOString().slice(0, 10);
-      const daysOverdue = dueDate < asOfDate
-        ? Math.floor(
-            (new Date(asOfDate).getTime() - new Date(dueDate).getTime()) /
-              (1000 * 60 * 60 * 24),
-          )
-        : 0;
+      const daysOverdue =
+        dueDate < asOfDate
+          ? Math.floor(
+              (new Date(asOfDate).getTime() - new Date(dueDate).getTime()) / (1000 * 60 * 60 * 24),
+            )
+          : 0;
       return {
         counterparty: p.supplierName,
         amount: Number(p.outstandingAmount),

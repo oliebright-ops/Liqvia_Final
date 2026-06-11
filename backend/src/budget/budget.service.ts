@@ -53,8 +53,7 @@ export class BudgetService {
       const budgetRows = budgetLines
         .filter(
           (l) =>
-            pastWindow.has(l.period) &&
-            (l.budgetType === 'prior' || l.budgetType === 'operating'),
+            pastWindow.has(l.period) && (l.budgetType === 'prior' || l.budgetType === 'operating'),
         )
         .map((l) => ({
           period: l.period,

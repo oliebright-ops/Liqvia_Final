@@ -278,9 +278,7 @@ export class UploadImportService {
         break;
       case 'trial_balance': {
         const periods = [
-          ...new Set(
-            (rows as Array<Record<string, unknown>>).map((r) => String(r.Period)),
-          ),
+          ...new Set((rows as Array<Record<string, unknown>>).map((r) => String(r.Period))),
         ];
         if (periods.length === 0) break;
         const entries = await this.prisma.journalEntry.findMany({
@@ -440,11 +438,7 @@ export class UploadImportService {
     });
   }
 
-  private async persistWeeklyActuals(
-    companyId: string,
-    rows: unknown[],
-    uploadBatchId: string,
-  ) {
+  private async persistWeeklyActuals(companyId: string, rows: unknown[], uploadBatchId: string) {
     for (const row of rows as Array<Record<string, unknown>>) {
       const period = String(row.Period);
       const accountCode = String(row['Account Code'] ?? '').trim();

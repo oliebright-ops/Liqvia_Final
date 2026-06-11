@@ -51,9 +51,7 @@ export function KpiCard({
         >
           {value}
         </p>
-        {subtitle && (
-          <p className="mt-1 text-xs text-muted-foreground">{subtitle}</p>
-        )}
+        {subtitle && <p className="mt-1 text-xs text-muted-foreground">{subtitle}</p>}
         <div className="mt-auto flex flex-wrap items-end justify-between gap-2 pt-3">
           <div>
             {changeBadge && (
@@ -78,7 +76,10 @@ export function KpiCard({
 
   if (href) {
     return (
-      <Link href={href} className="block h-full rounded-xl focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary">
+      <Link
+        href={href}
+        className="block h-full rounded-xl focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+      >
         {card}
       </Link>
     );

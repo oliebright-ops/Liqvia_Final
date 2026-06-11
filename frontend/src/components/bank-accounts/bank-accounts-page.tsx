@@ -22,10 +22,7 @@ export function BankAccountsPage() {
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const activeAccountId =
     selectedId ?? (summary && summary.accounts.length > 0 ? summary.accounts[0].id : null);
-  const { ledger, loading: txLoading } = useBankTransactions(
-    activeAccountId,
-    treasury?.asOfDate,
-  );
+  const { ledger, loading: txLoading } = useBankTransactions(activeAccountId, treasury?.asOfDate);
 
   const txnCategories = (t.dashboard as Record<string, unknown>).txnCategories as Record<
     string,
@@ -168,62 +165,66 @@ export function BankAccountsPage() {
                     {!ledger || ledger.transactions.length === 0 ? (
                       <p className="text-sm text-muted-foreground">{bank.noTransactions}</p>
                     ) : (
-                  <FinancialTable
-                    rows={ledger.transactions}
-                    rowKey={(r) => r.id}
-                    columns={[
-                      {
-                        key: 'date',
-                        header: bank.colDate,
-                        render: (r) => r.transactionDate,
-                        muted: true,
-                      },
-                      { key: 'desc', header: bank.colDescription, render: (r) => r.description },
-                      {
-                        key: 'cat',
-                        header: bank.colCategory,
-                        muted: true,
-                        render: (r) => txnCategories[r.category] ?? r.category,
-                      },
-                      {
-                        key: 'amount',
-                        header: bank.colAmount,
-                        align: 'right',
-                        mono: true,
-                        render: (r) => (
-                          <span
-                            className={
-                              r.direction === 'IN' ? 'text-cash-positive' : 'text-cash-negative'
-                            }
-                          >
-                            {r.direction === 'IN' ? '+' : '−'}
-                            {formatCurrency(r.amount, selected.currency)}
-                          </span>
-                        ),
-                      },
-                      {
-                        key: 'balance',
-                        header: bank.colRunningBalance,
-                        align: 'right',
-                        mono: true,
-                        render: (r) => formatCurrency(r.runningBalance, selected.currency),
-                      },
-                      {
-                        key: 'status',
-                        header: bank.colStatus,
-                        render: (r) => (
-                          <Badge
-                            variant={r.status === 'cleared' ? 'cash-positive' : 'warning'}
-                            className="text-[10px]"
-                          >
-                            {r.status === 'cleared'
-                              ? format('dashboard.txnCleared')
-                              : format('dashboard.txnPending')}
-                          </Badge>
-                        ),
-                      },
-                    ]}
-                  />
+                      <FinancialTable
+                        rows={ledger.transactions}
+                        rowKey={(r) => r.id}
+                        columns={[
+                          {
+                            key: 'date',
+                            header: bank.colDate,
+                            render: (r) => r.transactionDate,
+                            muted: true,
+                          },
+                          {
+                            key: 'desc',
+                            header: bank.colDescription,
+                            render: (r) => r.description,
+                          },
+                          {
+                            key: 'cat',
+                            header: bank.colCategory,
+                            muted: true,
+                            render: (r) => txnCategories[r.category] ?? r.category,
+                          },
+                          {
+                            key: 'amount',
+                            header: bank.colAmount,
+                            align: 'right',
+                            mono: true,
+                            render: (r) => (
+                              <span
+                                className={
+                                  r.direction === 'IN' ? 'text-cash-positive' : 'text-cash-negative'
+                                }
+                              >
+                                {r.direction === 'IN' ? '+' : '−'}
+                                {formatCurrency(r.amount, selected.currency)}
+                              </span>
+                            ),
+                          },
+                          {
+                            key: 'balance',
+                            header: bank.colRunningBalance,
+                            align: 'right',
+                            mono: true,
+                            render: (r) => formatCurrency(r.runningBalance, selected.currency),
+                          },
+                          {
+                            key: 'status',
+                            header: bank.colStatus,
+                            render: (r) => (
+                              <Badge
+                                variant={r.status === 'cleared' ? 'cash-positive' : 'warning'}
+                                className="text-[10px]"
+                              >
+                                {r.status === 'cleared'
+                                  ? format('dashboard.txnCleared')
+                                  : format('dashboard.txnPending')}
+                              </Badge>
+                            ),
+                          },
+                        ]}
+                      />
                     )}
                   </>
                 )}

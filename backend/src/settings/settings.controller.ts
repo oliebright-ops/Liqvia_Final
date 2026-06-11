@@ -113,7 +113,11 @@ export class SettingsController {
   @Patch('chart-of-accounts/:id')
   @Roles(UserRole.admin, UserRole.owner)
   updateCoa(@CurrentUser() user: AuthUser, @Param('id') id: string, @Body() body: unknown) {
-    return this.settings.updateChartOfAccount(user, id, parseBody(updateChartOfAccountSchema, body));
+    return this.settings.updateChartOfAccount(
+      user,
+      id,
+      parseBody(updateChartOfAccountSchema, body),
+    );
   }
 
   @Delete('chart-of-accounts/:id')

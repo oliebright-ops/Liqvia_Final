@@ -104,10 +104,50 @@ export interface QueryAnalysis {
 }
 
 const STOP_WORDS = new Set([
-  'a', 'an', 'the', 'is', 'are', 'was', 'were', 'what', 'which', 'who', 'when', 'where',
-  'why', 'how', 'for', 'of', 'to', 'in', 'on', 'at', 'my', 'our', 'this', 'that', 'it',
-  'do', 'does', 'did', 'can', 'could', 'would', 'should', 'about', 'specific', 'cash',
-  'flow', 'money', 'amount', 'transaction', 'payment', 'please', 'tell', 'me', 'show',
+  'a',
+  'an',
+  'the',
+  'is',
+  'are',
+  'was',
+  'were',
+  'what',
+  'which',
+  'who',
+  'when',
+  'where',
+  'why',
+  'how',
+  'for',
+  'of',
+  'to',
+  'in',
+  'on',
+  'at',
+  'my',
+  'our',
+  'this',
+  'that',
+  'it',
+  'do',
+  'does',
+  'did',
+  'can',
+  'could',
+  'would',
+  'should',
+  'about',
+  'specific',
+  'cash',
+  'flow',
+  'money',
+  'amount',
+  'transaction',
+  'payment',
+  'please',
+  'tell',
+  'me',
+  'show',
 ]);
 
 export function buildTreasuryContext(dashboard: DashboardPayload): TreasuryAiContext {
@@ -187,18 +227,37 @@ export function analyzeUserQuery(question: string, context: TreasuryAiContext): 
   let intent: QueryAnalysis['intent'] = 'general';
   if (isPayrollQuestion(q)) intent = 'payroll';
   else if (isTransactionQuestion(q)) intent = 'transaction_lookup';
-  else if (q.includes('outflow') || q.includes('spent') || q.includes('expense') || q.includes('debit'))
+  else if (
+    q.includes('outflow') ||
+    q.includes('spent') ||
+    q.includes('expense') ||
+    q.includes('debit')
+  )
     intent = 'outflow_summary';
-  else if (q.includes('inflow') || q.includes('receipt') || q.includes('received') || q.includes('credit'))
+  else if (
+    q.includes('inflow') ||
+    q.includes('receipt') ||
+    q.includes('received') ||
+    q.includes('credit')
+  )
     intent = 'inflow_summary';
-  else if (q.includes('payable') || q.includes('supplier') || q.includes('vendor') || q.includes('bill'))
+  else if (
+    q.includes('payable') ||
+    q.includes('supplier') ||
+    q.includes('vendor') ||
+    q.includes('bill')
+  )
     intent = 'payables';
-  else if (q.includes('receivable') || q.includes('invoice') || q.includes('customer') || q.includes('overdue'))
+  else if (
+    q.includes('receivable') ||
+    q.includes('invoice') ||
+    q.includes('customer') ||
+    q.includes('overdue')
+  )
     intent = 'receivables';
   else if (q.includes('budget') || q.includes('actual') || q.includes('variance'))
     intent = 'budget';
-  else if (q.includes('runway') || q.includes('burn'))
-    intent = 'runway';
+  else if (q.includes('runway') || q.includes('burn')) intent = 'runway';
 
   const pool =
     intent === 'outflow_summary'
@@ -209,11 +268,10 @@ export function analyzeUserQuery(question: string, context: TreasuryAiContext): 
 
   const relevantTransactions = scoreTransactions(pool, matchedTerms, amounts, q).slice(0, 8);
 
-  const relevantPayables = scoreCounterparties(
-    context.payablesDetail,
-    matchedTerms,
-    amounts,
-  ).slice(0, 6);
+  const relevantPayables = scoreCounterparties(context.payablesDetail, matchedTerms, amounts).slice(
+    0,
+    6,
+  );
 
   const relevantReceivables = scoreCounterparties(
     context.receivablesDetail,
@@ -309,9 +367,11 @@ function scoreTransactions(
     .map((row) => row.t);
 }
 
-function scoreCounterparties<
-  T extends { counterparty: string; amount: number },
->(items: T[], terms: string[], amounts: number[]): T[] {
+function scoreCounterparties<T extends { counterparty: string; amount: number }>(
+  items: T[],
+  terms: string[],
+  amounts: number[],
+): T[] {
   return items
     .map((item) => {
       let score = 0;
@@ -364,26 +424,17 @@ function periodInHorizon(period: string, asOfDate: string, horizonEnd: string): 
   return period >= asOfDate.slice(0, 7) && period <= horizonEnd.slice(0, 7);
 }
 
-function isPayrollPayable(
-  p: TreasuryAiContext['payablesDetail'][number],
-): boolean {
+function isPayrollPayable(p: TreasuryAiContext['payablesDetail'][number]): boolean {
   if (p.supplierPriority === 'payroll') return true;
   return /payroll|salary|wage|зарплат|заработн/i.test(p.counterparty);
 }
 
 function isPayrollTransaction(t: TreasuryAiTransaction): boolean {
-  return (
-    t.category === 'payroll' ||
-    /payroll|salary|wage|зарплат|заработн/i.test(t.description)
-  );
+  return t.category === 'payroll' || /payroll|salary|wage|зарплат|заработн/i.test(t.description);
 }
 
-export function formatPayrollOutlook(
-  context: TreasuryAiContext,
-  months: number,
-): string {
-  const fmt = (n: number) =>
-    `${context.currency} ${Math.round(n).toLocaleString('en-US')}`;
+export function formatPayrollOutlook(context: TreasuryAiContext, months: number): string {
+  const fmt = (n: number) => `${context.currency} ${Math.round(n).toLocaleString('en-US')}`;
   const horizonEnd = addMonthsIso(context.asOfDate, months);
   const lines: string[] = [];
 
@@ -393,20 +444,14 @@ export function formatPayrollOutlook(
   lines.push(`As of ${context.asOfDate} through ${horizonEnd}.`);
 
   const payrollPayables = context.payablesDetail.filter(
-    (p) =>
-      isPayrollPayable(p) &&
-      p.dueDate >= context.asOfDate &&
-      p.dueDate <= horizonEnd,
+    (p) => isPayrollPayable(p) && p.dueDate >= context.asOfDate && p.dueDate <= horizonEnd,
   );
   const payablesTotal = payrollPayables.reduce((s, p) => s + p.amount, 0);
 
   const payrollBudget = context.budgetLines.filter(
     (l) => l.category === 'payroll' && periodInHorizon(l.period, context.asOfDate, horizonEnd),
   );
-  const budgetTotal = payrollBudget.reduce(
-    (s, l) => s + Math.abs(l.budgetAmount),
-    0,
-  );
+  const budgetTotal = payrollBudget.reduce((s, l) => s + Math.abs(l.budgetAmount), 0);
 
   const payrollActuals = context.weeklyActuals.filter((a) => a.category === 'payroll');
   const actualsTotal = payrollActuals
@@ -422,13 +467,9 @@ export function formatPayrollOutlook(
       : 0;
 
   if (payrollPayables.length > 0) {
-    lines.push(
-      `\n**Scheduled payroll payables (AP): ${fmt(payablesTotal)}**`,
-    );
+    lines.push(`\n**Scheduled payroll payables (AP): ${fmt(payablesTotal)}**`);
     for (const p of payrollPayables.slice(0, 8)) {
-      lines.push(
-        `- ${p.counterparty} · ${fmt(p.amount)} · due ${p.dueDate}`,
-      );
+      lines.push(`- ${p.counterparty} · ${fmt(p.amount)} · due ${p.dueDate}`);
     }
     if (payrollPayables.length > 8) {
       lines.push(`- …and ${payrollPayables.length - 8} more`);
@@ -455,13 +496,14 @@ export function formatPayrollOutlook(
     lines.push(formatTransactionAnswer(context.currency, payrollTxns.slice(0, 5)));
   }
 
-  const bestEstimate = payablesTotal > 0
-    ? payablesTotal
-    : budgetTotal > 0
-      ? budgetTotal
-      : actualsTotal > 0
-        ? actualsTotal
-        : recentMonthlyAvg;
+  const bestEstimate =
+    payablesTotal > 0
+      ? payablesTotal
+      : budgetTotal > 0
+        ? budgetTotal
+        : actualsTotal > 0
+          ? actualsTotal
+          : recentMonthlyAvg;
 
   if (bestEstimate > 0) {
     lines.push(

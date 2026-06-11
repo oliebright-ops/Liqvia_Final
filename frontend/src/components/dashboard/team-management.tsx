@@ -72,7 +72,10 @@ export function TeamManagement() {
         </table>
 
         {isAdmin && (
-          <form onSubmit={addUser} className="space-y-3 rounded-lg border border-slate-200 bg-slate-50 p-4">
+          <form
+            onSubmit={addUser}
+            className="space-y-3 rounded-lg border border-slate-200 bg-slate-50 p-4"
+          >
             <p className="text-sm font-semibold text-slate-900">Add user</p>
             <div className="grid gap-3 sm:grid-cols-2">
               <input

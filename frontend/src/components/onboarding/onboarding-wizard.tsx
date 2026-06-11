@@ -19,8 +19,7 @@ import { DoneStep } from './steps/done-step';
 
 export function OnboardingWizard() {
   const router = useRouter();
-  const { user, loading, refreshUser, selectCompany, enterDemoMode, applyAuthResponse } =
-    useAuth();
+  const { user, loading, refreshUser, selectCompany, enterDemoMode, applyAuthResponse } = useAuth();
   const { locale } = useLocale();
   const t = useTranslations();
   const [phase, setPhase] = useState<OnboardingPhase>('welcome');

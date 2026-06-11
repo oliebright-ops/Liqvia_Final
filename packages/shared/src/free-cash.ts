@@ -47,9 +47,7 @@ export function buildFreeCashReport(
   overduePayables: number,
   currency: string,
 ): FreeCashReport {
-  const horizonWeeks = clampForecastHorizon(
-    forecastInput.horizonWeeks ?? 13,
-  );
+  const horizonWeeks = clampForecastHorizon(forecastInput.horizonWeeks ?? 13);
   const model = buildForecastModel({ ...forecastInput, horizonWeeks });
   const weeksInScope = model.weeks.filter((w) => w.weekIndex <= horizonWeeks);
 
@@ -68,12 +66,8 @@ export function buildFreeCashReport(
     };
   });
 
-  const fixedOutflowsHorizon = round2(
-    weeksInScope.reduce((sum, w) => sum + w.forecastOutflows, 0),
-  );
-  const apOutflowsHorizon = round2(
-    weeksInScope.reduce((sum, w) => sum + w.arApOutflows, 0),
-  );
+  const fixedOutflowsHorizon = round2(weeksInScope.reduce((sum, w) => sum + w.forecastOutflows, 0));
+  const apOutflowsHorizon = round2(weeksInScope.reduce((sum, w) => sum + w.arApOutflows, 0));
   const recurringOutflowsHorizon = round2(fixedOutflowsHorizon - apOutflowsHorizon);
 
   return {

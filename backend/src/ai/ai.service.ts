@@ -211,7 +211,12 @@ export class AiService {
       return `**Recent cash inflows**\n\n${formatTransactionAnswer(c.currency, inflows)}`;
     }
 
-    if (q.includes('supplier') || q.includes('payable') || q.includes('vendor') || q.includes('bill')) {
+    if (
+      q.includes('supplier') ||
+      q.includes('payable') ||
+      q.includes('vendor') ||
+      q.includes('bill')
+    ) {
       const items = analysis?.relevantPayables.length
         ? analysis.relevantPayables
         : c.payablesDetail.slice(0, 8);
@@ -247,10 +252,12 @@ export class AiService {
 
     if (q.includes('budget') || q.includes('actual') || q.includes('variance')) {
       const v = c.budgetMtdVariance ?? 0;
-      const lines = c.budgetLines.slice(0, 6).map(
-        (l) =>
-          `- **${l.period} · ${l.category}** · budget ${c.currency} ${Math.round(l.budgetAmount).toLocaleString()} · actual ${c.currency} ${Math.round(l.actualAmount).toLocaleString()} · variance ${c.currency} ${Math.round(l.varianceAmount).toLocaleString()}`,
-      );
+      const lines = c.budgetLines
+        .slice(0, 6)
+        .map(
+          (l) =>
+            `- **${l.period} · ${l.category}** · budget ${c.currency} ${Math.round(l.budgetAmount).toLocaleString()} · actual ${c.currency} ${Math.round(l.actualAmount).toLocaleString()} · variance ${c.currency} ${Math.round(l.varianceAmount).toLocaleString()}`,
+        );
       return `**Budget vs actual**\n\n- MTD variance: ${c.currency} ${Math.round(v).toLocaleString()} (${c.budgetVariancePct ?? 0}%)\n\n${lines.length ? 'Top lines:\n' + lines.join('\n') : 'No budget lines loaded yet.'}`;
     }
 
@@ -268,9 +275,9 @@ export class AiService {
 ${this.buildContextMessage(context)}
 
 ${
-      userQuestion ??
-      'Provide a concise executive cash-flow briefing with 2-3 recommended actions based strictly on the injected data points above.'
-    }`;
+  userQuestion ??
+  'Provide a concise executive cash-flow briefing with 2-3 recommended actions based strictly on the injected data points above.'
+}`;
 
     const res = await fetch('https://api.openai.com/v1/chat/completions', {
       method: 'POST',

@@ -19,10 +19,7 @@ import { KpiGrid } from './kpi-grid';
 import { RecentTransactions } from './recent-transactions';
 
 /** Demo mode uses live API data; only inject sample transactions when the ledger is empty. */
-function withDemoTransactionFallback(
-  summary: SummaryReport,
-  isDemoMode: boolean,
-): SummaryReport {
+function withDemoTransactionFallback(summary: SummaryReport, isDemoMode: boolean): SummaryReport {
   if (!isDemoMode || summary.recentTransactions.length > 0) {
     return summary;
   }
@@ -34,8 +31,7 @@ export function TreasuryDashboard() {
   const { t, format, locale } = useLanguage();
   const [viewHorizonWeeks, setViewHorizonWeeks] = useState<number | undefined>(undefined);
   const { data, loading, error, isFetching } = useTreasurySummary(viewHorizonWeeks);
-  const horizonWeeks =
-    viewHorizonWeeks ?? data?.liquidity.horizonWeeks ?? DEFAULT_FORECAST_HORIZON;
+  const horizonWeeks = viewHorizonWeeks ?? data?.liquidity.horizonWeeks ?? DEFAULT_FORECAST_HORIZON;
   const { data: freeCash, isFetching: freeCashFetching } = useFreeAvailableCash(horizonWeeks);
 
   const txnCategoryLabels = (t.dashboard as Record<string, unknown>).txnCategories as Record<

@@ -80,7 +80,9 @@ export function CompanySwitcher({
         ) : (
           <Building2 className={cn('h-4 w-4 shrink-0', dark ? 'text-blue-400' : 'text-primary')} />
         )}
-        <span className={cn('min-w-0 flex-1 truncate font-medium', dark && 'text-white')}>{label}</span>
+        <span className={cn('min-w-0 flex-1 truncate font-medium', dark && 'text-white')}>
+          {label}
+        </span>
         <ChevronDown
           className={cn(
             'h-4 w-4 transition-transform',
@@ -103,7 +105,9 @@ export function CompanySwitcher({
           )}
         >
           {links.length === 0 ? (
-            <p className={cn('px-3 py-2 text-xs', dark ? 'text-slate-400' : 'text-muted-foreground')}>
+            <p
+              className={cn('px-3 py-2 text-xs', dark ? 'text-slate-400' : 'text-muted-foreground')}
+            >
               {cs.noLinks}
             </p>
           ) : (

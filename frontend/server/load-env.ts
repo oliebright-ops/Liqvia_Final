@@ -19,11 +19,7 @@ export function loadAppEnv(): void {
   }
 }
 
-function applyEnvFile(
-  filePath: string,
-  override: boolean,
-  shellKeys: Set<string>,
-): void {
+function applyEnvFile(filePath: string, override: boolean, shellKeys: Set<string>): void {
   if (!existsSync(filePath)) return;
 
   const lines = readFileSync(filePath, 'utf8').split('\n');

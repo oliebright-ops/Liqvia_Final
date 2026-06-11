@@ -98,12 +98,10 @@ export class BankAccountsService {
     });
 
     const ledger = computeAccountLedger(this.toLedgerInput(movements), asOfDate);
-    const transactions = ledger.transactions
-      .slice(-limit)
-      .map((t) => ({
-        ...t,
-        status: txnStatus(t.transactionDate, asOfDate),
-      }));
+    const transactions = ledger.transactions.slice(-limit).map((t) => ({
+      ...t,
+      status: txnStatus(t.transactionDate, asOfDate),
+    }));
 
     return {
       openingBalance: ledger.openingBalance,

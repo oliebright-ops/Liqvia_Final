@@ -9,13 +9,7 @@ import { NestedTranslations } from '@/lib/i18n';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 
-export function AiInsightSection({
-  companyId,
-  t,
-}: {
-  companyId: string;
-  t: NestedTranslations;
-}) {
+export function AiInsightSection({ companyId, t }: { companyId: string; t: NestedTranslations }) {
   const ai = t.ai as Record<string, string>;
   const [question, setQuestion] = useState('');
   const [result, setResult] = useState<AiInsightResponse | null>(null);
@@ -41,7 +35,10 @@ export function AiInsightSection({
   return (
     <Card className="flex h-full flex-col">
       <CardHeader className="p-4 pb-2">
-        <Link href="/ai-cfo" className="flex items-center gap-2 rounded-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary">
+        <Link
+          href="/ai-cfo"
+          className="flex items-center gap-2 rounded-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+        >
           <Sparkles className="h-4 w-4 text-primary" aria-hidden />
           <CardTitle className="hover:text-primary">{ai.title}</CardTitle>
         </Link>

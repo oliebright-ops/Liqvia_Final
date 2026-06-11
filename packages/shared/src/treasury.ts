@@ -49,10 +49,7 @@ export const FORECAST_HORIZON_MAX = 26;
 export const FORECAST_WEEKS = DEFAULT_FORECAST_HORIZON;
 
 export function clampForecastHorizon(weeks: number): number {
-  return Math.min(
-    FORECAST_HORIZON_MAX,
-    Math.max(FORECAST_HORIZON_MIN, Math.round(weeks)),
-  );
+  return Math.min(FORECAST_HORIZON_MAX, Math.max(FORECAST_HORIZON_MIN, Math.round(weeks)));
 }
 
 export interface ForecastReceivableInput {

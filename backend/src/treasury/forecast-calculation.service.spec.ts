@@ -1,8 +1,4 @@
-import {
-  buildForecastModel,
-  dateToWeekIndex,
-  scheduleArApEntries,
-} from '@liqvia2/shared';
+import { buildForecastModel, dateToWeekIndex, scheduleArApEntries } from '@liqvia2/shared';
 import { ForecastCalculationService } from './forecast-calculation.service';
 
 describe('ForecastCalculationService', () => {
