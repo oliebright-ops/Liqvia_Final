@@ -1,0 +1,36 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --background: 224 56% 5%;
+    --foreground: 210 40% 98%;
+    --card: 222 47% 9%;
+    --card-foreground: 210 40% 98%;
+    --border: 222 30% 18%;
+    --muted: 222 30% 14%;
+    --muted-foreground: 215 20% 55%;
+    --primary: 221 94% 68%;
+    --primary-foreground: 224 56% 5%;
+    --sidebar-background: 222 50% 7%;
+    --radius: 0.625rem;
+    --chart-tooltip: 222 47% 9%;
+    --cash-positive: 152 60% 45%;
+    --cash-negative: 0 72% 58%;
+  }
+
+  * {
+    @apply border-border;
+  }
+
+  body {
+    @apply bg-background text-foreground font-sans antialiased;
+  }
+}
+
+@layer utilities {
+  .shadow-glow-primary {
+    box-shadow: 0 0 24px hsl(var(--primary) / 0.35);
+  }
+}

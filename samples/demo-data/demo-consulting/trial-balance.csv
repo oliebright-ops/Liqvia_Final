@@ -1,0 +1,5 @@
+Period,Account Code,Account Name,Account Type,Debit,Credit
+2026-05,1000,Cash,asset,180000,0
+2026-05,4000,Consulting Revenue,revenue,0,145000
+2026-05,5000,Payroll,expense,68000,0
+2026-05,6000,Operating Expenses,expense,22000,0

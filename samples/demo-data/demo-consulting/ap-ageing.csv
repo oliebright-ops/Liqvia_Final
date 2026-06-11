@@ -1,0 +1,4 @@
+Supplier Name,Bill Number,Bill Date,Due Date,Outstanding Amount,Supplier Priority,Currency
+Payroll Provider,PAY-05,2026-05-25,2026-06-05,34000,payroll,USD
+Cloud Hosting,BILL-201,2026-05-18,2026-06-17,4200,critical,USD
+Office Supplies Co,BILL-202,2026-05-22,2026-06-21,1500,flexible,USD

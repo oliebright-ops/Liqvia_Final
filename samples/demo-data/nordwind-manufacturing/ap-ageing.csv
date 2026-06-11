@@ -1,0 +1,5 @@
+Supplier Name,Bill Number,Bill Date,Due Date,Outstanding Amount,Supplier Priority,Currency
+Payroll Provider,PAY-05,2026-05-25,2026-06-06,96000,payroll,EUR
+Steel Supplier,BILL-401,2026-05-10,2026-06-09,82000,critical,EUR
+Equipment Lease,BILL-402,2026-05-18,2026-06-17,30000,critical,EUR
+Logistics Co,BILL-403,2026-05-22,2026-06-21,12000,flexible,EUR

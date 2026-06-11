@@ -1,0 +1,21 @@
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: liqvia2-postgres
+    restart: unless-stopped
+    ports:
+      - "5432:5432"
+    environment:
+      POSTGRES_USER: liqvia
+      POSTGRES_PASSWORD: liqvia
+      POSTGRES_DB: liqvia2
+    volumes:
+      - liqvia2_pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U liqvia -d liqvia2"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+volumes:
+  liqvia2_pgdata:

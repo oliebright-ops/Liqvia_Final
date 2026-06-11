@@ -1,0 +1,3 @@
+Supplier Name,Bill Number,Bill Date,Due Date,Outstanding Amount,Supplier Priority,Currency
+Payroll Provider,PAY-01,2026-01-01,2026-01-15,22000,payroll,USD
+Office Supplies Co,BILL-44,2026-01-10,2026-02-09,1200,flexible,USD

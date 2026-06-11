@@ -1,0 +1,30 @@
+{
+  "name": "liqvia2",
+  "private": true,
+  "version": "0.1.0",
+  "description": "AI Treasury & Cash Flow Platform for SMEs",
+  "scripts": {
+    "dev": "pnpm --filter @liqvia2/shared build && pnpm --filter @liqvia2/backend build && concurrently -n shared,app -c magenta,blue \"pnpm --filter @liqvia2/shared exec tsc --watch --preserveWatchOutput\" \"pnpm --filter @liqvia2/frontend dev\"",
+    "build": "pnpm --filter @liqvia2/shared build && pnpm --filter @liqvia2/backend build && pnpm --filter @liqvia2/frontend build && pnpm --filter @liqvia2/frontend build:server",
+    "start": "pnpm --filter @liqvia2/frontend start",
+    "lint": "pnpm -r lint",
+    "format": "prettier --write \"**/*.{ts,tsx,js,json,md}\"",
+    "format:check": "prettier --check \"**/*.{ts,tsx,js,json,md}\"",
+    "db:migrate": "pnpm --filter @liqvia2/backend prisma:migrate",
+    "db:generate": "pnpm --filter @liqvia2/backend prisma:generate",
+    "db:studio": "pnpm --filter @liqvia2/backend prisma:studio",
+    "db:seed": "pnpm --filter @liqvia2/backend prisma:seed"
+  },
+  "devDependencies": {
+    "@eslint/js": "^9.28.0",
+    "concurrently": "^9.1.2",
+    "eslint": "^9.28.0",
+    "prettier": "^3.5.3",
+    "typescript": "^5.8.3",
+    "typescript-eslint": "^8.33.0"
+  },
+  "engines": {
+    "node": ">=20"
+  },
+  "packageManager": "pnpm@9.15.0"
+}

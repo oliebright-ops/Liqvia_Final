@@ -1,0 +1,49 @@
+name: CI
+
+on:
+  push:
+    branches: [main, develop]
+  pull_request:
+    branches: [main, develop]
+
+jobs:
+  lint-and-test:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_USER: liqvia
+          POSTGRES_PASSWORD: liqvia
+          POSTGRES_DB: liqvia2_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+    env:
+      DATABASE_URL: postgresql://liqvia:liqvia@localhost:5432/liqvia2_test?schema=public
+
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 9
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+        continue-on-error: true
+      - run: pnpm install
+        if: failure()
+      - run: pnpm --filter @liqvia2/backend exec prisma generate
+      - run: pnpm --filter @liqvia2/backend exec prisma migrate deploy
+      - run: pnpm format:check
+      - run: pnpm lint
+      - run: pnpm build
+      - run: pnpm --filter @liqvia2/backend test
+      - run: pnpm --filter @liqvia2/backend run prisma:seed:demo

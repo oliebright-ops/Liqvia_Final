@@ -1,0 +1,46 @@
+# Dependencies
+node_modules/
+.pnpm-store/
+
+# Build
+dist/
+build/
+.next/
+out/
+
+# Env (per-app — see backend/.env.example and frontend/.env.example)
+.env
+.env.local
+.env.*.local
+backend/.env
+backend/.env.local
+frontend/.env.local
+
+# IDE
+.idea/
+.vscode/*
+!.vscode/extensions.json
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+npm-debug.log*
+pnpm-debug.log*
+
+# Test / coverage
+coverage/
+
+# Prisma
+backend/prisma/*.db
+backend/prisma/*.db-journal
+
+# Misc
+*.tsbuildinfo
+.turbo/
+.vercel/
+
+# Local tooling (corepack-installed pnpm shim)
+.tooling/

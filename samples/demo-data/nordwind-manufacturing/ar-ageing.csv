@@ -1,0 +1,4 @@
+Customer Name,Invoice Number,Invoice Date,Due Date,Outstanding Amount,Currency
+OEM Buyer GmbH,INV-4001,2026-03-01,2026-05-30,120000,EUR
+Distributor Nord,INV-4002,2026-04-15,2026-06-14,75000,EUR
+Distributor Süd,INV-4003,2026-05-20,2026-07-19,48000,EUR

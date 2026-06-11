@@ -1,0 +1,570 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// --- Enums ---
+
+enum UserRole {
+  owner
+  admin
+  member
+  viewer
+}
+
+enum AccountType {
+  asset
+  liability
+  equity
+  revenue
+  expense
+}
+
+enum SupplierPriority {
+  payroll
+  tax
+  critical
+  flexible
+  non_essential
+}
+
+enum UploadTemplateType {
+  trial_balance
+  ar_ageing
+  ap_ageing
+  bank_balances
+  bank_transactions
+  budget
+  prior_period_budget
+  rolling_budget
+  weekly_actuals
+}
+
+enum PeriodGranularity {
+  monthly
+  weekly
+}
+
+enum UploadBatchStatus {
+  pending
+  validating
+  validated
+  importing
+  completed
+  failed
+}
+
+enum ForecastType {
+  baseline
+  scenario
+}
+
+enum LiquidityStatus {
+  healthy
+  moderate
+  high_risk
+  critical
+}
+
+enum AlertSeverity {
+  info
+  warning
+  critical
+}
+
+enum AlertType {
+  runway
+  negative_cash
+  delayed_collection
+  liquidity_stress
+  upcoming_obligation
+}
+
+enum BudgetCategory {
+  revenue
+  payroll
+  expenses
+  capex
+  loan_repayment
+}
+
+enum ExternalSource {
+  manual
+  xero
+  quickbooks
+  bank_feed
+}
+
+// --- Tenant & auth ---
+
+model Company {
+  id                    String    @id @default(cuid())
+  name                  String
+  industry              String?
+  currency              String    @default("USD")
+  locale                String    @default("en")
+  fiscalYearStart       Int       @default(1)
+  forecastHorizonWeeks  Int       @default(13)
+  forecastLookbackWeeks Int       @default(4)
+  reportingPeriod       String?
+  periodGranularity     PeriodGranularity @default(monthly)
+  openingCashBalance    Decimal?  @db.Decimal(18, 2)
+  onboardingCompleted   Boolean   @default(false)
+  onboardingCompletedAt DateTime?
+  createdAt             DateTime  @default(now())
+  updatedAt             DateTime  @updatedAt
+  deletedAt             DateTime?
+
+  users            UserProfile[]
+  chartOfAccounts  ChartOfAccount[]
+  journalEntries   JournalEntry[]
+  bankAccounts     BankAccount[]
+  cashMovements    CashMovement[]
+  cashForecasts    CashForecast[]
+  budgets          Budget[]
+  weeklyActuals    WeeklyActual[]
+  receivables      Receivable[]
+  payables         Payable[]
+  uploadBatches    UploadBatch[]
+  scenarios        Scenario[]
+  aiLogs           AiLog[]
+  aiInsights       AiInsight[]
+  auditLogs        AuditLog[]
+  alerts           Alert[]
+  userLinks        UserCompanyLink[]
+
+  @@index([deletedAt])
+}
+
+model UserProfile {
+  id           String   @id @default(cuid())
+  email        String   @unique
+  passwordHash String
+  name         String
+  companyId    String?
+  isDemoMode   Boolean  @default(false)
+  role         UserRole @default(member)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+  createdBy    String?
+  updatedBy    String?
+
+  company      Company?          @relation(fields: [companyId], references: [id], onDelete: SetNull)
+  companyLinks UserCompanyLink[]
+  passwordResetTokens PasswordResetToken[]
+
+  journalEntriesCreated JournalEntry[] @relation("JournalEntryCreatedBy")
+  uploadBatchesCreated  UploadBatch[]  @relation("UploadBatchCreatedBy")
+  scenariosCreated      Scenario[]     @relation("ScenarioCreatedBy")
+  auditLogs             AuditLog[]
+
+  @@index([companyId])
+}
+
+model PasswordResetToken {
+  id        String   @id @default(cuid())
+  userId    String
+  tokenHash String   @unique
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+
+  user UserProfile @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([expiresAt])
+}
+
+model UserCompanyLink {
+  id        String   @id @default(cuid())
+  email     String
+  companyId String
+  userId    String?
+  role      UserRole @default(member)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  company Company      @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  user    UserProfile? @relation(fields: [userId], references: [id], onDelete: SetNull)
+
+  @@unique([email, companyId])
+  @@index([email])
+}
+
+// --- Actuals: accounting ---
+
+model ChartOfAccount {
+  id               String        @id @default(cuid())
+  companyId        String
+  code             String
+  name             String
+  accountType      AccountType
+  externalSource   ExternalSource @default(manual)
+  externalId       String?
+  createdAt        DateTime      @default(now())
+  updatedAt        DateTime      @updatedAt
+  deletedAt        DateTime?
+
+  company      Company       @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  journalLines JournalLine[]
+  budgetLines  BudgetLine[]
+
+  @@unique([companyId, code])
+  @@index([companyId])
+  @@index([accountType])
+}
+
+model JournalEntry {
+  id             String         @id @default(cuid())
+  companyId      String
+  period         String
+  entryDate      DateTime
+  description    String?
+  externalSource ExternalSource @default(manual)
+  externalId     String?
+  createdAt      DateTime       @default(now())
+  updatedAt      DateTime       @updatedAt
+  createdById    String?
+  deletedAt      DateTime?
+
+  company   Company      @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  createdBy UserProfile? @relation("JournalEntryCreatedBy", fields: [createdById], references: [id])
+  lines     JournalLine[]
+
+  @@index([companyId, period])
+  @@index([entryDate])
+}
+
+model JournalLine {
+  id              String   @id @default(cuid())
+  journalEntryId  String
+  chartOfAccountId String
+  debit           Decimal  @default(0) @db.Decimal(18, 2)
+  credit          Decimal  @default(0) @db.Decimal(18, 2)
+  createdAt       DateTime @default(now())
+
+  journalEntry   JournalEntry   @relation(fields: [journalEntryId], references: [id], onDelete: Cascade)
+  chartOfAccount ChartOfAccount @relation(fields: [chartOfAccountId], references: [id])
+
+  @@index([journalEntryId])
+  @@index([chartOfAccountId])
+}
+
+// --- Actuals: cash & AR/AP ---
+
+model BankAccount {
+  id                 String         @id @default(cuid())
+  companyId          String
+  name               String
+  accountNumberMasked String
+  currency           String
+  externalSource     ExternalSource @default(manual)
+  externalId         String?
+  createdAt          DateTime       @default(now())
+  updatedAt          DateTime       @updatedAt
+  deletedAt          DateTime?
+
+  company       Company        @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  cashMovements CashMovement[]
+
+  @@index([companyId])
+}
+
+model CashMovement {
+  id            String   @id @default(cuid())
+  companyId     String
+  bankAccountId String
+  movementDate  DateTime
+  amount        Decimal  @db.Decimal(18, 2)
+  description   String?
+  isInflow      Boolean
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  company     Company     @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  bankAccount BankAccount @relation(fields: [bankAccountId], references: [id], onDelete: Cascade)
+
+  @@index([companyId, movementDate])
+  @@index([bankAccountId])
+}
+
+model Receivable {
+  id                 String   @id @default(cuid())
+  companyId          String
+  customerName       String
+  invoiceNumber      String
+  invoiceDate        DateTime
+  dueDate            DateTime
+  outstandingAmount  Decimal  @db.Decimal(18, 2)
+  currency           String
+  uploadBatchId      String?
+  createdAt          DateTime @default(now())
+  updatedAt          DateTime @updatedAt
+  deletedAt          DateTime?
+
+  company     Company      @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  uploadBatch UploadBatch? @relation(fields: [uploadBatchId], references: [id])
+
+  @@index([companyId, dueDate])
+  @@index([companyId, invoiceNumber])
+}
+
+model Payable {
+  id                String           @id @default(cuid())
+  companyId         String
+  supplierName      String
+  billNumber        String
+  billDate          DateTime
+  dueDate           DateTime
+  outstandingAmount Decimal          @db.Decimal(18, 2)
+  supplierPriority  SupplierPriority
+  currency          String
+  uploadBatchId     String?
+  createdAt         DateTime         @default(now())
+  updatedAt         DateTime         @updatedAt
+  deletedAt         DateTime?
+
+  company     Company      @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  uploadBatch UploadBatch? @relation(fields: [uploadBatchId], references: [id])
+
+  @@index([companyId, dueDate])
+  @@index([companyId, supplierPriority])
+}
+
+// --- Budget (actuals comparison input) ---
+
+model Budget {
+  id        String    @id @default(cuid())
+  companyId String
+  name      String
+  fiscalYear Int
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  deletedAt DateTime?
+
+  company Company      @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  lines   BudgetLine[]
+
+  @@index([companyId])
+}
+
+model BudgetLine {
+  id               String         @id @default(cuid())
+  budgetId         String
+  period           String
+  category         BudgetCategory
+  chartOfAccountId String?
+  budgetAmount     Decimal        @db.Decimal(18, 2)
+  budgetType       String
+  createdAt        DateTime       @default(now())
+
+  budget         Budget          @relation(fields: [budgetId], references: [id], onDelete: Cascade)
+  chartOfAccount ChartOfAccount? @relation(fields: [chartOfAccountId], references: [id])
+
+  @@index([budgetId, period])
+  @@index([category])
+}
+
+model WeeklyActual {
+  id            String         @id @default(cuid())
+  companyId     String
+  period        String
+  weekStart     DateTime
+  category      BudgetCategory
+  accountCode   String?
+  actualAmount  Decimal        @db.Decimal(18, 2)
+  uploadBatchId String?
+  createdAt     DateTime       @default(now())
+
+  company     Company      @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  uploadBatch UploadBatch? @relation(fields: [uploadBatchId], references: [id])
+
+  @@unique([companyId, period, category, accountCode])
+  @@index([companyId, period])
+}
+
+// --- Forecast layer ---
+
+model CashForecast {
+  id           String       @id @default(cuid())
+  companyId    String
+  forecastType ForecastType @default(baseline)
+  scenarioId   String?
+  generatedAt  DateTime     @default(now())
+  weekCount    Int          @default(13)
+  createdAt    DateTime     @default(now())
+  updatedAt    DateTime     @updatedAt
+
+  company  Company        @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  scenario Scenario?      @relation(fields: [scenarioId], references: [id])
+  lines    ForecastLine[]
+
+  @@index([companyId, forecastType])
+  @@index([scenarioId])
+}
+
+model ForecastLine {
+  id               String          @id @default(cuid())
+  cashForecastId   String
+  weekIndex        Int
+  weekStart        DateTime
+  openingCash      Decimal         @db.Decimal(18, 2)
+  forecastInflows  Decimal         @db.Decimal(18, 2)
+  forecastOutflows Decimal         @db.Decimal(18, 2)
+  closingCash      Decimal         @db.Decimal(18, 2)
+  liquidityStatus  LiquidityStatus
+  majorDrivers     Json?
+
+  cashForecast CashForecast @relation(fields: [cashForecastId], references: [id], onDelete: Cascade)
+
+  @@unique([cashForecastId, weekIndex])
+  @@index([weekStart])
+}
+
+// --- Scenario layer ---
+
+model Scenario {
+  id                      String   @id @default(cuid())
+  companyId               String
+  name                    String
+  revenueDeclinePercent   Decimal  @default(0) @db.Decimal(5, 2)
+  payrollIncreasePercent  Decimal  @default(0) @db.Decimal(5, 2)
+  receivableDelayDays     Int      @default(0)
+  expenseGrowthPercent    Decimal  @default(0) @db.Decimal(5, 2)
+  createdAt               DateTime @default(now())
+  updatedAt               DateTime @updatedAt
+  createdById             String?
+
+  company       Company        @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  createdBy     UserProfile?   @relation("ScenarioCreatedBy", fields: [createdById], references: [id])
+  lines         ScenarioLine[]
+  cashForecasts CashForecast[]
+
+  @@index([companyId])
+}
+
+model ScenarioLine {
+  id               String   @id @default(cuid())
+  scenarioId       String
+  weekIndex        Int
+  weekStart        DateTime
+  openingCash      Decimal  @db.Decimal(18, 2)
+  forecastInflows  Decimal  @db.Decimal(18, 2)
+  forecastOutflows Decimal  @db.Decimal(18, 2)
+  closingCash      Decimal  @db.Decimal(18, 2)
+  liquidityStatus  LiquidityStatus
+
+  scenario Scenario @relation(fields: [scenarioId], references: [id], onDelete: Cascade)
+
+  @@unique([scenarioId, weekIndex])
+}
+
+// --- Uploads ---
+
+model UploadBatch {
+  id           String             @id @default(cuid())
+  companyId    String
+  templateType UploadTemplateType
+  fileName     String
+  status       UploadBatchStatus  @default(pending)
+  rowCount     Int?
+  rowSnapshot  Json?
+  createdAt    DateTime           @default(now())
+  updatedAt    DateTime           @updatedAt
+  createdById  String?
+
+  company      Company       @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  createdBy    UserProfile?  @relation("UploadBatchCreatedBy", fields: [createdById], references: [id])
+  errors       UploadError[]
+  receivables   Receivable[]
+  payables      Payable[]
+  weeklyActuals WeeklyActual[]
+
+  @@index([companyId, status])
+  @@index([createdAt])
+}
+
+model UploadError {
+  id            String @id @default(cuid())
+  uploadBatchId String
+  rowNumber     Int?
+  columnName    String?
+  message       String
+  createdAt     DateTime @default(now())
+
+  uploadBatch UploadBatch @relation(fields: [uploadBatchId], references: [id], onDelete: Cascade)
+
+  @@index([uploadBatchId])
+}
+
+// --- Alerts ---
+
+model Alert {
+  id        String        @id @default(cuid())
+  companyId String
+  alertType AlertType
+  severity  AlertSeverity
+  message   String
+  metadata  Json?
+  resolved  Boolean       @default(false)
+  createdAt DateTime      @default(now())
+  resolvedAt DateTime?
+
+  company Company @relation(fields: [companyId], references: [id], onDelete: Cascade)
+
+  @@index([companyId, resolved])
+  @@index([alertType])
+}
+
+// --- AI ---
+
+model AiLog {
+  id           String   @id @default(cuid())
+  companyId    String
+  userId       String?
+  promptHash   String?
+  model        String?
+  inputTokens  Int?
+  outputTokens Int?
+  latencyMs    Int?
+  createdAt    DateTime @default(now())
+
+  company Company @relation(fields: [companyId], references: [id], onDelete: Cascade)
+
+  @@index([companyId, createdAt])
+}
+
+model AiInsight {
+  id        String   @id @default(cuid())
+  companyId String
+  insightType String
+  content   String
+  context   Json?
+  createdAt DateTime @default(now())
+
+  company Company @relation(fields: [companyId], references: [id], onDelete: Cascade)
+
+  @@index([companyId, insightType])
+}
+
+// --- Audit ---
+
+model AuditLog {
+  id         String   @id @default(cuid())
+  companyId  String
+  userId     String?
+  action     String
+  entityType String
+  entityId   String?
+  metadata   Json?
+  createdAt  DateTime @default(now())
+
+  company Company      @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  user    UserProfile? @relation(fields: [userId], references: [id])
+
+  @@index([companyId, createdAt])
+  @@index([entityType, entityId])
+}

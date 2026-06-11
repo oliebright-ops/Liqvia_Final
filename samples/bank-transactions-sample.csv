@@ -1,0 +1,5 @@
+Bank Account Name,Account Number Masked,Transaction Date,Description,Amount,Direction
+Operating Account,****4521,2026-01-05,Customer payment INV-1001,15000,IN
+Operating Account,****4521,2026-01-08,Payroll run January,11000,OUT
+Operating Account,****4521,2026-01-12,Supplier materials invoice,4200,OUT
+Reserve Account,****8832,2026-01-10,Internal transfer from operating,5000,IN

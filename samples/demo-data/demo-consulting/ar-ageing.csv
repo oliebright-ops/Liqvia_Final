@@ -1,0 +1,4 @@
+Customer Name,Invoice Number,Invoice Date,Due Date,Outstanding Amount,Currency
+Acme Corp,INV-2001,2026-05-15,2026-06-14,42000,USD
+Beta LLC,INV-2002,2026-05-20,2026-06-19,28000,USD
+Gamma Partners,INV-2003,2026-05-28,2026-06-27,18000,USD

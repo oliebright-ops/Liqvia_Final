@@ -1,0 +1,4 @@
+Period,Account Code,Account Name,Account Type,Debit,Credit
+2026-01,1000,Cash,asset,50000,0
+2026-01,4000,Revenue,revenue,0,120000
+2026-01,5000,Payroll,expense,45000,0

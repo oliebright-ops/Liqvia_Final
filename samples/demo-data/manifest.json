@@ -1,0 +1,36 @@
+{
+  "companies": [
+    {
+      "id": "demo-consulting",
+      "name": "Demo Consulting Ltd",
+      "currency": "USD",
+      "locale": "en",
+      "slug": "demo-consulting",
+      "profile": "Healthy services firm with steady collections and strong runway."
+    },
+    {
+      "id": "brightspark-retail",
+      "name": "Brightspark Retail Co",
+      "currency": "USD",
+      "locale": "en",
+      "slug": "brightspark-retail",
+      "profile": "Seasonal retailer with tight liquidity and large upcoming payables."
+    },
+    {
+      "id": "nordwind-manufacturing",
+      "name": "Nordwind Manufacturing GmbH",
+      "currency": "EUR",
+      "locale": "es",
+      "slug": "nordwind-manufacturing",
+      "profile": "Capital-intensive manufacturer with delayed receivables (watch)."
+    },
+    {
+      "id": "cloudpeak-saas",
+      "name": "CloudPeak SaaS Inc",
+      "currency": "USD",
+      "locale": "en",
+      "slug": "cloudpeak-saas",
+      "profile": "High-burn startup with short runway (critical)."
+    }
+  ]
+}

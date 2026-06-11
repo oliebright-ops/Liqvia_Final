@@ -1,0 +1,4 @@
+Supplier Name,Bill Number,Bill Date,Due Date,Outstanding Amount,Supplier Priority,Currency
+Payroll Provider,PAY-05,2026-05-25,2026-06-06,78000,payroll,USD
+Cloud Provider,BILL-501,2026-05-15,2026-06-14,18000,critical,USD
+Ad Network,BILL-502,2026-05-20,2026-06-19,12000,flexible,USD

@@ -1,0 +1,16 @@
+import { QueryClient } from '@tanstack/react-query';
+
+export const queryClient = new QueryClient({
+  defaultOptions: {
+    queries: {
+      staleTime: 30_000,
+      refetchOnWindowFocus: false,
+    },
+  },
+});
+
+export const treasurySummaryKey = (companyId: string | null, horizonWeeks?: number) =>
+  ['treasury-summary', companyId, horizonWeeks ?? null] as const;
+
+export const freeCashKey = (companyId: string | null, horizonWeeks: number) =>
+  ['free-cash', companyId, horizonWeeks] as const;
