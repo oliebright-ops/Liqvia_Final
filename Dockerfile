@@ -17,6 +17,7 @@ COPY packages/shared packages/shared
 COPY backend backend
 COPY frontend frontend
 COPY samples samples
+RUN mkdir -p frontend/public
 ENV NEXT_TELEMETRY_DISABLED=1
 RUN pnpm --filter @liqvia2/shared build \
   && pnpm --filter @liqvia2/backend exec prisma generate \
