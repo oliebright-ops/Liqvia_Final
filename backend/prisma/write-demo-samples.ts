@@ -1,6 +1,6 @@
 import { mkdirSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
-import { buildDemoPackFiles, DEMO_PACK_PROFILES } from './demo-pack-generator';
+import { buildDemoPackFiles, DEMO_PACK_PROFILES } from '../src/demo/demo-pack-generator';
 
 const SAMPLES_DIR = join(__dirname, '..', '..', 'samples', 'demo-data');
 const asOfDate = process.env.DEMO_AS_OF_DATE ?? new Date().toISOString().slice(0, 10);
