@@ -5,7 +5,7 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import { UserRole } from '@prisma/client';
-import * as bcrypt from 'bcrypt';
+import * as bcrypt from 'bcryptjs';
 import { DEFAULT_DEMO_COMPANY_ID } from '@liqvia2/shared';
 import { PrismaService } from '../prisma/prisma.service';
 import { TreasuryEngineService } from '../treasury/treasury-engine.service';

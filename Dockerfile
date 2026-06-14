@@ -20,8 +20,8 @@ COPY samples samples
 RUN mkdir -p frontend/public
 # Recreate workspace symlinks after full package sources are copied.
 RUN pnpm install --frozen-lockfile --ignore-scripts || pnpm install --ignore-scripts
-# --ignore-scripts skips Prisma postinstall; rebuild native addons bcrypt needs at runtime.
-RUN pnpm rebuild bcrypt sharp esbuild
+# Native addons still needed for Next (sharp, esbuild).
+RUN pnpm rebuild sharp esbuild
 ENV NEXT_TELEMETRY_DISABLED=1
 RUN pnpm --filter @liqvia2/shared build \
   && pnpm --filter @liqvia2/backend exec prisma generate \
