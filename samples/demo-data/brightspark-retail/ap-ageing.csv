@@ -1,5 +1,4 @@
 Supplier Name,Bill Number,Bill Date,Due Date,Outstanding Amount,Supplier Priority,Currency
-Payroll Provider,PAY-05,2026-05-25,2026-06-06,68000,payroll,USD
-Inventory Supplier,BILL-301,2026-05-12,2026-06-11,54000,critical,USD
-Tax Authority,TAX-02,2026-05-15,2026-06-15,18000,tax,USD
-Marketing Agency,BILL-302,2026-05-20,2026-06-19,6000,flexible,USD
+Inventory Wholesale,PO-881,2026-05-12,2026-06-01,54000,critical,USD
+Payroll Services,PAY-R05,2026-05-26,2026-06-05,36000,payroll,USD
+Mall Rent Ltd,RENT-05,2026-05-01,2026-06-01,18000,critical,USD

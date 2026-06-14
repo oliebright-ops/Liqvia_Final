@@ -1,4 +1,15 @@
 {
+  "generatedAsOf": "2026-06-06",
+  "packFiles": [
+    "trial-balance.csv",
+    "bank-balances.csv",
+    "ar-ageing.csv",
+    "ap-ageing.csv",
+    "weekly-actuals.csv",
+    "prior-period-budget.csv",
+    "rolling-budget.csv",
+    "bank-transactions.csv"
+  ],
   "companies": [
     {
       "id": "demo-consulting",

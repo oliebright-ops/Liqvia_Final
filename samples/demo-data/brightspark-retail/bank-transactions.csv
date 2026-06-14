@@ -1,0 +1,27 @@
+Bank Account Name,Account Number Masked,Transaction Date,Description,Amount,Direction
+Operating Account,****1190,2026-08-01,Customer receipts 2026-W15,37926,IN
+Operating Account,****1190,2026-08-02,Payroll 2026-W15,16628,OUT
+Operating Account,****1190,2026-08-03,Vendor payments 2026-W15,15358,OUT
+Operating Account,****1190,2026-07-25,Customer receipts 2026-W16,41224,IN
+Operating Account,****1190,2026-07-26,Payroll 2026-W16,16628,OUT
+Operating Account,****1190,2026-07-27,Vendor payments 2026-W16,15358,OUT
+Operating Account,****1190,2026-07-18,Customer receipts 2026-W17,45346,IN
+Operating Account,****1190,2026-07-19,Payroll 2026-W17,16628,OUT
+Operating Account,****1190,2026-07-20,Vendor payments 2026-W17,15358,OUT
+Reserve Account,****7721,2026-07-21,Reserve sweep 2026-W17,2667,IN
+Operating Account,****1190,2026-07-11,Customer receipts 2026-W18,48644,IN
+Operating Account,****1190,2026-07-12,Payroll 2026-W18,16628,OUT
+Operating Account,****1190,2026-07-13,Vendor payments 2026-W18,15358,OUT
+Operating Account,****1190,2026-07-04,Customer receipts 2026-W19,49469,IN
+Operating Account,****1190,2026-07-05,Payroll 2026-W19,16628,OUT
+Operating Account,****1190,2026-07-06,Vendor payments 2026-W19,15358,OUT
+Operating Account,****1190,2026-06-27,Customer receipts 2026-W20,43285,IN
+Operating Account,****1190,2026-06-28,Payroll 2026-W20,16628,OUT
+Operating Account,****1190,2026-06-29,Vendor payments 2026-W20,15358,OUT
+Reserve Account,****7721,2026-06-30,Reserve sweep 2026-W20,2546,IN
+Operating Account,****1190,2026-06-20,Customer receipts 2026-W21,40400,IN
+Operating Account,****1190,2026-06-21,Payroll 2026-W21,16628,OUT
+Operating Account,****1190,2026-06-22,Vendor payments 2026-W21,15358,OUT
+Operating Account,****1190,2026-06-13,Customer receipts 2026-W22,46171,IN
+Operating Account,****1190,2026-06-14,Payroll 2026-W22,16628,OUT
+Operating Account,****1190,2026-06-15,Vendor payments 2026-W22,15358,OUT

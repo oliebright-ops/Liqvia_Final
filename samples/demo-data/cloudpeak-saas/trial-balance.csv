@@ -1,6 +1,7 @@
 Period,Account Code,Account Name,Account Type,Debit,Credit
-2026-05,1000,Cash,asset,38000,0
-2026-05,4000,Subscription Revenue,revenue,0,42000
-2026-05,5000,Payroll,expense,78000,0
-2026-05,6000,Cloud Infrastructure,expense,18000,0
-2026-05,6100,Sales & Marketing,expense,24000,0
+2026-06,1000,Cash,asset,38000,0
+2026-06,1200,Accounts Receivable,asset,21000,0
+2026-06,2000,Accounts Payable,liability,0,71000
+2026-06,4000,Operating Revenue,revenue,0,42000
+2026-06,5000,Payroll,expense,78000,0
+2026-06,6000,Operating Expenses,expense,42000,0

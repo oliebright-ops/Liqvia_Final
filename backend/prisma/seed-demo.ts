@@ -7,6 +7,7 @@ import * as bcrypt from 'bcryptjs';
 import { AppModule } from '../src/app.module';
 import { PrismaService } from '../src/prisma/prisma.service';
 import { UploadImportService } from '../src/uploads/upload-import.service';
+import { buildDemoPackFiles, DEMO_PACK_PROFILES } from './demo-pack-generator';
 
 interface DemoCompany {
   id: string;
@@ -24,7 +25,10 @@ const FILES: Array<{ file: string; template: UploadTemplateType }> = [
   { file: 'bank-balances.csv', template: 'bank_balances' },
   { file: 'ar-ageing.csv', template: 'ar_ageing' },
   { file: 'ap-ageing.csv', template: 'ap_ageing' },
-  { file: 'budget.csv', template: 'budget' },
+  { file: 'weekly-actuals.csv', template: 'weekly_actuals' },
+  { file: 'prior-period-budget.csv', template: 'prior_period_budget' },
+  { file: 'rolling-budget.csv', template: 'rolling_budget' },
+  { file: 'bank-transactions.csv', template: 'bank_transactions' },
 ];
 
 async function main() {
@@ -85,8 +89,14 @@ async function main() {
 
     await resetCompanyData(prisma, company.id);
 
+    const profile = DEMO_PACK_PROFILES.find((p) => p.slug === company.slug);
+    if (!profile) {
+      throw new Error(`No demo pack profile for slug: ${company.slug}`);
+    }
+    const pack = buildDemoPackFiles(profile);
+
     for (const { file, template } of FILES) {
-      const csvContent = readFileSync(join(SAMPLES_DIR, company.slug, file), 'utf8');
+      const csvContent = pack[template];
       const result = await importer.importCsv({
         templateType: template,
         csvContent,
