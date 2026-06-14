@@ -9,7 +9,8 @@ COPY package.json pnpm-workspace.yaml pnpm-lock.yaml* ./
 COPY packages/shared/package.json packages/shared/
 COPY backend/package.json backend/
 COPY frontend/package.json frontend/
-RUN pnpm install --frozen-lockfile || pnpm install
+# Schema is copied in the build stage; skip postinstall (prisma generate) here.
+RUN pnpm install --frozen-lockfile --ignore-scripts || pnpm install --ignore-scripts
 
 FROM deps AS build
 COPY packages/shared packages/shared
@@ -26,7 +27,7 @@ RUN pnpm --filter @liqvia2/shared build \
 FROM base AS runner
 ENV NODE_ENV=production
 WORKDIR /app
-COPY --from=deps /app/node_modules ./node_modules
+COPY --from=build /app/node_modules ./node_modules
 COPY --from=build /app/package.json ./package.json
 COPY --from=build /app/pnpm-workspace.yaml ./pnpm-workspace.yaml
 COPY --from=build /app/packages/shared ./packages/shared
