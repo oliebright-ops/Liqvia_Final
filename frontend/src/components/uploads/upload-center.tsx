@@ -5,9 +5,11 @@ import {
   UPLOAD_TEMPLATES,
   UploadTemplateType,
   UploadValidationResult,
+  UPLOAD_FILE_ACCEPT,
   validateUpload,
 } from '@liqvia2/shared';
 import { apiGet, apiPost, apiUrl } from '@/lib/api';
+import { readUploadFile } from '@/lib/read-upload-file';
 import { useAuth } from '@/lib/auth-context';
 import { notifyWorkspaceRefresh } from '@/lib/workspace-refresh';
 import { useTranslations } from '@/lib/i18n';
@@ -147,10 +149,17 @@ export function UploadCenter() {
     const file = e.target.files?.[0];
     setImportMessage(null);
     if (!file) return;
-    const text = await file.text();
-    setFileName(file.name);
-    setCsvContent(text);
-    runValidation(text);
+    try {
+      const text = await readUploadFile(file);
+      setFileName(file.name);
+      setCsvContent(text);
+      runValidation(text);
+    } catch (err) {
+      setFileName(null);
+      setCsvContent(null);
+      setValidation(null);
+      setImportMessage(err instanceof Error ? err.message : t('upload.unsupportedFile'));
+    }
   };
 
   const onTemplateChange = (type: UploadTemplateType) => {
@@ -346,10 +355,10 @@ export function UploadCenter() {
               <span className="text-sm font-medium text-foreground">
                 {fileName ?? t('upload.dropzone')}
               </span>
-              <span className="mt-1 text-xs text-muted-foreground">{t('upload.csvOnly')}</span>
+              <span className="mt-1 text-xs text-muted-foreground">{t('upload.fileFormats')}</span>
               <input
                 type="file"
-                accept=".csv,text/csv"
+                accept={UPLOAD_FILE_ACCEPT}
                 className="sr-only"
                 onChange={onFileChange}
               />

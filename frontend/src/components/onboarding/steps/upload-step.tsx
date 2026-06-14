@@ -1,8 +1,9 @@
 'use client';
 
 import { useCallback, useEffect, useState } from 'react';
-import { UPLOAD_TEMPLATES, UploadTemplateType, validateUpload } from '@liqvia2/shared';
+import { UPLOAD_TEMPLATES, UploadTemplateType, UPLOAD_FILE_ACCEPT, validateUpload } from '@liqvia2/shared';
 import { apiGet, apiPost, apiUrl } from '@/lib/api';
+import { readUploadFile } from '@/lib/read-upload-file';
 import { notifyWorkspaceRefresh } from '@/lib/workspace-refresh';
 import { useTranslations } from '@/lib/i18n';
 import { OnboardingNav } from '../onboarding-nav';
@@ -62,7 +63,7 @@ export function UploadStep({
     setImporting(true);
     setMessage(null);
     try {
-      const csvContent = await file.text();
+      const csvContent = await readUploadFile(file);
       const validation = validateUpload(type, csvContent, { companyCurrency });
       if (!validation.valid) {
         setMessage(validation.errors[0]?.message ?? t('onboarding.upload.importError'));
@@ -120,7 +121,7 @@ export function UploadStep({
                   {busy ? '…' : t('onboarding.upload.uploadFile')}
                   <input
                     type="file"
-                    accept=".csv,text/csv"
+                    accept={UPLOAD_FILE_ACCEPT}
                     className="sr-only"
                     disabled={importing}
                     onChange={(e) => {

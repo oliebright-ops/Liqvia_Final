@@ -15,3 +15,10 @@ export * from './rolling-budget';
 export * from './treasury-summary';
 export { parseCsv } from './csv/parse-csv';
 export type { ParsedCsv } from './csv/parse-csv';
+export {
+  isCsvFileName,
+  isExcelFileName,
+  isSupportedSpreadsheetFileName,
+  spreadsheetToCsvString,
+  UPLOAD_FILE_ACCEPT,
+} from './spreadsheet/parse-spreadsheet';

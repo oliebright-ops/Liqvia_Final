@@ -26,6 +26,7 @@ import { join } from 'path';
 import {
   getFutureWeekPeriods,
   getPastWeekPeriods,
+  spreadsheetToCsvString,
   UPLOAD_TEMPLATES,
   UPLOAD_TEMPLATE_TYPES,
   UploadTemplateType,
@@ -99,7 +100,7 @@ export class UploadController {
 
   @Post('validate')
   @UseGuards(WorkspaceGuard)
-  @ApiOperation({ summary: 'Validate CSV content (JSON body)' })
+  @ApiOperation({ summary: 'Validate CSV or Excel file content (JSON body)' })
   @ApiOkResponse({ description: 'Validation result with errors or parsed row preview' })
   validateBody(@Body() body: ValidateUploadDto) {
     return this.runValidation(body.templateType, body.csvContent, body.companyCurrency);
@@ -148,7 +149,7 @@ export class UploadController {
   @Post('import')
   @UseGuards(WorkspaceGuard)
   @Roles(UserRole.admin, UserRole.owner, UserRole.member)
-  @ApiOperation({ summary: 'Validate and import CSV rows into the database' })
+  @ApiOperation({ summary: 'Validate and import spreadsheet rows into the database' })
   @ApiOkResponse({ description: 'Import batch summary; triggers forecast recalculation' })
   importBody(@CurrentUser() user: AuthUser, @Body() body: ImportUploadDto) {
     return this.imports.importCsv({
@@ -173,7 +174,7 @@ export class UploadController {
       },
     },
   })
-  @ApiOperation({ summary: 'Validate an uploaded CSV file (multipart)' })
+  @ApiOperation({ summary: 'Validate an uploaded CSV or Excel file (multipart)' })
   @UseInterceptors(FileInterceptor('file'))
   validateFile(
     @UploadedFile() file: Express.Multer.File | undefined,
@@ -181,10 +182,17 @@ export class UploadController {
     @Body('companyCurrency') companyCurrency?: string,
   ) {
     if (!file?.buffer) {
-      throw new BadRequestException('CSV file is required (field name: file)');
+      throw new BadRequestException('Spreadsheet file is required (field name: file)');
     }
     const templateType = parseTemplateType(templateTypeRaw);
-    const csvContent = file.buffer.toString('utf-8');
+    let csvContent: string;
+    try {
+      csvContent = spreadsheetToCsvString(file.buffer, file.originalname);
+    } catch (err) {
+      throw new BadRequestException(
+        err instanceof Error ? err.message : 'Could not read spreadsheet file',
+      );
+    }
     return this.runValidation(templateType, csvContent, companyCurrency);
   }
 
@@ -194,7 +202,7 @@ export class UploadController {
     companyCurrency?: string,
   ) {
     if (!csvContent?.trim()) {
-      throw new BadRequestException('CSV content is empty');
+      throw new BadRequestException('Spreadsheet content is empty');
     }
 
     const result = this.validation.validate(templateType, csvContent, { companyCurrency });
