@@ -18,6 +18,8 @@ COPY backend backend
 COPY frontend frontend
 COPY samples samples
 RUN mkdir -p frontend/public
+# Recreate workspace symlinks after full package sources are copied.
+RUN pnpm install --frozen-lockfile --ignore-scripts || pnpm install --ignore-scripts
 ENV NEXT_TELEMETRY_DISABLED=1
 RUN pnpm --filter @liqvia2/shared build \
   && pnpm --filter @liqvia2/backend exec prisma generate \
@@ -33,6 +35,9 @@ COPY --from=build /app/package.json ./package.json
 COPY --from=build /app/pnpm-workspace.yaml ./pnpm-workspace.yaml
 COPY --from=build /app/packages/shared ./packages/shared
 COPY --from=build /app/backend ./backend
+COPY --from=build /app/backend/node_modules ./backend/node_modules
+COPY --from=build /app/frontend/package.json ./frontend/package.json
+COPY --from=build /app/frontend/node_modules ./frontend/node_modules
 COPY --from=build /app/frontend/.next ./frontend/.next
 COPY --from=build /app/frontend/server-dist ./frontend/server-dist
 COPY --from=build /app/frontend/public ./frontend/public
