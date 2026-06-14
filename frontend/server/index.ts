@@ -47,8 +47,8 @@ async function start() {
     }
   }
 
-  server.listen(port, () => {
-    console.log(`> Liqvia ready on http://localhost:${port} (UI + /api)`);
+  server.listen(port, '0.0.0.0', () => {
+    console.log(`> Liqvia ready on http://0.0.0.0:${port} (UI + /api)`);
   });
 }
 

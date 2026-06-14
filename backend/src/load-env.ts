@@ -1,5 +1,7 @@
 import { existsSync, readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
+import { applyDatabaseUrlDefaults } from './database-url';
+import { validateProductionEnv } from './validate-production-env';
 
 /** Backend package root (parent of src/ or dist/). */
 const backendRoot = resolve(__dirname, '..');
@@ -38,3 +40,6 @@ for (const [file, override] of [
     applyEnvFile(path, override);
   }
 }
+
+applyDatabaseUrlDefaults();
+validateProductionEnv();

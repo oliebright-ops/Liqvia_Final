@@ -1,6 +1,30 @@
 import { existsSync, readFileSync } from 'node:fs';
 import path from 'node:path';
 
+function normalizeDatabaseUrl(url: string): string {
+  if (url.includes('sslmode=')) return url;
+  const needsSsl =
+    process.env.NODE_ENV === 'production' ||
+    /\.render\.com|neon\.tech|supabase\.co|rds\.amazonaws\.com/i.test(url);
+  if (!needsSsl) return url;
+  const separator = url.includes('?') ? '&' : '?';
+  return `${url}${separator}sslmode=require`;
+}
+
+function applyDatabaseUrlDefaults(): void {
+  const url = process.env.DATABASE_URL?.trim();
+  if (!url) return;
+  process.env.DATABASE_URL = normalizeDatabaseUrl(url);
+}
+
+function validateProductionEnv(): void {
+  if (process.env.NODE_ENV !== 'production') return;
+  const missing = ['DATABASE_URL', 'JWT_SECRET'].filter((key) => !process.env[key]?.trim());
+  if (missing.length === 0) return;
+  console.error(`[env] Missing required production variables: ${missing.join(', ')}`);
+  process.exit(1);
+}
+
 /** Load env from frontend and backend packages (backend holds DATABASE_URL, JWT, etc.). */
 export function loadAppEnv(): void {
   const shellKeys = new Set(Object.keys(process.env));
@@ -17,6 +41,9 @@ export function loadAppEnv(): void {
   ] as const) {
     applyEnvFile(file, override, shellKeys);
   }
+
+  applyDatabaseUrlDefaults();
+  validateProductionEnv();
 }
 
 function applyEnvFile(filePath: string, override: boolean, shellKeys: Set<string>): void {

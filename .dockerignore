@@ -1,0 +1,17 @@
+node_modules
+.next
+frontend/server-dist
+backend/dist
+packages/shared/dist
+.git
+.github
+*.log
+.env
+.env.*
+backend/.env
+backend/.env.local
+frontend/.env.local
+.tooling
+.pnpm-store
+coverage
+**/*.tsbuildinfo

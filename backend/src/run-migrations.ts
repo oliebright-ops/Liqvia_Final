@@ -1,6 +1,10 @@
+import { createRequire } from 'node:module';
 import { execSync } from 'node:child_process';
 import { existsSync } from 'node:fs';
 import { resolve } from 'node:path';
+import { applyDatabaseUrlDefaults } from './database-url';
+
+const nodeRequire = createRequire(__filename);
 
 /** Backend package root (contains prisma/schema.prisma). Works from src/ and dist/. */
 function backendRoot(): string {
@@ -8,14 +12,19 @@ function backendRoot(): string {
 }
 
 function resolvePrismaCli(): string {
-  const root = backendRoot();
-  const candidates = [
-    resolve(root, 'node_modules', 'prisma', 'build', 'index.js'),
-    resolve(root, '..', 'node_modules', 'prisma', 'build', 'index.js'),
-  ];
-  for (const path of candidates) {
-    if (existsSync(path)) return path;
+  const searchPaths = [backendRoot(), resolve(backendRoot(), '..')];
+  for (const base of searchPaths) {
+    try {
+      return nodeRequire.resolve('prisma/build/index.js', { paths: [base] });
+    } catch {
+      // try next path
+    }
   }
+
+  const root = backendRoot();
+  const legacy = resolve(root, 'node_modules', 'prisma', 'build', 'index.js');
+  if (existsSync(legacy)) return legacy;
+
   throw new Error('Prisma CLI not found — run pnpm install in the monorepo root.');
 }
 
@@ -32,6 +41,8 @@ export function runMigrations(): void {
     console.warn('[migrate] DATABASE_URL is not set — skipping automatic migration.');
     return;
   }
+
+  applyDatabaseUrlDefaults();
 
   const prismaCli = resolvePrismaCli();
   const cwd = backendRoot();
