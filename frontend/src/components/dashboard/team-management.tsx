@@ -13,7 +13,7 @@ export function TeamManagement() {
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [role, setRole] = useState<'member' | 'viewer' | 'admin'>('member');
+  const [role, setRole] = useState<'member' | 'viewer' | 'admin' | 'uploader'>('member');
   const [error, setError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
 
@@ -109,6 +109,7 @@ export function TeamManagement() {
               >
                 <option value="member">Member</option>
                 <option value="viewer">Viewer</option>
+                <option value="uploader">Uploader</option>
                 <option value="admin">Admin</option>
               </select>
             </div>

@@ -34,22 +34,21 @@ import { cn } from '@/lib/utils';
 type Tab = 'profile' | 'entities' | 'company' | 'team' | 'coa';
 
 export function SettingsPage() {
+  const { can } = useAuth();
   const { t } = useLanguage();
   const searchParams = useSearchParams();
   const mod = t.modules as Record<string, Record<string, string>>;
   const set = mod.settings;
-  const initialTab = (searchParams.get('tab') as Tab | null) ?? 'profile';
-  const [tab, setTab] = useState<Tab>(
-    ['profile', 'entities', 'company', 'team', 'coa'].includes(initialTab) ? initialTab : 'profile',
-  );
-
-  const tabs: { id: Tab; label: string }[] = [
-    { id: 'profile', label: set.tabProfile },
-    { id: 'entities', label: set.tabEntities },
-    { id: 'company', label: set.tabCompany },
-    { id: 'team', label: set.tabTeam },
-    { id: 'coa', label: set.tabCoa },
+  const allTabs: { id: Tab; label: string; visible: boolean }[] = [
+    { id: 'profile', label: set.tabProfile, visible: can('settings:profile') },
+    { id: 'entities', label: set.tabEntities, visible: can('settings:admin') },
+    { id: 'company', label: set.tabCompany, visible: can('settings:admin') },
+    { id: 'team', label: set.tabTeam, visible: can('settings:admin') },
+    { id: 'coa', label: set.tabCoa, visible: can('settings:admin') },
   ];
+  const tabs = allTabs.filter((item) => item.visible);
+  const initialTab = (searchParams.get('tab') as Tab | null) ?? tabs[0]?.id ?? 'profile';
+  const [tab, setTab] = useState<Tab>(tabs.some((item) => item.id === initialTab) ? initialTab : tabs[0]?.id ?? 'profile');
 
   return (
     <div className="space-y-6">
@@ -135,6 +134,7 @@ function ProfileTab() {
 function roleBadgeVariant(role: string): 'success' | 'warning' | 'muted' | 'default' {
   if (role === 'owner' || role === 'admin') return 'success';
   if (role === 'viewer') return 'warning';
+  if (role === 'uploader') return 'muted';
   return 'default';
 }
 
@@ -455,7 +455,7 @@ function CompanyTab() {
   );
 }
 
-const TEAM_ROLES = ['admin', 'member', 'viewer'] as const;
+const TEAM_ROLES = ['admin', 'member', 'viewer', 'uploader'] as const;
 
 function TeamTab() {
   const { isAdmin, refreshUser } = useAuth();

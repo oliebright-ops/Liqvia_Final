@@ -10,7 +10,6 @@ import {
   UseGuards,
   UseInterceptors,
 } from '@nestjs/common';
-import { UserRole } from '@prisma/client';
 import { FileInterceptor } from '@nestjs/platform-express';
 import {
   ApiBody,
@@ -33,7 +32,7 @@ import {
 } from '@liqvia2/shared';
 import { AuthUser } from '../auth/auth.types';
 import { CurrentUser } from '../auth/current-user.decorator';
-import { Roles } from '../auth/decorators';
+import { Permissions } from '../auth/decorators';
 import { WorkspaceGuard } from '../auth/workspace.guard';
 import { ImportUploadDto, ValidateUploadDto } from '../dto/upload.dto';
 import { UploadActiveDataService } from './upload-active-data.service';
@@ -50,6 +49,7 @@ export class UploadController {
   ) {}
 
   @Get('templates')
+  @Permissions('uploads:read')
   @ApiOperation({ summary: 'List CSV upload templates and required column headers' })
   listTemplates() {
     return UPLOAD_TEMPLATE_TYPES.map((type) => {
@@ -64,6 +64,7 @@ export class UploadController {
   }
 
   @Get('templates/:type/sample')
+  @Permissions('uploads:read')
   @ApiOperation({ summary: 'Download sample CSV for a template type' })
   @ApiParam({ name: 'type', enum: UPLOAD_TEMPLATE_TYPES })
   downloadSample(@Param('type') type: string, @Res() res: Response) {
@@ -100,6 +101,7 @@ export class UploadController {
 
   @Post('validate')
   @UseGuards(WorkspaceGuard)
+  @Permissions('uploads:write')
   @ApiOperation({ summary: 'Validate CSV or Excel file content (JSON body)' })
   @ApiOkResponse({ description: 'Validation result with errors or parsed row preview' })
   validateBody(@Body() body: ValidateUploadDto) {
@@ -108,6 +110,7 @@ export class UploadController {
 
   @Get('batches')
   @UseGuards(WorkspaceGuard)
+  @Permissions('uploads:read')
   @ApiOperation({ summary: 'List recent upload batches for the authenticated company' })
   listBatches(@CurrentUser() user: AuthUser) {
     return this.imports.listBatches(user.companyId!);
@@ -115,6 +118,7 @@ export class UploadController {
 
   @Get('batches/:id')
   @UseGuards(WorkspaceGuard)
+  @Permissions('uploads:read')
   @ApiOperation({ summary: 'Get upload batch detail with stored row snapshot' })
   getBatch(@CurrentUser() user: AuthUser, @Param('id') id: string) {
     return this.imports.getBatch(user.companyId!, id);
@@ -122,6 +126,7 @@ export class UploadController {
 
   @Get('latest')
   @UseGuards(WorkspaceGuard)
+  @Permissions('uploads:read')
   @ApiOperation({ summary: 'Latest completed upload per template type' })
   getLatestByType(@CurrentUser() user: AuthUser) {
     return this.imports.getLatestByType(user.companyId!);
@@ -129,6 +134,7 @@ export class UploadController {
 
   @Get('active/:type')
   @UseGuards(WorkspaceGuard)
+  @Permissions('uploads:read')
   @ApiOperation({ summary: 'Live data currently in use for a template type' })
   @ApiParam({ name: 'type', enum: UPLOAD_TEMPLATE_TYPES })
   getActiveData(@CurrentUser() user: AuthUser, @Param('type') type: string) {
@@ -138,7 +144,7 @@ export class UploadController {
 
   @Post('wipe')
   @UseGuards(WorkspaceGuard)
-  @Roles(UserRole.admin, UserRole.owner)
+  @Permissions('settings:admin')
   @ApiOperation({
     summary: 'Wipe live financial data; retain upload batch snapshots for reference',
   })
@@ -148,7 +154,7 @@ export class UploadController {
 
   @Post('import')
   @UseGuards(WorkspaceGuard)
-  @Roles(UserRole.admin, UserRole.owner, UserRole.member)
+  @Permissions('uploads:write')
   @ApiOperation({ summary: 'Validate and import spreadsheet rows into the database' })
   @ApiOkResponse({ description: 'Import batch summary; triggers forecast recalculation' })
   importBody(@CurrentUser() user: AuthUser, @Body() body: ImportUploadDto) {
@@ -162,6 +168,8 @@ export class UploadController {
   }
 
   @Post('validate/file')
+  @UseGuards(WorkspaceGuard)
+  @Permissions('uploads:write')
   @ApiConsumes('multipart/form-data')
   @ApiBody({
     schema: {

@@ -3,6 +3,7 @@ import { ApiOperation, ApiQuery, ApiTags } from '@nestjs/swagger';
 import { clampForecastHorizon, DEFAULT_FORECAST_HORIZON } from '@liqvia2/shared';
 import { AuthUser } from '../auth/auth.types';
 import { CurrentUser } from '../auth/current-user.decorator';
+import { Permissions } from '../auth/decorators';
 import { WorkspaceGuard } from '../auth/workspace.guard';
 import { FreeCashService } from './free-cash.service';
 
@@ -20,6 +21,7 @@ export class FreeCashController {
   constructor(private readonly freeCash: FreeCashService) {}
 
   @Get()
+  @Permissions('treasury:read')
   @ApiOperation({
     summary: 'Horizon-scoped free available cash (cumulative forecast outflows)',
   })

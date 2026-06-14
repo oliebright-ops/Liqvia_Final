@@ -2,6 +2,7 @@
 
 import { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
+import { hasFullAccess, hasPermission, type AppPermission } from '@liqvia2/shared';
 import { apiGet, apiPost } from './api';
 import { AuthResponse, AuthUser, resolvePostAuthPath } from './auth-types';
 import { clearAuthSession, getAccessToken, getStoredUser, setAuthSession } from './auth-storage';
@@ -19,6 +20,7 @@ interface AuthContextValue {
   refreshUser: () => Promise<void>;
   applyAuthResponse: (res: AuthResponse) => Promise<void>;
   isAdmin: boolean;
+  can: (permission: AppPermission) => boolean;
 }
 
 const AuthContext = createContext<AuthContextValue | null>(null);
@@ -115,6 +117,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     router.push('/');
   }, [router]);
 
+  const can = useCallback(
+    (permission: AppPermission) => (user?.role ? hasPermission(user.role, permission) : false),
+    [user?.role],
+  );
+
   const value = useMemo<AuthContextValue>(
     () => ({
       user,
@@ -127,7 +134,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       logout,
       refreshUser,
       applyAuthResponse,
-      isAdmin: user?.role === 'admin' || user?.role === 'owner',
+      isAdmin: user?.role ? hasFullAccess(user.role) : false,
+      can,
     }),
     [
       user,
@@ -140,6 +148,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       logout,
       refreshUser,
       applyAuthResponse,
+      can,
     ],
   );
 

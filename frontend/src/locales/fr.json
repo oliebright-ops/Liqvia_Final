@@ -462,6 +462,7 @@
       "roles": {
         "member": "Membre",
         "viewer": "Lecteur",
+        "uploader": "Chargeur de données",
         "admin": "Administrateur"
       }
     },

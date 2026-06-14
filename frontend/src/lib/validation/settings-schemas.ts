@@ -20,7 +20,7 @@ export const inviteFormSchema = z.object({
   name: z.string().min(1).max(120),
   email: z.string().email(),
   password: z.string().min(8).max(128),
-  role: z.enum(['member', 'viewer', 'admin']),
+  role: z.enum(['member', 'viewer', 'admin', 'uploader']),
 });
 
 export const entityFormSchema = z.object({

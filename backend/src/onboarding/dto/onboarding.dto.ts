@@ -33,8 +33,8 @@ export class OnboardingTeamMemberDto {
   @ApiPropertyOptional({ example: 'MemberPass123!' })
   password?: string;
 
-  @ApiProperty({ enum: ['member', 'viewer', 'admin'], example: 'member' })
-  role!: 'member' | 'viewer' | 'admin';
+  @ApiProperty({ enum: ['member', 'viewer', 'admin', 'uploader'], example: 'member' })
+  role!: 'member' | 'viewer' | 'admin' | 'uploader';
 }
 
 export class OnboardingCreateCompanyDto {

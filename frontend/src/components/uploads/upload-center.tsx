@@ -51,7 +51,9 @@ const TEMPLATE_TYPES = (Object.keys(UPLOAD_TEMPLATES) as UploadTemplateType[]).f
 
 export function UploadCenter() {
   const t = useTranslations();
-  const { isAdmin } = useAuth();
+  const { can } = useAuth();
+  const canUpload = can('uploads:write');
+  const canWipe = can('settings:admin');
   const { data: dashboard } = useDashboard();
   const [templateType, setTemplateType] = useState<UploadTemplateType>('trial_balance');
   const [fileName, setFileName] = useState<string | null>(null);
@@ -248,7 +250,7 @@ export function UploadCenter() {
     <div className="space-y-8">
       <div className="flex flex-wrap items-start justify-between gap-4">
         <PageHeader title={t('upload.title')} subtitle={t('upload.subtitle')} />
-        {isAdmin && (
+        {canWipe && (
           <div className="flex flex-col items-end gap-2">
             {!wipeConfirm ? (
               <Button type="button" variant="outline" onClick={() => setWipeConfirm(true)}>
@@ -351,18 +353,22 @@ export function UploadCenter() {
             </CardDescription>
           </CardHeader>
           <CardContent>
-            <label className="flex cursor-pointer flex-col items-center justify-center rounded-lg border-2 border-dashed border-border bg-muted/30 px-6 py-12 transition-colors hover:border-primary/50 hover:bg-muted/50">
-              <span className="text-sm font-medium text-foreground">
-                {fileName ?? t('upload.dropzone')}
-              </span>
-              <span className="mt-1 text-xs text-muted-foreground">{t('upload.fileFormats')}</span>
-              <input
-                type="file"
-                accept={UPLOAD_FILE_ACCEPT}
-                className="sr-only"
-                onChange={onFileChange}
-              />
-            </label>
+            {canUpload ? (
+              <label className="flex cursor-pointer flex-col items-center justify-center rounded-lg border-2 border-dashed border-border bg-muted/30 px-6 py-12 transition-colors hover:border-primary/50 hover:bg-muted/50">
+                <span className="text-sm font-medium text-foreground">
+                  {fileName ?? t('upload.dropzone')}
+                </span>
+                <span className="mt-1 text-xs text-muted-foreground">{t('upload.fileFormats')}</span>
+                <input
+                  type="file"
+                  accept={UPLOAD_FILE_ACCEPT}
+                  className="sr-only"
+                  onChange={onFileChange}
+                />
+              </label>
+            ) : (
+              <p className="text-sm text-muted-foreground">{t('upload.readOnly')}</p>
+            )}
           </CardContent>
         </Card>
 
@@ -433,14 +439,16 @@ export function UploadCenter() {
                   </tbody>
                 </table>
               </div>
-              <div className="mt-6 flex items-center gap-4">
-                <Button type="button" disabled={importing} onClick={confirmImport}>
-                  {importing ? t('upload.importing') : t('upload.confirmImport')}
-                </Button>
-                <Alert variant="success" className="flex-1 py-2">
-                  {validation.summary}
-                </Alert>
-              </div>
+              {canUpload && (
+                <div className="mt-6 flex items-center gap-4">
+                  <Button type="button" disabled={importing} onClick={confirmImport}>
+                    {importing ? t('upload.importing') : t('upload.confirmImport')}
+                  </Button>
+                  <Alert variant="success" className="flex-1 py-2">
+                    {validation.summary}
+                  </Alert>
+                </div>
+              )}
             </CardContent>
           </Card>
         )}

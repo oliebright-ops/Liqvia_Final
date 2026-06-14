@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import { apiPost } from '@/lib/api';
+import { useAuth } from '@/lib/auth-context';
 import { useDashboard } from '@/hooks/use-dashboard';
 import { ScenarioComparison, formatMoney } from '@/lib/dashboard-types';
 import { ScenarioProjectionChart } from '@/components/charts/scenario-projection-chart';
@@ -18,6 +19,7 @@ const SLIDERS = [
 ] as const;
 
 export function ScenariosPage() {
+  const { can } = useAuth();
   const { t } = useLanguage();
   const chart = t.chart as Record<string, string>;
   const scenarioT = t.scenario as Record<string, string>;
@@ -44,7 +46,6 @@ export function ScenariosPage() {
     setError(null);
     try {
       const created = await apiPost<{ id: string }>('/scenarios', {
-        companyId: data.companyId,
         name: `Scenario ${new Date().toISOString().slice(0, 16)}`,
         variables: vars,
       });
@@ -91,9 +92,13 @@ export function ScenariosPage() {
                 </label>
               ))}
             </div>
-            <Button onClick={() => void run()} disabled={running}>
-              {running ? scenarioT.running : scenarioT.run}
-            </Button>
+            {can('scenarios:write') ? (
+              <Button onClick={() => void run()} disabled={running}>
+                {running ? scenarioT.running : scenarioT.run}
+              </Button>
+            ) : (
+              <p className="text-xs text-muted-foreground">{scenarioT.readOnly}</p>
+            )}
             {error && <p className="text-xs text-cash-negative">{error}</p>}
           </CardContent>
         </Card>

@@ -2,6 +2,7 @@ import { Controller, Get, UseGuards } from '@nestjs/common';
 import { ApiOperation, ApiTags } from '@nestjs/swagger';
 import { AuthUser } from '../auth/auth.types';
 import { CurrentUser } from '../auth/current-user.decorator';
+import { Permissions } from '../auth/decorators';
 import { WorkspaceGuard } from '../auth/workspace.guard';
 import { LedgerService } from './ledger.service';
 
@@ -12,6 +13,7 @@ export class LedgerController {
 
   @Get()
   @UseGuards(WorkspaceGuard)
+  @Permissions('treasury:read')
   @ApiOperation({ summary: 'AR/AP ledger entries with aging summaries' })
   get(@CurrentUser() user: AuthUser) {
     return this.ledger.getLedger(user.companyId!);

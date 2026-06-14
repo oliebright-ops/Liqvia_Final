@@ -14,6 +14,7 @@ enum UserRole {
   admin
   member
   viewer
+  uploader
 }
 
 enum AccountType {

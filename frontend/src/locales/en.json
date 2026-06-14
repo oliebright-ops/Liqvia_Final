@@ -293,7 +293,8 @@
     "deltaW13": "Change in week-13 cash",
     "scenarioRunway": "Scenario runway",
     "chartTitle": "13-week projection comparison",
-    "failed": "Scenario run failed"
+    "failed": "Scenario run failed",
+    "readOnly": "You have view-only access to scenarios."
   },
   "ai": {
     "title": "AI CFO Insight",
@@ -462,6 +463,7 @@
       "roles": {
         "member": "Member",
         "viewer": "Viewer",
+        "uploader": "Uploader",
         "admin": "Admin"
       }
     },
@@ -553,6 +555,7 @@
     "activeDataEmpty": "No live data for this type — upload a file to import.",
     "activeDataRows": "{count} row(s) in use",
     "inUse": "In use",
+    "readOnly": "You can review upload history and templates, but only uploaders and admins can import files.",
     "snapshotTitle": "Historical upload snapshot",
     "viewActiveData": "View current data in use"
   }

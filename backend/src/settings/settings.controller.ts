@@ -10,10 +10,10 @@ import {
   UseGuards,
 } from '@nestjs/common';
 import { ApiOperation, ApiTags } from '@nestjs/swagger';
-import { AccountType, UserRole } from '@prisma/client';
+import { AccountType } from '@prisma/client';
 import { AuthUser } from '../auth/auth.types';
 import { CurrentUser } from '../auth/current-user.decorator';
-import { Roles } from '../auth/decorators';
+import { Permissions } from '../auth/decorators';
 import { WorkspaceGuard } from '../auth/workspace.guard';
 import {
   chartOfAccountSchema,
@@ -37,46 +37,50 @@ export class SettingsController {
   constructor(private readonly settings: SettingsService) {}
 
   @Get('company')
+  @Permissions('settings:admin')
   @ApiOperation({ summary: 'Get company profile' })
   getCompany(@CurrentUser() user: AuthUser) {
     return this.settings.getCompany(user.companyId!);
   }
 
   @Patch('company')
-  @Roles(UserRole.admin, UserRole.owner)
+  @Permissions('settings:admin')
   @ApiOperation({ summary: 'Update company profile' })
   updateCompany(@CurrentUser() user: AuthUser, @Body() body: unknown) {
     return this.settings.updateCompany(user, parseBody(updateCompanySchema, body));
   }
 
   @Patch('horizon')
-  @ApiOperation({ summary: 'Update forecast horizon weeks (workspace view preference)' })
+  @Permissions('settings:admin')
+  @ApiOperation({ summary: 'Update forecast horizon weeks (company workspace preference)' })
   updateHorizon(@CurrentUser() user: AuthUser, @Body() body: unknown) {
     const dto = parseBody(updateHorizonSchema, body);
     return this.settings.updateForecastHorizon(user, dto.forecastHorizonWeeks);
   }
 
   @Patch('profile')
+  @Permissions('settings:profile')
   @ApiOperation({ summary: 'Update current user profile' })
   updateProfile(@CurrentUser() user: AuthUser, @Body() body: unknown) {
     return this.settings.updateProfile(user.id, parseBody(updateProfileSchema, body));
   }
 
   @Get('team')
+  @Permissions('settings:admin')
   @ApiOperation({ summary: 'List team members via UserCompanyLink' })
   listTeam(@CurrentUser() user: AuthUser) {
     return this.settings.listTeam(user.companyId!);
   }
 
   @Post('team/invite')
-  @Roles(UserRole.admin, UserRole.owner)
+  @Permissions('settings:admin')
   @ApiOperation({ summary: 'Invite a team member' })
   invite(@CurrentUser() user: AuthUser, @Body() body: unknown) {
     return this.settings.inviteMember(user, parseBody(inviteTeamMemberSchema, body));
   }
 
   @Patch('team/:linkId/role')
-  @Roles(UserRole.admin, UserRole.owner)
+  @Permissions('settings:admin')
   @ApiOperation({ summary: 'Update a team member role for the active entity' })
   updateRole(
     @CurrentUser() user: AuthUser,
@@ -88,13 +92,14 @@ export class SettingsController {
   }
 
   @Delete('team/:linkId')
-  @Roles(UserRole.admin, UserRole.owner)
+  @Permissions('settings:admin')
   @ApiOperation({ summary: 'Remove a team member' })
   remove(@CurrentUser() user: AuthUser, @Param('linkId') linkId: string) {
     return this.settings.removeMember(user, linkId);
   }
 
   @Get('chart-of-accounts')
+  @Permissions('settings:admin')
   @ApiOperation({ summary: 'List chart of accounts' })
   listCoa(
     @CurrentUser() user: AuthUser,
@@ -105,13 +110,15 @@ export class SettingsController {
   }
 
   @Post('chart-of-accounts')
-  @Roles(UserRole.admin, UserRole.owner)
+  @Permissions('settings:admin')
+  @ApiOperation({ summary: 'Create chart of accounts entry' })
   createCoa(@CurrentUser() user: AuthUser, @Body() body: unknown) {
     return this.settings.createChartOfAccount(user, parseBody(chartOfAccountSchema, body));
   }
 
   @Patch('chart-of-accounts/:id')
-  @Roles(UserRole.admin, UserRole.owner)
+  @Permissions('settings:admin')
+  @ApiOperation({ summary: 'Update chart of accounts entry' })
   updateCoa(@CurrentUser() user: AuthUser, @Param('id') id: string, @Body() body: unknown) {
     return this.settings.updateChartOfAccount(
       user,
@@ -121,7 +128,8 @@ export class SettingsController {
   }
 
   @Delete('chart-of-accounts/:id')
-  @Roles(UserRole.admin, UserRole.owner)
+  @Permissions('settings:admin')
+  @ApiOperation({ summary: 'Archive chart of accounts entry' })
   archiveCoa(@CurrentUser() user: AuthUser, @Param('id') id: string) {
     return this.settings.archiveChartOfAccount(user, id);
   }

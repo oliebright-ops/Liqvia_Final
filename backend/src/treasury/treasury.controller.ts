@@ -1,6 +1,8 @@
-import { Body, Controller, Get, Param, Post, Query } from '@nestjs/common';
+import { Body, Controller, Get, Param, Post, Query, UseGuards } from '@nestjs/common';
 import { ApiOkResponse, ApiOperation, ApiParam, ApiQuery, ApiTags } from '@nestjs/swagger';
 import { ForecastCalculationInput, KPI_DEFAULTS, scheduleArApEntries } from '@liqvia2/shared';
+import { Permissions } from '../auth/decorators';
+import { WorkspaceGuard } from '../auth/workspace.guard';
 import {
   AlertPreviewDto,
   ForecastPreviewDto,
@@ -104,6 +106,8 @@ export class TreasuryController {
   }
 
   @Get('forecast/:companyId')
+  @UseGuards(WorkspaceGuard)
+  @Permissions('treasury:read')
   @ApiOperation({ summary: 'Generate forecast from database for a company' })
   @ApiParam({ name: 'companyId', example: 'demo-consulting' })
   @ApiQuery({ name: 'persist', required: false, description: 'Set to true to save forecast' })
@@ -112,6 +116,8 @@ export class TreasuryController {
   }
 
   @Post('forecast/:companyId/generate')
+  @UseGuards(WorkspaceGuard)
+  @Permissions('treasury:read')
   @ApiOperation({ summary: 'Generate and persist baseline forecast for a company' })
   @ApiParam({ name: 'companyId', example: 'demo-consulting' })
   generateForecast(@Param('companyId') companyId: string) {
@@ -119,6 +125,8 @@ export class TreasuryController {
   }
 
   @Get('forecast/:companyId/stored')
+  @UseGuards(WorkspaceGuard)
+  @Permissions('treasury:read')
   @ApiOperation({ summary: 'Read the latest persisted baseline forecast' })
   @ApiParam({ name: 'companyId', example: 'demo-consulting' })
   getStoredForecast(@Param('companyId') companyId: string) {
@@ -126,6 +134,8 @@ export class TreasuryController {
   }
 
   @Get('alerts/:companyId')
+  @UseGuards(WorkspaceGuard)
+  @Permissions('treasury:read')
   @ApiOperation({ summary: 'Evaluate rule-based liquidity alerts for a company' })
   @ApiParam({ name: 'companyId', example: 'cloudpeak-saas' })
   async getAlerts(@Param('companyId') companyId: string) {
@@ -134,6 +144,8 @@ export class TreasuryController {
   }
 
   @Get('alerts/:companyId/stored')
+  @UseGuards(WorkspaceGuard)
+  @Permissions('treasury:read')
   @ApiOperation({ summary: 'List unresolved alerts persisted in the database' })
   @ApiParam({ name: 'companyId', example: 'cloudpeak-saas' })
   getStoredAlerts(@Param('companyId') companyId: string) {

@@ -15,7 +15,9 @@ import {
   TrendingUp,
   Wallet,
 } from 'lucide-react';
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
+import { canAccessRoute } from '@liqvia2/shared';
+import { useAuth } from '@/lib/auth-context';
 import { useLanguage } from '@/lib/i18n';
 import { cn } from '@/lib/utils';
 import { CompanySwitcher } from './company-switcher';
@@ -35,11 +37,17 @@ const NAV = [
 
 export function Sidebar() {
   const pathname = usePathname();
+  const { user } = useAuth();
   const { t } = useLanguage();
   const nav = t.nav as Record<string, string>;
   const app = t.app as Record<string, string>;
   const layout = t.layout as Record<string, string>;
   const [collapsed, setCollapsed] = useState(false);
+
+  const visibleNav = useMemo(() => {
+    if (!user?.role || user.isDemoMode) return NAV;
+    return NAV.filter((item) => canAccessRoute(user.role, item.href));
+  }, [user?.role, user?.isDemoMode]);
 
   return (
     <aside
@@ -70,7 +78,7 @@ export function Sidebar() {
       </div>
 
       <nav className="flex-1 space-y-0.5 p-2">
-        {NAV.map(({ href, labelKey, icon: Icon }) => {
+        {visibleNav.map(({ href, labelKey, icon: Icon }) => {
           const active = pathname === href || pathname.startsWith(`${href}/`);
           const label = nav[labelKey];
           return (

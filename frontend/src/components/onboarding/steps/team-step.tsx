@@ -122,6 +122,7 @@ export function TeamStep({
                     >
                       <option value="member">{t('onboarding.team.roles.member')}</option>
                       <option value="viewer">{t('onboarding.team.roles.viewer')}</option>
+                      <option value="uploader">{t('onboarding.team.roles.uploader')}</option>
                       <option value="admin">{t('onboarding.team.roles.admin')}</option>
                     </select>
                   </label>

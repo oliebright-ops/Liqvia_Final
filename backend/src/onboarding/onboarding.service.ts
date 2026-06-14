@@ -159,7 +159,9 @@ export class OnboardingService {
             ? UserRole.admin
             : member.role === 'viewer'
               ? UserRole.viewer
-              : UserRole.member;
+              : member.role === 'uploader'
+                ? UserRole.uploader
+                : UserRole.member;
 
         await tx.userCompanyLink.upsert({
           where: { email_companyId: { email, companyId: company.id } },

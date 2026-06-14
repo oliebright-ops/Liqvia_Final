@@ -3,6 +3,7 @@ import { ApiOperation, ApiParam, ApiQuery, ApiTags } from '@nestjs/swagger';
 import { clampForecastHorizon } from '@liqvia2/shared';
 import { AuthUser } from '../auth/auth.types';
 import { CurrentUser } from '../auth/current-user.decorator';
+import { Permissions } from '../auth/decorators';
 import { WorkspaceGuard } from '../auth/workspace.guard';
 import { DashboardService } from './dashboard.service';
 
@@ -20,6 +21,7 @@ export class DashboardController {
 
   @Get()
   @UseGuards(WorkspaceGuard)
+  @Permissions('treasury:read')
   @ApiOperation({
     summary: 'Executive dashboard for the authenticated user’s company',
   })
@@ -33,6 +35,8 @@ export class DashboardController {
   }
 
   @Get(':companyId')
+  @UseGuards(WorkspaceGuard)
+  @Permissions('treasury:read')
   @ApiOperation({
     summary: 'Executive dashboard aggregate (KPIs, forecast, alerts, budget vs actual)',
   })

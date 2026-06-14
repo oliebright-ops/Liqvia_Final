@@ -53,6 +53,7 @@ export class SettingsService {
   }
 
   async updateForecastHorizon(actor: AuthUser, forecastHorizonWeeks: number) {
+    this.assertAdmin(actor);
     if (!actor.companyId) throw new ForbiddenException('No company workspace');
     const updated = await this.prisma.company.update({
       where: { id: actor.companyId },

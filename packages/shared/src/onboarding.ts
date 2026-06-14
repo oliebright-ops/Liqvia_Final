@@ -65,7 +65,7 @@ export interface OnboardingTeamMemberInput {
   name: string;
   email: string;
   password?: string;
-  role: 'member' | 'viewer' | 'admin';
+  role: 'member' | 'viewer' | 'admin' | 'uploader';
 }
 
 export interface OnboardingCreateCompanyPayload {

@@ -1,4 +1,4 @@
-export type UserRole = 'owner' | 'admin' | 'member' | 'viewer';
+export type UserRole = 'owner' | 'admin' | 'member' | 'viewer' | 'uploader';
 
 export interface AuthUser {
   id: string;
@@ -41,9 +41,11 @@ export interface OnboardingContext {
   companyLinks: CompanyLink[];
 }
 
+import { getDefaultAppPath } from '@liqvia2/shared';
+
 export function resolvePostAuthPath(user: AuthUser): string {
   if (user.isDemoMode || (user.companyId && user.onboardingCompleted)) {
-    return '/dashboard';
+    return getDefaultAppPath(user.role);
   }
   return '/onboarding';
 }
