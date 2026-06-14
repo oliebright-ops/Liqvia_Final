@@ -106,6 +106,7 @@ function ResetPasswordForm() {
 export default function ResetPasswordPage() {
   const { t } = useLanguage();
   const auth = t.auth as Record<string, string>;
+  const common = t.common as Record<string, string>;
 
   return (
     <AppShell>
@@ -116,7 +117,7 @@ export default function ResetPasswordPage() {
           </CardHeader>
           <CardContent>
             <Suspense
-              fallback={<p className="text-sm text-muted-foreground">{t.common.loading}</p>}
+              fallback={<p className="text-sm text-muted-foreground">{common.loading}</p>}
             >
               <ResetPasswordForm />
             </Suspense>
