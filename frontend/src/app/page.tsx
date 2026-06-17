@@ -75,10 +75,7 @@ export default function HomePage() {
         <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-xl bg-blue-600 text-2xl font-bold text-white">
           L
         </div>
-        <p className="mt-6 text-sm font-medium uppercase tracking-wide text-muted-foreground">
-          {t('app.tagline')}
-        </p>
-        <h1 className="mt-2 text-4xl font-semibold tracking-tight text-foreground">
+        <h1 className="mt-6 text-4xl font-semibold tracking-tight text-foreground">
           {t('home.landing.title')}
         </h1>
         <p className="mx-auto mt-4 max-w-lg text-lg text-muted-foreground">

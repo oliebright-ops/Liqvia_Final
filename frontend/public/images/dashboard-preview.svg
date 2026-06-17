@@ -1,42 +1,50 @@
-<svg xmlns="http://www.w3.org/2000/svg" width="960" height="540" viewBox="0 0 960 540" fill="none">
-  <rect width="960" height="540" fill="#0F1117"/>
-  <rect x="24" y="24" width="912" height="48" rx="8" fill="#161B26"/>
-  <rect x="40" y="40" width="120" height="16" rx="4" fill="#2A3142"/>
-  <rect x="760" y="36" width="160" height="24" rx="6" fill="#1E2433"/>
-  <rect x="24" y="88" width="210" height="88" rx="10" fill="#161B26" stroke="#2563EB" stroke-width="1.5"/>
-  <rect x="246" y="88" width="210" height="88" rx="10" fill="#161B26"/>
-  <rect x="468" y="88" width="210" height="88" rx="10" fill="#161B26"/>
-  <rect x="690" y="88" width="246" height="88" rx="10" fill="#161B26"/>
-  <rect x="40" y="104" width="80" height="8" rx="2" fill="#4B5563"/>
-  <rect x="40" y="124" width="120" height="20" rx="4" fill="#E5E7EB"/>
-  <rect x="40" y="152" width="64" height="8" rx="2" fill="#22C55E"/>
-  <rect x="262" y="104" width="72" height="8" rx="2" fill="#4B5563"/>
-  <rect x="262" y="124" width="48" height="20" rx="4" fill="#E5E7EB"/>
-  <rect x="262" y="152" width="88" height="8" rx="2" fill="#6B7280"/>
-  <rect x="484" y="104" width="64" height="8" rx="2" fill="#4B5563"/>
-  <rect x="484" y="124" width="96" height="20" rx="4" fill="#E5E7EB"/>
-  <rect x="706" y="104" width="56" height="8" rx="2" fill="#4B5563"/>
-  <rect x="706" y="124" width="80" height="20" rx="4" fill="#E5E7EB"/>
-  <rect x="24" y="192" width="600" height="200" rx="10" fill="#161B26"/>
-  <rect x="40" y="208" width="100" height="10" rx="2" fill="#6B7280"/>
-  <polyline points="40,360 120,300 200,320 280,260 360,280 440,220 520,240 600,200" stroke="#3B82F6" stroke-width="2.5" fill="none"/>
-  <rect x="636" y="192" width="300" height="200" rx="10" fill="#161B26"/>
-  <rect x="652" y="208" width="120" height="10" rx="2" fill="#6B7280"/>
-  <rect x="652" y="232" width="268" height="36" rx="6" fill="#1E2433"/>
-  <rect x="668" y="244" width="8" height="8" rx="2" fill="#EF4444"/>
-  <rect x="684" y="244" width="180" height="8" rx="2" fill="#9CA3AF"/>
-  <rect x="652" y="280" width="268" height="36" rx="6" fill="#1E2433"/>
-  <rect x="668" y="292" width="8" height="8" rx="2" fill="#F59E0B"/>
-  <rect x="684" y="292" width="160" height="8" rx="2" fill="#9CA3AF"/>
-  <rect x="652" y="328" width="268" height="36" rx="6" fill="#1E2433"/>
-  <rect x="668" y="340" width="8" height="8" rx="2" fill="#22C55E"/>
-  <rect x="684" y="340" width="140" height="8" rx="2" fill="#9CA3AF"/>
-  <rect x="24" y="408" width="456" height="108" rx="10" fill="#161B26"/>
-  <rect x="40" y="424" width="88" height="10" rx="2" fill="#6B7280"/>
-  <rect x="40" y="448" width="420" height="8" rx="2" fill="#2A3142"/>
-  <rect x="40" y="468" width="380" height="8" rx="2" fill="#2A3142"/>
-  <rect x="40" y="488" width="400" height="8" rx="2" fill="#2A3142"/>
-  <rect x="492" y="408" width="444" height="108" rx="10" fill="#161B26"/>
-  <rect x="508" y="424" width="72" height="10" rx="2" fill="#6B7280"/>
-  <rect x="508" y="448" width="400" height="48" rx="6" fill="#1E2433"/>
+<svg xmlns="http://www.w3.org/2000/svg" width="960" height="480" viewBox="0 0 960 480" fill="none">
+  <rect width="960" height="480" fill="#0F1117"/>
+  <rect x="24" y="20" width="912" height="44" rx="8" fill="#161B26"/>
+  <text x="40" y="48" fill="#E5E7EB" font-family="system-ui, -apple-system, sans-serif" font-size="14" font-weight="600">Treasury Overview</text>
+  <text x="820" y="48" fill="#9CA3AF" font-family="system-ui, -apple-system, sans-serif" font-size="12">As of Jun 17, 2026</text>
+
+  <rect x="24" y="80" width="216" height="92" rx="10" fill="#161B26" stroke="#2563EB" stroke-width="1.5"/>
+  <text x="40" y="104" fill="#9CA3AF" font-family="system-ui, -apple-system, sans-serif" font-size="11">Cash position</text>
+  <text x="40" y="132" fill="#F9FAFB" font-family="system-ui, -apple-system, sans-serif" font-size="22" font-weight="600">$284,500</text>
+  <text x="40" y="156" fill="#22C55E" font-family="system-ui, -apple-system, sans-serif" font-size="11">+4.2% vs last week</text>
+
+  <rect x="256" y="80" width="216" height="92" rx="10" fill="#161B26"/>
+  <text x="272" y="104" fill="#9CA3AF" font-family="system-ui, -apple-system, sans-serif" font-size="11">Cash runway</text>
+  <text x="272" y="132" fill="#F9FAFB" font-family="system-ui, -apple-system, sans-serif" font-size="22" font-weight="600">18 weeks</text>
+  <text x="272" y="156" fill="#9CA3AF" font-family="system-ui, -apple-system, sans-serif" font-size="11">Burn: $15,800/wk</text>
+
+  <rect x="488" y="80" width="216" height="92" rx="10" fill="#161B26"/>
+  <text x="504" y="104" fill="#9CA3AF" font-family="system-ui, -apple-system, sans-serif" font-size="11">Free available cash</text>
+  <text x="504" y="132" fill="#F9FAFB" font-family="system-ui, -apple-system, sans-serif" font-size="22" font-weight="600">$198,200</text>
+  <text x="504" y="156" fill="#9CA3AF" font-family="system-ui, -apple-system, sans-serif" font-size="11">13-week horizon</text>
+
+  <rect x="720" y="80" width="216" height="92" rx="10" fill="#161B26"/>
+  <text x="736" y="104" fill="#9CA3AF" font-family="system-ui, -apple-system, sans-serif" font-size="11">AR due 30 days</text>
+  <text x="736" y="132" fill="#F9FAFB" font-family="system-ui, -apple-system, sans-serif" font-size="22" font-weight="600">$62,400</text>
+  <text x="736" y="156" fill="#F59E0B" font-family="system-ui, -apple-system, sans-serif" font-size="11">$8.1k delayed 90+</text>
+
+  <rect x="24" y="188" width="580" height="268" rx="10" fill="#161B26"/>
+  <text x="40" y="212" fill="#E5E7EB" font-family="system-ui, -apple-system, sans-serif" font-size="13" font-weight="600">13-week cash forecast</text>
+  <line x1="40" y1="420" x2="580" y2="420" stroke="#2A3142" stroke-width="1"/>
+  <polyline points="40,380 100,340 160,350 220,300 280,310 340,260 400,270 460,230 520,240 560,210" stroke="#3B82F6" stroke-width="2.5" fill="none"/>
+  <polyline points="40,400 100,370 160,375 220,340 280,345 340,310 400,315 460,285 520,290 560,265" stroke="#6B7280" stroke-width="1.5" fill="none" stroke-dasharray="4 4"/>
+
+  <rect x="620" y="188" width="316" height="268" rx="10" fill="#161B26"/>
+  <text x="636" y="212" fill="#E5E7EB" font-family="system-ui, -apple-system, sans-serif" font-size="13" font-weight="600">Liquidity alerts</text>
+
+  <rect x="636" y="228" width="284" height="52" rx="8" fill="#1E2433"/>
+  <circle cx="652" cy="254" r="5" fill="#EF4444"/>
+  <text x="668" y="250" fill="#F9FAFB" font-family="system-ui, -apple-system, sans-serif" font-size="12" font-weight="500">Runway below 12 weeks</text>
+  <text x="668" y="268" fill="#9CA3AF" font-family="system-ui, -apple-system, sans-serif" font-size="11">Triggered today · High</text>
+
+  <rect x="636" y="292" width="284" height="52" rx="8" fill="#1E2433"/>
+  <circle cx="652" cy="318" r="5" fill="#F59E0B"/>
+  <text x="668" y="314" fill="#F9FAFB" font-family="system-ui, -apple-system, sans-serif" font-size="12" font-weight="500">Large AP due in 7 days</text>
+  <text x="668" y="332" fill="#9CA3AF" font-family="system-ui, -apple-system, sans-serif" font-size="11">$42,000 payable · Medium</text>
+
+  <rect x="636" y="356" width="284" height="52" rx="8" fill="#1E2433"/>
+  <circle cx="652" cy="382" r="5" fill="#22C55E"/>
+  <text x="668" y="378" fill="#F9FAFB" font-family="system-ui, -apple-system, sans-serif" font-size="12" font-weight="500">Cash position improved</text>
+  <text x="668" y="396" fill="#9CA3AF" font-family="system-ui, -apple-system, sans-serif" font-size="11">+4.2% vs prior week</text>
 </svg>

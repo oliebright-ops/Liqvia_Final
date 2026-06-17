@@ -42,7 +42,8 @@
       "demoHint": "Pruebe Liqvia con los datos de ejemplo de Acme Construction — sin necesidad de iniciar sesión.",
       "demoError": "No se pudo iniciar la demostración. Asegúrese de que los datos de demostración estén cargados.",
       "previewAlt": "Vista previa del panel de tesorería de Liqvia",
-      "previewCaption": "Su panel de tesorería en vivo, actualizado diariamente desde las cuentas bancarias conectadas.",
+      "previewComingSoon": "Vista previa del panel próximamente",
+      "previewCaption": "Su panel de tesorería en vivo — alertas, autonomía y previsiones en una sola vista.",
       "previewBadge": {
         "cashPosition": "Posición de caja en vivo",
         "liquidityAlerts": "Alertas de liquidez",

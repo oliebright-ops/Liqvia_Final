@@ -42,7 +42,8 @@
       "demoHint": "Essayez Liqvia avec les données d'exemple d'Acme Construction — sans connexion.",
       "demoError": "Impossible de démarrer la démo. Vérifiez que les données de démonstration sont initialisées.",
       "previewAlt": "Aperçu du tableau de bord de trésorerie Liqvia",
-      "previewCaption": "Votre tableau de bord de trésorerie en direct — mis à jour quotidiennement à partir des comptes bancaires connectés.",
+      "previewComingSoon": "Aperçu du tableau de bord bientôt disponible",
+      "previewCaption": "Votre tableau de bord de trésorerie en direct — alertes, autonomie et prévisions en une seule vue.",
       "previewBadge": {
         "cashPosition": "Position de trésorerie en direct",
         "liquidityAlerts": "Alertes de liquidité",

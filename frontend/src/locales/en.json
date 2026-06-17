@@ -42,7 +42,8 @@
       "demoHint": "Try Liqvia with Acme Construction sample data — no sign-in needed.",
       "demoError": "Could not start demo. Ensure demo data is seeded.",
       "previewAlt": "Liqvia treasury dashboard preview",
-      "previewCaption": "Your live treasury dashboard – updated daily from connected bank accounts.",
+      "previewComingSoon": "Dashboard preview coming soon",
+      "previewCaption": "Your live treasury dashboard — alerts, runway, and forecasts in one view.",
       "previewBadge": {
         "cashPosition": "Live cash position",
         "liquidityAlerts": "Liquidity alerts",
