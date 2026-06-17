@@ -29,9 +29,11 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { EmptyState } from '@/components/ui/empty-state';
 import { FinancialTable } from '@/components/ui/financial-table';
 import { PageHeader } from '@/components/treasury/page-header';
+import { RoleAccessPanel } from '@/components/settings/role-access-panel';
 import { cn } from '@/lib/utils';
+import type { UserRole } from '@/lib/auth-types';
 
-type Tab = 'profile' | 'entities' | 'company' | 'team' | 'coa';
+type Tab = 'profile' | 'access' | 'entities' | 'company' | 'team' | 'coa';
 
 export function SettingsPage() {
   const { can } = useAuth();
@@ -41,6 +43,7 @@ export function SettingsPage() {
   const set = mod.settings;
   const allTabs: { id: Tab; label: string; visible: boolean }[] = [
     { id: 'profile', label: set.tabProfile, visible: can('settings:profile') },
+    { id: 'access', label: set.tabAccess, visible: can('settings:profile') },
     { id: 'entities', label: set.tabEntities, visible: can('settings:admin') },
     { id: 'company', label: set.tabCompany, visible: can('settings:admin') },
     { id: 'team', label: set.tabTeam, visible: can('settings:admin') },
@@ -71,6 +74,7 @@ export function SettingsPage() {
         ))}
       </div>
       {tab === 'profile' && <ProfileTab />}
+      {tab === 'access' && <AccessTab />}
       {tab === 'entities' && <EntitiesTab />}
       {tab === 'company' && <CompanyTab />}
       {tab === 'team' && <TeamTab />}
@@ -126,8 +130,29 @@ function ProfileTab() {
           </Button>
           {saved && <span className="ml-2 text-xs text-cash-positive">{set.saved}</span>}
         </form>
+        {user?.role && (
+          <div className="mt-6 border-t border-border pt-6">
+            <RoleAccessPanel role={user.role} variant="self" />
+          </div>
+        )}
       </CardContent>
     </Card>
+  );
+}
+
+function AccessTab() {
+  const { user, isAdmin } = useAuth();
+  const { t } = useLanguage();
+  const set = (t.modules as Record<string, Record<string, string>>).settings;
+
+  return (
+    <div className="space-y-4">
+      {user?.role && <RoleAccessPanel role={user.role} variant="self" />}
+      {isAdmin && <RoleAccessPanel role={user?.role ?? 'admin'} variant="matrix" />}
+      {!isAdmin && (
+        <p className="text-xs text-muted-foreground">{set.accessMatrixAdminOnly}</p>
+      )}
+    </div>
   );
 }
 
@@ -452,6 +477,7 @@ function CompanyTab() {
         </form>
       </CardContent>
     </Card>
+    </div>
   );
 }
 
@@ -461,12 +487,14 @@ function TeamTab() {
   const { isAdmin, refreshUser } = useAuth();
   const { t } = useLanguage();
   const set = (t.modules as Record<string, Record<string, string>>).settings;
+  const roleLabels = (t.onboarding as Record<string, Record<string, string>>).team.roles;
   const [members, setMembers] = useState<TeamMemberView[]>([]);
   const [savingRole, setSavingRole] = useState<string | null>(null);
   const form = useForm<InviteFormValues>({
     resolver: zodResolver(inviteFormSchema),
     defaultValues: { role: 'member' },
   });
+  const inviteRole = form.watch('role') as UserRole;
 
   const load = useCallback(() => {
     apiGet<TeamMemberView[]>('/settings/team')
@@ -502,6 +530,8 @@ function TeamTab() {
 
   return (
     <div className="space-y-4">
+      {user?.role && <YourAccessCard role={user.role} />}
+      {isAdmin && <RoleAccessMatrix />}
       <Card>
         <CardHeader>
           <CardTitle>{set.tabTeam}</CardTitle>
@@ -526,7 +556,7 @@ function TeamTab() {
                     >
                       {TEAM_ROLES.map((role) => (
                         <option key={role} value={role}>
-                          {role}
+                          {roleLabel(role, t)}
                         </option>
                       ))}
                     </select>

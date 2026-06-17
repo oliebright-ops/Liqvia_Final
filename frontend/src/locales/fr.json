@@ -12,15 +12,42 @@
   },
   "home": {
     "landing": {
-      "title": "Bienvenue sur Liqvia",
-      "subtitle": "Votre plateforme d'intelligence de trésorerie. Connectez-vous, créez le profil de votre entreprise ou explorez avec des données de démonstration.",
+      "title": "Connaissez votre trésorerie, autonomie et risques — chaque jour",
+      "subtitle": "Conçu pour les PME qui ont dépassé les tableurs mais ne peuvent pas se payer un logiciel de trésorerie enterprise.",
+      "benefitForecast": "Prévision de trésorerie glissante sur 13 semaines, mise à jour depuis vos comptes bancaires",
+      "benefitRunway": "Connaissez votre autonomie de trésorerie en semaines — pas en mois",
+      "benefitAlerts": "Alertes de liquidité lorsque votre position se dégrade",
+      "socialProof": "Actuellement en bêta privée — 5 partenaires de conception intégrés",
+      "security": {
+        "heading": "Sécurité et conformité",
+        "encryptionTitle": "Chiffrement de niveau bancaire",
+        "encryptionDesc": "AES-256 au repos, TLS 1.3 en transit",
+        "residencyTitle": "Résidence des données",
+        "residencyDesc": "Vos données restent dans votre région",
+        "rbacTitle": "Accès basé sur les rôles",
+        "rbacDesc": "Permissions granulaires par membre de l'équipe",
+        "auditTitle": "Journaux d'audit complets",
+        "auditDesc": "Chaque action financière enregistrée et traçable"
+      },
+      "credibility": {
+        "finance": "Conçu par des professionnels de la finance et de l'audit",
+        "standards": "Compatible IFRS et GAAP",
+        "methodology": "Méthodologie de trésorerie glissante sur 13 semaines"
+      },
       "signInTitle": "Se connecter",
       "signInHint": "Accédez à l'espace de travail de votre entreprise avec votre compte existant.",
       "registerTitle": "S'inscrire / créer le profil de l'entreprise",
       "registerHint": "Créez un compte et configurez votre organisation.",
       "demoTitle": "Explorer avec des données de démonstration",
       "demoHint": "Essayez Liqvia avec les données d'exemple d'Acme Construction — sans connexion.",
-      "demoError": "Impossible de démarrer la démo. Vérifiez que les données de démonstration sont initialisées."
+      "demoError": "Impossible de démarrer la démo. Vérifiez que les données de démonstration sont initialisées.",
+      "previewAlt": "Aperçu du tableau de bord de trésorerie Liqvia",
+      "previewCaption": "Votre tableau de bord de trésorerie en direct — mis à jour quotidiennement à partir des comptes bancaires connectés.",
+      "previewBadge": {
+        "cashPosition": "Position de trésorerie en direct",
+        "liquidityAlerts": "Alertes de liquidité",
+        "cashRunway": "Autonomie de trésorerie en semaines"
+      }
     },
     "signedIn": {
       "title": "Bon retour, {name}",

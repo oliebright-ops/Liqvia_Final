@@ -12,15 +12,42 @@
   },
   "home": {
     "landing": {
-      "title": "Bienvenido a Liqvia",
-      "subtitle": "Su plataforma de inteligencia de tesorería. Inicie sesión, cree el perfil de su empresa o explore con datos de demostración.",
+      "title": "Conozca su posición de caja, autonomía y riesgos — cada día",
+      "subtitle": "Diseñado para pymes que superaron las hojas de cálculo pero no pueden pagar software de tesorería empresarial.",
+      "benefitForecast": "Previsión de caja rolling a 13 semanas, actualizada desde sus cuentas bancarias",
+      "benefitRunway": "Conozca su autonomía de caja en semanas, no en meses",
+      "benefitAlerts": "Alertas de liquidez cuando su posición se deteriora",
+      "socialProof": "Actualmente en beta privada — 5 socios de diseño incorporados",
+      "security": {
+        "heading": "Seguridad y cumplimiento",
+        "encryptionTitle": "Cifrado de nivel bancario",
+        "encryptionDesc": "AES-256 en reposo, TLS 1.3 en tránsito",
+        "residencyTitle": "Residencia de datos",
+        "residencyDesc": "Sus datos permanecen en su región",
+        "rbacTitle": "Acceso basado en roles",
+        "rbacDesc": "Permisos granulares por miembro del equipo",
+        "auditTitle": "Registros de auditoría completos",
+        "auditDesc": "Cada acción financiera registrada y trazable"
+      },
+      "credibility": {
+        "finance": "Creado por profesionales de finanzas y auditoría",
+        "standards": "Compatible con IFRS y GAAP",
+        "methodology": "Metodología de flujo de caja rolling a 13 semanas"
+      },
       "signInTitle": "Iniciar sesión",
       "signInHint": "Acceda al espacio de trabajo de su empresa con su cuenta existente.",
       "registerTitle": "Registrarse / crear perfil de empresa",
       "registerHint": "Cree una cuenta y configure su organización.",
       "demoTitle": "Explorar con datos de demostración",
       "demoHint": "Pruebe Liqvia con los datos de ejemplo de Acme Construction — sin necesidad de iniciar sesión.",
-      "demoError": "No se pudo iniciar la demostración. Asegúrese de que los datos de demostración estén cargados."
+      "demoError": "No se pudo iniciar la demostración. Asegúrese de que los datos de demostración estén cargados.",
+      "previewAlt": "Vista previa del panel de tesorería de Liqvia",
+      "previewCaption": "Su panel de tesorería en vivo, actualizado diariamente desde las cuentas bancarias conectadas.",
+      "previewBadge": {
+        "cashPosition": "Posición de caja en vivo",
+        "liquidityAlerts": "Alertas de liquidez",
+        "cashRunway": "Autonomía de caja en semanas"
+      }
     },
     "signedIn": {
       "title": "Bienvenido de nuevo, {name}",

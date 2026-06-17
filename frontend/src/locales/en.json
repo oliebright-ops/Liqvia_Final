@@ -12,15 +12,42 @@
   },
   "home": {
     "landing": {
-      "title": "Welcome to Liqvia",
-      "subtitle": "Your treasury intelligence platform. Sign in, create your company profile, or explore with demo data.",
+      "title": "Know Your Cash Position, Runway and Risks — Every Day",
+      "subtitle": "Built for SMEs who outgrew spreadsheets but can't afford enterprise treasury software.",
+      "benefitForecast": "13-week rolling cash forecast, updated from your bank accounts",
+      "benefitRunway": "Know your cash runway in weeks — not months",
+      "benefitAlerts": "Liquidity alerts when your position moves against you",
+      "socialProof": "Currently in private beta — 5 design partners onboarded",
+      "security": {
+        "heading": "Security & Compliance",
+        "encryptionTitle": "Bank-Level Encryption",
+        "encryptionDesc": "AES-256 at rest, TLS 1.3 in transit",
+        "residencyTitle": "Data Residency",
+        "residencyDesc": "Your data stays in your region",
+        "rbacTitle": "Role-Based Access",
+        "rbacDesc": "Granular permissions per team member",
+        "auditTitle": "Full Audit Logs",
+        "auditDesc": "Every financial action logged and traceable"
+      },
+      "credibility": {
+        "finance": "Built by finance & audit professionals",
+        "standards": "IFRS & GAAP compatible",
+        "methodology": "13-week rolling cash flow methodology"
+      },
       "signInTitle": "Sign in",
       "signInHint": "Access your company workspace with your existing account.",
       "registerTitle": "Register / create company profile",
       "registerHint": "Create an account and set up your organization.",
       "demoTitle": "Explore with demo data",
       "demoHint": "Try Liqvia with Acme Construction sample data — no sign-in needed.",
-      "demoError": "Could not start demo. Ensure demo data is seeded."
+      "demoError": "Could not start demo. Ensure demo data is seeded.",
+      "previewAlt": "Liqvia treasury dashboard preview",
+      "previewCaption": "Your live treasury dashboard – updated daily from connected bank accounts.",
+      "previewBadge": {
+        "cashPosition": "Live cash position",
+        "liquidityAlerts": "Liquidity alerts",
+        "cashRunway": "Cash runway in weeks"
+      }
     },
     "signedIn": {
       "title": "Welcome back, {name}",
