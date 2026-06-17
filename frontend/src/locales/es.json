@@ -19,20 +19,27 @@
       "benefitAlerts": "Alertas de liquidez cuando su posición se deteriora",
       "socialProof": "Actualmente en beta privada — 5 socios de diseño incorporados",
       "security": {
-        "heading": "Seguridad y cumplimiento",
-        "encryptionTitle": "Cifrado de nivel bancario",
-        "encryptionDesc": "AES-256 en reposo, TLS 1.3 en tránsito",
-        "residencyTitle": "Residencia de datos",
-        "residencyDesc": "Sus datos permanecen en su región",
-        "rbacTitle": "Acceso basado en roles",
-        "rbacDesc": "Permisos granulares por miembro del equipo",
-        "auditTitle": "Registros de auditoría completos",
-        "auditDesc": "Cada acción financiera registrada y trazable"
+        "eyebrow": "Confianza y seguridad",
+        "headline": "Seguridad de nivel empresarial para equipos financieros",
+        "subheadline": "Protección de datos financieros sensibles con los controles y la gobernanza que exigen las organizaciones financieras modernas.",
+        "bankGradeTitle": "Seguridad de nivel bancario",
+        "bankGradeDesc": "Cifrado AES-256 en reposo y TLS 1.3 en tránsito.",
+        "controlledAccessTitle": "Acceso controlado",
+        "controlledAccessDesc": "Permisos basados en roles entre empresas, entidades y miembros del equipo.",
+        "auditTitle": "Auditoría completa",
+        "auditDesc": "Cada acción financiera queda registrada, es trazable y revisable.",
+        "residencyTitle": "Control de residencia de datos",
+        "residencyDesc": "Mantenga los datos financieros alineados con los requisitos regionales de cumplimiento."
       },
       "credibility": {
-        "finance": "Creado por profesionales de finanzas y auditoría",
-        "standards": "Compatible con IFRS y GAAP",
-        "methodology": "Metodología de flujo de caja rolling a 13 semanas"
+        "headline": "Creado por profesionales financieros que entienden el flujo de caja",
+        "body": "Liqvia fue diseñado por profesionales de finanzas y auditoría que vivieron de primera mano las limitaciones de la gestión de caja basada en hojas de cálculo.",
+        "badgeFinanceExpertise": "Experiencia en finanzas y auditoría",
+        "badgeTreasuryPractices": "Mejores prácticas de tesorería",
+        "badgeIfrs": "Compatible con IFRS",
+        "badgeGaap": "Compatible con GAAP",
+        "badgeCashFlowMethodology": "Metodología de flujo de caja a 13 semanas",
+        "badgeAuditReporting": "Informes aptos para auditoría"
       },
       "signInTitle": "Iniciar sesión",
       "signInHint": "Acceda al espacio de trabajo de su empresa con su cuenta existente.",
@@ -40,10 +47,27 @@
       "registerHint": "Cree una cuenta y configure su organización.",
       "demoTitle": "Explorar con datos de demostración",
       "demoHint": "Pruebe Liqvia con los datos de ejemplo de Acme Construction — sin necesidad de iniciar sesión.",
+      "demoNoSignup": "Sin registro",
+      "demoLoading": "Iniciando demo…",
+      "partnerAvatarsCaption": "Equipos financieros confían en la beta privada",
       "demoError": "No se pudo iniciar la demostración. Asegúrese de que los datos de demostración estén cargados.",
       "previewAlt": "Vista previa del panel de tesorería de Liqvia",
       "previewComingSoon": "Vista previa del panel próximamente",
       "previewCaption": "Su panel de tesorería en vivo — alertas, autonomía y previsiones en una sola vista.",
+      "previewFeatures": {
+        "cashPosition": {
+          "title": "Posición de caja en vivo",
+          "description": "Saldos consolidados en cuentas operativas y de reserva, actualizados desde sus cargas."
+        },
+        "cashRunway": {
+          "title": "Autonomía de caja en semanas",
+          "description": "Vea cuántas semanas de liquidez quedan con su ritmo de consumo actual."
+        },
+        "liquidityAlerts": {
+          "title": "Alertas de liquidez",
+          "description": "Reciba avisos cuando la autonomía se reduzca o los pagos amenacen su posición de caja."
+        }
+      },
       "previewBadge": {
         "cashPosition": "Posición de caja en vivo",
         "liquidityAlerts": "Alertas de liquidez",
@@ -141,6 +165,8 @@
     "loading": "Cargando datos de tesorería…",
     "totalCash": "Caja total",
     "reconciliationPending": "Conciliación pendiente",
+    "demoDataBadge": "Datos de demostración",
+    "dismissStatusBadge": "Descartar indicador de estado",
     "cashPosition": "Posición de caja",
     "acrossBankAccounts": "En {count} cuentas bancarias",
     "vsLastWeek": "vs semana anterior",
@@ -286,6 +312,11 @@
     "inflows": "Entradas",
     "outflows": "Salidas",
     "weekPrefix": "S",
+    "excludeW1": "Excluir S1",
+    "excludeW1Hint": "Oculte la semana 1 para normalizar el eje cuando los flujos iniciales comprimen el pronóstico",
+    "excludeW1HintInactive": "Alternar para ocultar la semana 1 del gráfico",
+    "scaleHint": "Las barras muestran entradas y salidas semanales; la línea sigue el efectivo de cierre.",
+    "openingBalanceInflow": "Entrada de saldo inicial",
     "budget": "Presupuesto",
     "actual": "Real",
     "baseline": "Línea base",

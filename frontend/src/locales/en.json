@@ -19,20 +19,27 @@
       "benefitAlerts": "Liquidity alerts when your position moves against you",
       "socialProof": "Currently in private beta — 5 design partners onboarded",
       "security": {
-        "heading": "Security & Compliance",
-        "encryptionTitle": "Bank-Level Encryption",
-        "encryptionDesc": "AES-256 at rest, TLS 1.3 in transit",
-        "residencyTitle": "Data Residency",
-        "residencyDesc": "Your data stays in your region",
-        "rbacTitle": "Role-Based Access",
-        "rbacDesc": "Granular permissions per team member",
-        "auditTitle": "Full Audit Logs",
-        "auditDesc": "Every financial action logged and traceable"
+        "eyebrow": "Trust & Security",
+        "headline": "Enterprise-Grade Security Built for Finance Teams",
+        "subheadline": "Protecting sensitive financial data with the controls and governance expected by modern finance organizations.",
+        "bankGradeTitle": "Bank-Grade Security",
+        "bankGradeDesc": "AES-256 encryption at rest and TLS 1.3 encryption in transit.",
+        "controlledAccessTitle": "Controlled Access",
+        "controlledAccessDesc": "Role-based permissions across companies, entities and team members.",
+        "auditTitle": "Complete Audit Trail",
+        "auditDesc": "Every financial action is logged, traceable and reviewable.",
+        "residencyTitle": "Data Residency Controls",
+        "residencyDesc": "Keep financial data aligned with regional compliance requirements."
       },
       "credibility": {
-        "finance": "Built by finance & audit professionals",
-        "standards": "IFRS & GAAP compatible",
-        "methodology": "13-week rolling cash flow methodology"
+        "headline": "Built by Finance Professionals Who Understand Cash Flow",
+        "body": "Liqvia was designed by finance and audit professionals who experienced first-hand the limitations of spreadsheet-based cash management.",
+        "badgeFinanceExpertise": "Finance & Audit Expertise",
+        "badgeTreasuryPractices": "Treasury Best Practices",
+        "badgeIfrs": "IFRS Compatible",
+        "badgeGaap": "GAAP Compatible",
+        "badgeCashFlowMethodology": "13-Week Cash Flow Methodology",
+        "badgeAuditReporting": "Audit-Friendly Reporting"
       },
       "signInTitle": "Sign in",
       "signInHint": "Access your company workspace with your existing account.",
@@ -40,10 +47,27 @@
       "registerHint": "Create an account and set up your organization.",
       "demoTitle": "Explore with demo data",
       "demoHint": "Try Liqvia with Acme Construction sample data — no sign-in needed.",
+      "demoNoSignup": "No sign-up required",
+      "demoLoading": "Starting demo…",
+      "partnerAvatarsCaption": "Trusted by finance teams in private beta",
       "demoError": "Could not start demo. Ensure demo data is seeded.",
       "previewAlt": "Liqvia treasury dashboard preview",
       "previewComingSoon": "Dashboard preview coming soon",
       "previewCaption": "Your live treasury dashboard — alerts, runway, and forecasts in one view.",
+      "previewFeatures": {
+        "cashPosition": {
+          "title": "Live cash position",
+          "description": "Consolidated balances across operating and reserve accounts, updated from your uploads."
+        },
+        "cashRunway": {
+          "title": "Cash runway in weeks",
+          "description": "See how many weeks of liquidity remain at your current burn rate."
+        },
+        "liquidityAlerts": {
+          "title": "Liquidity alerts",
+          "description": "Get notified when runway tightens or payables threaten your cash position."
+        }
+      },
       "previewBadge": {
         "cashPosition": "Live cash position",
         "liquidityAlerts": "Liquidity alerts",
@@ -141,6 +165,8 @@
     "loading": "Loading treasury data…",
     "totalCash": "Total cash",
     "reconciliationPending": "Reconciliation pending",
+    "demoDataBadge": "Demo data",
+    "dismissStatusBadge": "Dismiss status badge",
     "cashPosition": "Cash position",
     "acrossBankAccounts": "Across {count} bank accounts",
     "vsLastWeek": "vs last week",
@@ -286,6 +312,11 @@
     "inflows": "Inflows",
     "outflows": "Outflows",
     "weekPrefix": "W",
+    "excludeW1": "Exclude W1",
+    "excludeW1Hint": "Hide week 1 to normalize the axis when opening inflows compress the forecast",
+    "excludeW1HintInactive": "Toggle to hide week 1 from the chart",
+    "scaleHint": "Bars show weekly inflows and outflows; line tracks closing cash.",
+    "openingBalanceInflow": "Opening balance inflow",
     "budget": "Budget",
     "actual": "Actual",
     "baseline": "Baseline",

@@ -226,6 +226,38 @@ function addDays(isoDate: string, days: number): string {
   return d.toISOString().slice(0, 10);
 }
 
+export const PENDING_CLEARANCE_DAYS = 3;
+export const STALE_RECONCILIATION_HOURS = 48;
+
+/** Pending bank items older than 48h — stale reconciliation candidates. */
+export function hasStaleUnreconciledTransactions(
+  movements: CashMovementInput[],
+  asOfDate: string,
+): boolean {
+  return countStaleUnreconciledTransactions(movements, asOfDate) > 0;
+}
+
+export function countStaleUnreconciledTransactions(
+  movements: CashMovementInput[],
+  asOfDate: string,
+): number {
+  return movements.filter((m) => isStaleUnreconciledTransaction(m, asOfDate)).length;
+}
+
+function isStaleUnreconciledTransaction(m: CashMovementInput, asOfDate: string): boolean {
+  if (isBalanceAnchor(m.description)) return false;
+  const date = m.movementDate.slice(0, 10);
+  const days = daysBetween(date, asOfDate);
+  const hours = hoursBetween(date, asOfDate);
+  return days <= PENDING_CLEARANCE_DAYS && hours > STALE_RECONCILIATION_HOURS;
+}
+
+function hoursBetween(start: string, end: string): number {
+  const startMs = new Date(`${start.slice(0, 10)}T00:00:00.000Z`).getTime();
+  const endMs = new Date(`${end.slice(0, 10)}T12:00:00.000Z`).getTime();
+  return Math.max(0, (endMs - startMs) / (1000 * 60 * 60));
+}
+
 function daysBetween(start: string, end: string): number {
   const ms = new Date(end).getTime() - new Date(start).getTime();
   return Math.max(0, Math.floor(ms / (1000 * 60 * 60 * 24)));

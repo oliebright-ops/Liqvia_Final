@@ -1,7 +1,9 @@
 'use client';
 
 import Link from 'next/link';
+import { X } from 'lucide-react';
 import { NestedTranslations, TranslateFn } from '@/lib/i18n';
+import type { DashboardStatusBadge } from '@/lib/dashboard-controller';
 import { Badge } from '@/components/ui/badge';
 import { HorizonControl } from './horizon-control';
 
@@ -10,7 +12,8 @@ export function DashboardHeader({
   asOfDate,
   totalCashDisplay,
   accountCountSubtitle,
-  reconciliationPending,
+  statusBadge,
+  onDismissStatusBadge,
   horizonWeeks,
   onHorizonChange,
   t,
@@ -20,7 +23,8 @@ export function DashboardHeader({
   asOfDate: string;
   totalCashDisplay: string;
   accountCountSubtitle: string;
-  reconciliationPending: boolean;
+  statusBadge: DashboardStatusBadge | null;
+  onDismissStatusBadge: () => void;
   horizonWeeks: number;
   onHorizonChange: (weeks: number) => void;
   t: NestedTranslations;
@@ -51,9 +55,20 @@ export function DashboardHeader({
             </p>
             <p className="text-xs text-muted-foreground">{accountCountSubtitle}</p>
           </Link>
-          {reconciliationPending && (
-            <Badge variant="warning" className="text-[10px]">
-              {dash.reconciliationPending}
+          {statusBadge && (
+            <Badge
+              variant={statusBadge.variant === 'demo' ? 'muted' : 'warning'}
+              className="gap-1.5 pr-1.5 text-[10px]"
+            >
+              <span>{dash[statusBadge.labelKey]}</span>
+              <button
+                type="button"
+                onClick={onDismissStatusBadge}
+                className="rounded-sm p-0.5 transition-colors hover:bg-black/10 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-primary"
+                aria-label={dash.dismissStatusBadge}
+              >
+                <X className="h-3 w-3" aria-hidden />
+              </button>
             </Badge>
           )}
         </div>

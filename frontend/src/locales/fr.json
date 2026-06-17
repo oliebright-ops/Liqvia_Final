@@ -19,20 +19,27 @@
       "benefitAlerts": "Alertes de liquidité lorsque votre position se dégrade",
       "socialProof": "Actuellement en bêta privée — 5 partenaires de conception intégrés",
       "security": {
-        "heading": "Sécurité et conformité",
-        "encryptionTitle": "Chiffrement de niveau bancaire",
-        "encryptionDesc": "AES-256 au repos, TLS 1.3 en transit",
-        "residencyTitle": "Résidence des données",
-        "residencyDesc": "Vos données restent dans votre région",
-        "rbacTitle": "Accès basé sur les rôles",
-        "rbacDesc": "Permissions granulaires par membre de l'équipe",
-        "auditTitle": "Journaux d'audit complets",
-        "auditDesc": "Chaque action financière enregistrée et traçable"
+        "eyebrow": "Confiance et sécurité",
+        "headline": "Sécurité de niveau entreprise pour les équipes finance",
+        "subheadline": "Protection des données financières sensibles avec les contrôles et la gouvernance attendus par les organisations financières modernes.",
+        "bankGradeTitle": "Sécurité de niveau bancaire",
+        "bankGradeDesc": "Chiffrement AES-256 au repos et TLS 1.3 en transit.",
+        "controlledAccessTitle": "Accès contrôlé",
+        "controlledAccessDesc": "Permissions basées sur les rôles entre sociétés, entités et membres de l'équipe.",
+        "auditTitle": "Piste d'audit complète",
+        "auditDesc": "Chaque action financière est enregistrée, traçable et vérifiable.",
+        "residencyTitle": "Contrôles de résidence des données",
+        "residencyDesc": "Alignez les données financières sur les exigences régionales de conformité."
       },
       "credibility": {
-        "finance": "Conçu par des professionnels de la finance et de l'audit",
-        "standards": "Compatible IFRS et GAAP",
-        "methodology": "Méthodologie de trésorerie glissante sur 13 semaines"
+        "headline": "Conçu par des professionnels de la finance qui maîtrisent la trésorerie",
+        "body": "Liqvia a été conçu par des professionnels de la finance et de l'audit ayant vécu les limites de la gestion de trésorerie par tableur.",
+        "badgeFinanceExpertise": "Expertise finance et audit",
+        "badgeTreasuryPractices": "Bonnes pratiques de trésorerie",
+        "badgeIfrs": "Compatible IFRS",
+        "badgeGaap": "Compatible GAAP",
+        "badgeCashFlowMethodology": "Méthodologie de trésorerie sur 13 semaines",
+        "badgeAuditReporting": "Reporting adapté à l'audit"
       },
       "signInTitle": "Se connecter",
       "signInHint": "Accédez à l'espace de travail de votre entreprise avec votre compte existant.",
@@ -40,10 +47,27 @@
       "registerHint": "Créez un compte et configurez votre organisation.",
       "demoTitle": "Explorer avec des données de démonstration",
       "demoHint": "Essayez Liqvia avec les données d'exemple d'Acme Construction — sans connexion.",
+      "demoNoSignup": "Sans inscription",
+      "demoLoading": "Démarrage de la démo…",
+      "partnerAvatarsCaption": "Des équipes finance en bêta privée",
       "demoError": "Impossible de démarrer la démo. Vérifiez que les données de démonstration sont initialisées.",
       "previewAlt": "Aperçu du tableau de bord de trésorerie Liqvia",
       "previewComingSoon": "Aperçu du tableau de bord bientôt disponible",
       "previewCaption": "Votre tableau de bord de trésorerie en direct — alertes, autonomie et prévisions en une seule vue.",
+      "previewFeatures": {
+        "cashPosition": {
+          "title": "Position de trésorerie en direct",
+          "description": "Soldes consolidés sur les comptes d'exploitation et de réserve, mis à jour via vos imports."
+        },
+        "cashRunway": {
+          "title": "Autonomie de trésorerie en semaines",
+          "description": "Visualisez le nombre de semaines de liquidité restantes au rythme de consommation actuel."
+        },
+        "liquidityAlerts": {
+          "title": "Alertes de liquidité",
+          "description": "Soyez averti lorsque l'autonomie se resserre ou que les paiements menacent votre trésorerie."
+        }
+      },
       "previewBadge": {
         "cashPosition": "Position de trésorerie en direct",
         "liquidityAlerts": "Alertes de liquidité",
@@ -141,6 +165,8 @@
     "loading": "Chargement des données de trésorerie…",
     "totalCash": "Trésorerie totale",
     "reconciliationPending": "Rapprochement en attente",
+    "demoDataBadge": "Données de démonstration",
+    "dismissStatusBadge": "Masquer l'indicateur de statut",
     "cashPosition": "Position de trésorerie",
     "acrossBankAccounts": "Sur {count} comptes bancaires",
     "vsLastWeek": "vs semaine dernière",
@@ -286,6 +312,11 @@
     "inflows": "Entrées",
     "outflows": "Sorties",
     "weekPrefix": "S",
+    "excludeW1": "Exclure S1",
+    "excludeW1Hint": "Masquez la semaine 1 pour normaliser l'axe lorsque les entrées initiales compriment la prévision",
+    "excludeW1HintInactive": "Basculer pour masquer la semaine 1 du graphique",
+    "scaleHint": "Les barres montrent les entrées et sorties hebdomadaires ; la ligne suit la trésorerie de clôture.",
+    "openingBalanceInflow": "Entrée de solde d'ouverture",
     "budget": "Budget",
     "actual": "Réalisé",
     "baseline": "Référence",

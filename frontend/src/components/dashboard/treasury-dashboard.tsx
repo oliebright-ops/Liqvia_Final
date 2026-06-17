@@ -4,7 +4,10 @@ import { useMemo, useState } from 'react';
 import { DEFAULT_FORECAST_HORIZON, mergeFreeCashAlerts } from '@liqvia2/shared';
 import { useAuth } from '@/lib/auth-context';
 import { DEMO_RECENT_TXN } from '@/lib/dashboard-demo-transactions';
-import { mapSummaryToDashboardView } from '@/lib/dashboard-controller';
+import {
+  mapSummaryToDashboardView,
+  resolveDashboardStatusBadge,
+} from '@/lib/dashboard-controller';
 import { useFreeAvailableCash } from '@/hooks/use-free-available-cash';
 import { useTreasurySummary } from '@/hooks/use-treasury-summary';
 import { useLanguage } from '@/lib/i18n';
@@ -26,10 +29,17 @@ function withDemoTransactionFallback(summary: SummaryReport, isDemoMode: boolean
   return { ...summary, recentTransactions: DEMO_RECENT_TXN };
 }
 
+const STATUS_BADGE_DISMISS_KEY = 'liqvia:dashboard-status-badge-dismissed';
+
 export function TreasuryDashboard() {
   const { user } = useAuth();
   const { t, format, locale } = useLanguage();
   const [viewHorizonWeeks, setViewHorizonWeeks] = useState<number | undefined>(undefined);
+  const [statusBadgeDismissed, setStatusBadgeDismissed] = useState(
+    () =>
+      typeof window !== 'undefined' &&
+      sessionStorage.getItem(STATUS_BADGE_DISMISS_KEY) === '1',
+  );
   const { data, loading, error, isFetching } = useTreasurySummary(viewHorizonWeeks);
   const horizonWeeks = viewHorizonWeeks ?? data?.liquidity.horizonWeeks ?? DEFAULT_FORECAST_HORIZON;
   const { data: freeCash, isFetching: freeCashFetching } = useFreeAvailableCash(horizonWeeks);
@@ -69,6 +79,17 @@ export function TreasuryDashboard() {
     return mapSummaryToDashboardView(withAlerts, format, locale, txnCategoryLabels, horizonWeeks);
   }, [data, freeCash, user?.isDemoMode, format, locale, txnCategoryLabels, horizonWeeks]);
 
+  const statusBadge = useMemo(() => {
+    if (!data) return null;
+    const summary = withDemoTransactionFallback(data, user?.isDemoMode ?? false);
+    return resolveDashboardStatusBadge(summary, user?.isDemoMode ?? false, statusBadgeDismissed);
+  }, [data, user?.isDemoMode, statusBadgeDismissed]);
+
+  function dismissStatusBadge() {
+    setStatusBadgeDismissed(true);
+    sessionStorage.setItem(STATUS_BADGE_DISMISS_KEY, '1');
+  }
+
   if (error) {
     return <Alert variant="error">{format('errors.loadFailed')}</Alert>;
   }
@@ -84,7 +105,8 @@ export function TreasuryDashboard() {
         asOfDate={view.asOfDate}
         totalCashDisplay={view.totalCashDisplay}
         accountCountSubtitle={view.accountCountSubtitle}
-        reconciliationPending={view.reconciliationPending}
+        statusBadge={statusBadge}
+        onDismissStatusBadge={dismissStatusBadge}
         horizonWeeks={horizonWeeks}
         onHorizonChange={setViewHorizonWeeks}
         t={t}

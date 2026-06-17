@@ -4,6 +4,8 @@ import { formatMoney } from '@/lib/dashboard-types';
 
 export const CHART_COLORS = {
   primary: 'hsl(221, 94%, 68%)',
+  inflowOperational: 'hsl(221, 94%, 68%)',
+  inflowAnomalous: 'hsl(221, 35%, 52%)',
   inflow: 'hsl(152, 60%, 45%)',
   outflow: 'hsl(0, 72%, 58%)',
   muted: 'hsl(215, 20%, 55%)',

@@ -3,29 +3,15 @@
 import Link from 'next/link';
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { ClipboardList, Lock, Shield, Users } from 'lucide-react';
 import { AppShell } from '@/components/layout/app-shell';
 import { Button } from '@/components/ui/button';
+import { CredibilityBannerSection } from '@/components/home/credibility-banner-section';
+import { DashboardPreviewSection } from '@/components/home/dashboard-preview-section';
+import { HeroCtaSection } from '@/components/home/hero-cta-section';
+import { SecurityTrustSection } from '@/components/home/security-trust-section';
 import { useAuth } from '@/lib/auth-context';
 import { resolvePostAuthPath } from '@/lib/auth-types';
-import { DashboardPreviewSection } from '@/components/home/dashboard-preview-section';
 import { useTranslations } from '@/lib/i18n';
-
-/** Update this line when beta status changes — layout stays the same. */
-const SOCIAL_PROOF_BADGE = 'home.landing.socialProof';
-
-const SECURITY_BADGES = [
-  { icon: Lock, titleKey: 'home.landing.security.encryptionTitle', descKey: 'home.landing.security.encryptionDesc' },
-  { icon: Shield, titleKey: 'home.landing.security.residencyTitle', descKey: 'home.landing.security.residencyDesc' },
-  { icon: Users, titleKey: 'home.landing.security.rbacTitle', descKey: 'home.landing.security.rbacDesc' },
-  { icon: ClipboardList, titleKey: 'home.landing.security.auditTitle', descKey: 'home.landing.security.auditDesc' },
-] as const;
-
-const CREDIBILITY_ITEMS = [
-  'home.landing.credibility.finance',
-  'home.landing.credibility.standards',
-  'home.landing.credibility.methodology',
-] as const;
 
 export default function HomePage() {
   const t = useTranslations();
@@ -71,27 +57,24 @@ export default function HomePage() {
 
   return (
     <AppShell>
-      <div className="mx-auto max-w-2xl text-center">
-        <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-xl bg-blue-600 text-2xl font-bold text-white">
-          L
-        </div>
-        <h1 className="mt-6 text-4xl font-semibold tracking-tight text-foreground">
-          {t('home.landing.title')}
-        </h1>
-        <p className="mx-auto mt-4 max-w-lg text-lg text-muted-foreground">
-          {t('home.landing.subtitle')}
-        </p>
-        <p
-          className="mx-auto mt-5 inline-block rounded-full border px-4 py-1.5 text-xs text-muted-foreground"
-          style={{ borderColor: '#00B4D8' }}
-        >
-          {t(SOCIAL_PROOF_BADGE)}
-        </p>
+      <HeroCtaSection
+        onExploreDemo={() => void onExploreDemo()}
+        demoLoading={demoLoading}
+        disabled={loading}
+        demoError={demoError}
+      />
+
+      <div className="relative mt-10 overflow-hidden rounded-3xl border border-slate-800/50 bg-[#0B0D12] px-4 pb-16 pt-10 sm:mt-12 sm:px-8 sm:pt-12">
+        <div
+          className="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_at_50%_-20%,rgba(59,130,246,0.12),transparent_55%)]"
+          aria-hidden
+        />
+        <DashboardPreviewSection />
+        <SecurityTrustSection />
+        <CredibilityBannerSection />
       </div>
 
-      <DashboardPreviewSection />
-
-      <ul className="mx-auto mt-10 max-w-lg space-y-2 text-sm text-muted-foreground">
+      <ul className="mx-auto mt-8 max-w-lg space-y-2 text-sm text-muted-foreground sm:mt-10">
         {(
           [
             'home.landing.benefitForecast',
@@ -107,99 +90,6 @@ export default function HomePage() {
           </li>
         ))}
       </ul>
-
-      <div className="mx-auto max-w-2xl">
-        <div className="mt-10 space-y-3">
-          <Link
-            href="/login"
-            className="flex w-full items-center justify-between rounded-xl border border-border bg-card px-5 py-4 text-left transition-colors hover:border-primary/50"
-          >
-            <div className="flex items-center gap-4">
-              <span className="flex h-10 w-10 items-center justify-center rounded-lg bg-muted text-lg">
-                🔑
-              </span>
-              <div>
-                <p className="font-medium text-foreground">{t('home.landing.signInTitle')}</p>
-                <p className="text-sm text-muted-foreground">{t('home.landing.signInHint')}</p>
-              </div>
-            </div>
-            <span className="text-slate-400">›</span>
-          </Link>
-
-          <Link
-            href="/register"
-            className="flex w-full items-center justify-between rounded-xl border border-primary/30 bg-primary/10 px-5 py-4 text-left transition-colors hover:border-primary hover:shadow-glow-primary"
-          >
-            <div className="flex items-center gap-4">
-              <span className="flex h-10 w-10 items-center justify-center rounded-lg bg-primary/20 text-lg">
-                🏢
-              </span>
-              <div>
-                <p className="font-medium text-foreground">{t('home.landing.registerTitle')}</p>
-                <p className="text-sm text-muted-foreground">{t('home.landing.registerHint')}</p>
-              </div>
-            </div>
-            <span className="text-blue-400">›</span>
-          </Link>
-
-          <button
-            type="button"
-            onClick={() => void onExploreDemo()}
-            disabled={demoLoading || loading}
-            className="flex w-full items-center justify-between rounded-xl border border-amber-300 bg-amber-50 px-5 py-4 text-left transition-colors hover:border-amber-400 hover:bg-amber-100/80 disabled:opacity-50"
-          >
-            <div className="flex items-center gap-4">
-              <span className="flex h-10 w-10 items-center justify-center rounded-lg bg-amber-500/20 text-lg">
-                🧪
-              </span>
-              <div>
-                <p className="font-medium text-amber-950">{t('home.landing.demoTitle')}</p>
-                <p className="text-sm text-amber-900/70">{t('home.landing.demoHint')}</p>
-              </div>
-            </div>
-            <span className="text-amber-600">{demoLoading ? '…' : '›'}</span>
-          </button>
-        </div>
-
-        {demoError && <p className="mt-4 text-center text-sm text-red-600">{demoError}</p>}
-
-        <section className="mt-12 rounded-xl p-6" style={{ backgroundColor: '#F8FAFC' }}>
-          <h2 className="text-center text-sm font-semibold uppercase tracking-wide text-foreground">
-            {t('home.landing.security.heading')}
-          </h2>
-          <div className="mt-6 grid gap-4 sm:grid-cols-2">
-            {SECURITY_BADGES.map(({ icon: Icon, titleKey, descKey }) => (
-              <div key={titleKey} className="flex gap-3 rounded-lg bg-white/80 p-4">
-                <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary">
-                  <Icon className="h-4 w-4" aria-hidden />
-                </span>
-                <div>
-                  <p className="text-sm font-semibold text-foreground">{t(titleKey)}</p>
-                  <p className="mt-0.5 text-xs text-muted-foreground">{t(descKey)}</p>
-                </div>
-              </div>
-            ))}
-          </div>
-        </section>
-
-        <div
-          className="mt-8 flex flex-col items-center justify-center gap-3 rounded-lg px-4 py-3 text-center text-[11px] font-medium uppercase tracking-wider sm:flex-row sm:gap-0"
-          style={{ backgroundColor: '#EBF4FA', color: '#4A6FA5' }}
-        >
-          {CREDIBILITY_ITEMS.map((key, index) => (
-            <span key={key} className="flex items-center sm:px-4">
-              {index > 0 && (
-                <span
-                  className="mr-4 hidden h-4 w-px sm:inline-block"
-                  style={{ backgroundColor: '#4A6FA5', opacity: 0.35 }}
-                  aria-hidden
-                />
-              )}
-              {t(key)}
-            </span>
-          ))}
-        </div>
-      </div>
     </AppShell>
   );
 }

@@ -2,8 +2,10 @@ import type { BudgetVarianceResult, TreasuryKpiDashboard } from './kpi';
 import {
   computeArDue30Days,
   computeCashPosition,
+  countStaleUnreconciledTransactions,
   DashboardKpiCards,
   DashboardTransactionRow,
+  hasStaleUnreconciledTransactions,
   mapRecentTransactions,
   type CashMovementInput,
   type ReceivableMetricInput,
@@ -66,6 +68,9 @@ export interface TreasuryReconciliation {
   isConsistent: boolean;
   transactionActualsTotal: number;
   budgetActualsTotal: number;
+  hasBankAccounts: boolean;
+  hasStaleUnreconciledTransactions: boolean;
+  staleUnreconciledCount: number;
 }
 
 export interface TreasuryRawSnapshot {
@@ -154,11 +159,19 @@ export function buildTreasurySummary(raw: TreasuryRawSnapshot): SummaryReport {
     .filter((p) => p.dueDate < raw.asOfDate && p.outstandingAmount > 0)
     .reduce((s, p) => s + p.outstandingAmount, 0);
 
-  const reconciliation = validateTreasuryConsistency({
-    movements: raw.movements,
-    asOfDate: raw.asOfDate,
-    budgetActualsTotal: raw.budgetVsActual.totalActual,
-  });
+  const reconciliation = {
+    ...validateTreasuryConsistency({
+      movements: raw.movements,
+      asOfDate: raw.asOfDate,
+      budgetActualsTotal: raw.budgetVsActual.totalActual,
+    }),
+    hasBankAccounts: cashPosition.bankAccountCount > 0,
+    hasStaleUnreconciledTransactions: hasStaleUnreconciledTransactions(
+      raw.movements,
+      raw.asOfDate,
+    ),
+    staleUnreconciledCount: countStaleUnreconciledTransactions(raw.movements, raw.asOfDate),
+  };
 
   const freeCash = buildFreeCashReport(
     cashPosition.totalBalance,
@@ -341,7 +354,14 @@ export function validateTreasuryConsistency(input: {
   const tolerance = input.tolerance ?? 1;
   const isConsistent = Math.abs(transactionActualsTotal - budgetActualsTotal) <= tolerance;
 
-  return { isConsistent, transactionActualsTotal, budgetActualsTotal };
+  return {
+    isConsistent,
+    transactionActualsTotal,
+    budgetActualsTotal,
+    hasBankAccounts: false,
+    hasStaleUnreconciledTransactions: false,
+    staleUnreconciledCount: 0,
+  };
 }
 
 function round1(n: number): number {

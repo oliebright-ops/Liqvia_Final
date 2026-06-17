@@ -9,13 +9,29 @@ export interface DashboardViewModel {
   currency: string;
   totalCashDisplay: string;
   accountCountSubtitle: string;
-  reconciliationPending: boolean;
   kpiCards: KpiCardViewModel[];
   forecast: WeeklyForecastLine[];
   liquidityStatus: string;
   alerts: SummaryReport['alerts'];
   recentTransactions: TransactionRowViewModel[];
   companyId: string;
+}
+
+export interface DashboardStatusBadge {
+  variant: 'warning' | 'demo';
+  labelKey: 'reconciliationPending' | 'demoDataBadge';
+}
+
+export function resolveDashboardStatusBadge(
+  summary: SummaryReport,
+  isDemoMode: boolean,
+  dismissed: boolean,
+): DashboardStatusBadge | null {
+  if (dismissed) return null;
+  if (isDemoMode) return { variant: 'demo', labelKey: 'demoDataBadge' };
+  if (!summary.reconciliation.hasBankAccounts) return null;
+  if (!summary.reconciliation.hasStaleUnreconciledTransactions) return null;
+  return { variant: 'warning', labelKey: 'reconciliationPending' };
 }
 
 export interface KpiCardViewModel {
@@ -81,7 +97,6 @@ export function mapSummaryToDashboardView(
     accountCountSubtitle: dash('acrossBankAccounts', {
       count: String(summary.cash.accountCount),
     }),
-    reconciliationPending: !summary.reconciliation.isConsistent,
     kpiCards,
     forecast: summary.forecast,
     liquidityStatus: summary.liquidity.liquidityStatus,
