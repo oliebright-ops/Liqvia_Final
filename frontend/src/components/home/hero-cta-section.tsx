@@ -46,7 +46,6 @@ export function HeroCtaSection({
         <div className="flex w-full max-w-md flex-col items-center gap-2 sm:flex-row sm:justify-center sm:gap-3">
           <Button
             type="button"
-            size="lg"
             disabled={disabled || demoLoading}
             onClick={onExploreDemo}
             className="h-12 w-full min-w-[220px] px-8 text-base font-semibold shadow-glow-primary sm:w-auto"

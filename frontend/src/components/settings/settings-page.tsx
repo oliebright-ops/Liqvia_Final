@@ -29,9 +29,8 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { EmptyState } from '@/components/ui/empty-state';
 import { FinancialTable } from '@/components/ui/financial-table';
 import { PageHeader } from '@/components/treasury/page-header';
-import { RoleAccessPanel } from '@/components/settings/role-access-panel';
+import { RoleAccessMatrix, roleLabel, YourAccessCard } from '@/components/settings/role-access-guide';
 import { cn } from '@/lib/utils';
-import type { UserRole } from '@/lib/auth-types';
 
 type Tab = 'profile' | 'access' | 'entities' | 'company' | 'team' | 'coa';
 
@@ -132,7 +131,7 @@ function ProfileTab() {
         </form>
         {user?.role && (
           <div className="mt-6 border-t border-border pt-6">
-            <RoleAccessPanel role={user.role} variant="self" />
+            <YourAccessCard role={user.role} />
           </div>
         )}
       </CardContent>
@@ -147,8 +146,8 @@ function AccessTab() {
 
   return (
     <div className="space-y-4">
-      {user?.role && <RoleAccessPanel role={user.role} variant="self" />}
-      {isAdmin && <RoleAccessPanel role={user?.role ?? 'admin'} variant="matrix" />}
+      {user?.role && <YourAccessCard role={user.role} />}
+      {isAdmin && <RoleAccessMatrix />}
       {!isAdmin && (
         <p className="text-xs text-muted-foreground">{set.accessMatrixAdminOnly}</p>
       )}
@@ -477,24 +476,21 @@ function CompanyTab() {
         </form>
       </CardContent>
     </Card>
-    </div>
   );
 }
 
 const TEAM_ROLES = ['admin', 'member', 'viewer', 'uploader'] as const;
 
 function TeamTab() {
-  const { isAdmin, refreshUser } = useAuth();
+  const { user, isAdmin, refreshUser } = useAuth();
   const { t } = useLanguage();
   const set = (t.modules as Record<string, Record<string, string>>).settings;
-  const roleLabels = (t.onboarding as Record<string, Record<string, string>>).team.roles;
   const [members, setMembers] = useState<TeamMemberView[]>([]);
   const [savingRole, setSavingRole] = useState<string | null>(null);
   const form = useForm<InviteFormValues>({
     resolver: zodResolver(inviteFormSchema),
     defaultValues: { role: 'member' },
   });
-  const inviteRole = form.watch('role') as UserRole;
 
   const load = useCallback(() => {
     apiGet<TeamMemberView[]>('/settings/team')

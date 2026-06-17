@@ -13,6 +13,22 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { useLanguage } from '@/lib/i18n';
 import { cn } from '@/lib/utils';
 
+type SettingsCopy = {
+  accessLevels: Record<RoleAccessLevel, string>;
+  accessAreas: Record<RoleAccessArea, string>;
+  roles: Record<UserRole, { label: string; summary: string }>;
+  yourAccessTitle: string;
+  yourAccessSubtitle: string;
+  accessMatrixTitle: string;
+  accessMatrixSubtitle: string;
+  colRole: string;
+  [key: string]: unknown;
+};
+
+function settingsCopy(t: ReturnType<typeof useLanguage>['t']): SettingsCopy {
+  return (t.modules as { settings: SettingsCopy }).settings;
+}
+
 function levelBadgeVariant(level: RoleAccessLevel): 'success' | 'warning' | 'muted' | 'default' {
   if (level === 'full') return 'success';
   if (level === 'edit') return 'default';
@@ -22,7 +38,7 @@ function levelBadgeVariant(level: RoleAccessLevel): 'success' | 'warning' | 'mut
 
 function RoleAccessBadge({ level }: { level: RoleAccessLevel }) {
   const { t } = useLanguage();
-  const access = (t.modules as Record<string, Record<string, string>>).settings.accessLevels;
+  const access = settingsCopy(t).accessLevels;
   return (
     <Badge variant={levelBadgeVariant(level)} className="text-[10px] uppercase tracking-wide">
       {access[level]}
@@ -32,15 +48,15 @@ function RoleAccessBadge({ level }: { level: RoleAccessLevel }) {
 
 function RoleSummary({ role }: { role: UserRole }) {
   const { t } = useLanguage();
-  const roles = (t.modules as Record<string, Record<string, Record<string, string>>>).settings.roles;
+  const roles = settingsCopy(t).roles;
   return <p className="text-sm text-muted-foreground">{roles[role]?.summary}</p>;
 }
 
 export function YourAccessCard({ role }: { role: UserRole }) {
   const { t } = useLanguage();
-  const set = (t.modules as Record<string, Record<string, string>>).settings;
-  const roles = (t.modules as Record<string, Record<string, Record<string, string>>>).settings.roles;
-  const areas = (t.modules as Record<string, Record<string, string>>).settings.accessAreas;
+  const set = settingsCopy(t);
+  const roles = set.roles;
+  const areas = set.accessAreas;
   const levels = getRoleAccessLevels(role);
 
   return (
@@ -72,9 +88,9 @@ export function YourAccessCard({ role }: { role: UserRole }) {
 
 export function RoleAccessMatrix() {
   const { t } = useLanguage();
-  const set = (t.modules as Record<string, Record<string, string>>).settings;
-  const roles = (t.modules as Record<string, Record<string, Record<string, string>>>).settings.roles;
-  const areas = (t.modules as Record<string, Record<string, string>>).settings.accessAreas;
+  const set = settingsCopy(t);
+  const roles = set.roles;
+  const areas = set.accessAreas;
 
   return (
     <Card>
@@ -120,10 +136,11 @@ export function RoleAccessMatrix() {
 
 export function RoleInviteHint({ role }: { role: UserRole }) {
   const { t } = useLanguage();
-  const roles = (t.modules as Record<string, Record<string, Record<string, string>>>).settings.roles;
+  const set = settingsCopy(t);
+  const roles = set.roles;
   const levels = getRoleAccessLevels(role);
-  const areas = (t.modules as Record<string, Record<string, string>>).settings.accessAreas;
-  const access = (t.modules as Record<string, Record<string, string>>).settings.accessLevels;
+  const areas = set.accessAreas;
+  const access = set.accessLevels;
 
   const highlights = ROLE_ACCESS_AREAS.filter((area) => levels[area] !== 'none');
 
@@ -146,6 +163,6 @@ export function RoleInviteHint({ role }: { role: UserRole }) {
 }
 
 export function roleLabel(role: string, t: ReturnType<typeof useLanguage>['t']): string {
-  const roles = (t.modules as Record<string, Record<string, Record<string, string>>>).settings.roles;
+  const roles = settingsCopy(t).roles;
   return roles[role as UserRole]?.label ?? role;
 }
