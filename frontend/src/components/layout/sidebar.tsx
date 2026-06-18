@@ -102,7 +102,7 @@ export function Sidebar() {
       </nav>
 
       <div className={cn('border-t border-border p-3', collapsed && 'px-2')}>
-        {!collapsed && <LanguageSwitcher />}
+        <LanguageSwitcher collapsed={collapsed} compact />
         <button
           type="button"
           onClick={() => setCollapsed((c) => !c)}

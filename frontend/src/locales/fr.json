@@ -411,6 +411,7 @@
       "title": "Paramètres",
       "subtitle": "Profil d'entreprise, accès équipe et plan comptable.",
       "tabProfile": "Profil",
+      "tabAccess": "Accès",
       "tabEntities": "Entités",
       "tabCompany": "Entreprise",
       "tabTeam": "Équipe",
@@ -462,7 +463,21 @@
       "entitiesCreated": "Entité créée",
       "entitiesPermissionHint": "Basculez entre les entités ici. Votre rôle détermine ce que vous pouvez modifier dans Paramètres → Équipe pour chaque entité.",
       "entitiesViewerHint": "Accès lecture seule",
-      "teamRoleHint": "Modifiez les rôles de l'entité active. Basculez d'abord d'entité, puis mettez à jour les permissions dans cet onglet."
+      "teamRoleHint": "Modifiez les rôles de l'entité active. Basculez d'abord d'entité, puis mettez à jour les permissions dans cet onglet.",
+      "accessMatrixAdminOnly": "La matrice complète des rôles est réservée aux administrateurs.",
+      "yourAccessTitle": "Votre accès",
+      "yourAccessSubtitle": "Vous êtes connecté en tant que",
+      "accessMatrixTitle": "Guide des rôles et accès",
+      "accessMatrixSubtitle": "Ce que chaque rôle peut faire en trésorerie, imports, scénarios et administration.",
+      "accessLevels": { "full": "Complet", "edit": "Modification", "view": "Lecture", "none": "Aucun" },
+      "accessAreas": { "treasury": "Trésorerie", "uploads": "Imports", "scenarios": "Scénarios", "ai": "AI CFO", "administration": "Administration" },
+      "roles": {
+        "owner": { "label": "Propriétaire", "summary": "Contrôle total de l'espace de travail, de l'équipe et des paramètres." },
+        "admin": { "label": "Administrateur", "summary": "Gère l'équipe, les paramètres, les imports et les données de trésorerie." },
+        "member": { "label": "Membre", "summary": "Utilise les modules de trésorerie et importe des données." },
+        "viewer": { "label": "Observateur", "summary": "Accès en lecture seule aux tableaux de bord et analyses." },
+        "uploader": { "label": "Importateur", "summary": "Import de fichiers uniquement — pas de tableaux de bord ni paramètres." }
+      }
     }
   },
   "onboarding": {

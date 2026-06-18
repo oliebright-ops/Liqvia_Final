@@ -411,6 +411,7 @@
       "title": "Configuración",
       "subtitle": "Perfil de empresa, acceso del equipo y plan de cuentas.",
       "tabProfile": "Perfil",
+      "tabAccess": "Acceso",
       "tabEntities": "Entidades",
       "tabCompany": "Empresa",
       "tabTeam": "Equipo",
@@ -462,7 +463,21 @@
       "entitiesCreated": "Entidad creada",
       "entitiesPermissionHint": "Cambie entre entidades aquí. Su rol controla lo que puede modificar en Ajustes → Equipo para cada entidad.",
       "entitiesViewerHint": "Acceso de solo lectura",
-      "teamRoleHint": "Cambie los roles de la entidad activa. Primero cambie de entidad y luego actualice los permisos en esta pestaña."
+      "teamRoleHint": "Cambie los roles de la entidad activa. Primero cambie de entidad y luego actualice los permisos en esta pestaña.",
+      "accessMatrixAdminOnly": "La matriz completa de roles solo es visible para administradores.",
+      "yourAccessTitle": "Su acceso",
+      "yourAccessSubtitle": "Ha iniciado sesión como",
+      "accessMatrixTitle": "Guía de roles y acceso",
+      "accessMatrixSubtitle": "Qué puede hacer cada rol en tesorería, cargas, escenarios y administración.",
+      "accessLevels": { "full": "Completo", "edit": "Edición", "view": "Vista", "none": "Ninguno" },
+      "accessAreas": { "treasury": "Tesorería", "uploads": "Cargas", "scenarios": "Escenarios", "ai": "AI CFO", "administration": "Administración" },
+      "roles": {
+        "owner": { "label": "Propietario", "summary": "Control total del espacio de trabajo, equipo y configuración." },
+        "admin": { "label": "Administrador", "summary": "Gestiona equipo, configuración, cargas y datos de tesorería." },
+        "member": { "label": "Miembro", "summary": "Opera módulos de tesorería y carga datos." },
+        "viewer": { "label": "Observador", "summary": "Solo lectura de paneles y análisis." },
+        "uploader": { "label": "Cargador", "summary": "Solo carga de archivos — sin paneles ni configuración." }
+      }
     }
   },
   "onboarding": {

@@ -412,6 +412,7 @@
       "title": "Settings",
       "subtitle": "Company profile, team access, and chart of accounts.",
       "tabProfile": "Profile",
+      "tabAccess": "Access",
       "tabEntities": "Entities",
       "tabCompany": "Company",
       "tabTeam": "Team",
@@ -463,7 +464,47 @@
       "entitiesCreated": "Entity created",
       "entitiesPermissionHint": "Switch between entities here. Your role controls what you can change in Settings → Team for each entity.",
       "entitiesViewerHint": "Read-only access",
-      "teamRoleHint": "Change roles for the active entity. Switch entity first, then update permissions in this tab."
+      "teamRoleHint": "Change roles for the active entity. Switch entity first, then update permissions in this tab.",
+      "accessMatrixAdminOnly": "The full role matrix is only visible to administrators.",
+      "yourAccessTitle": "Your access",
+      "yourAccessSubtitle": "You are signed in as",
+      "accessMatrixTitle": "Role access guide",
+      "accessMatrixSubtitle": "What each role can do across treasury, uploads, scenarios, and administration.",
+      "accessLevels": {
+        "full": "Full",
+        "edit": "Edit",
+        "view": "View",
+        "none": "None"
+      },
+      "accessAreas": {
+        "treasury": "Treasury",
+        "uploads": "Uploads",
+        "scenarios": "Scenarios",
+        "ai": "AI CFO",
+        "administration": "Administration"
+      },
+      "roles": {
+        "owner": {
+          "label": "Owner",
+          "summary": "Full control over the workspace, team, and settings."
+        },
+        "admin": {
+          "label": "Admin",
+          "summary": "Manage team, settings, uploads, and treasury data."
+        },
+        "member": {
+          "label": "Member",
+          "summary": "Operate treasury modules and upload data."
+        },
+        "viewer": {
+          "label": "Viewer",
+          "summary": "Read-only access to dashboards and analysis."
+        },
+        "uploader": {
+          "label": "Uploader",
+          "summary": "Upload files only — no treasury dashboards or settings."
+        }
+      }
     }
   },
   "onboarding": {
