@@ -25,6 +25,7 @@ import {
   buildTemplateSampleCsv,
   buildTemplateSampleXlsx,
   getTemplateSampleFileName,
+  MAX_UPLOAD_FILE_BYTES,
   spreadsheetToCsvString,
   UPLOAD_TEMPLATES,
   UPLOAD_TEMPLATE_TYPES,
@@ -37,6 +38,11 @@ import { WorkspaceGuard } from '../auth/workspace.guard';
 import { ImportUploadDto, ValidateUploadDto } from '../dto/upload.dto';
 import { UploadActiveDataService } from './upload-active-data.service';
 import { UploadImportService } from './upload-import.service';
+import {
+  assertUploadCsvContent,
+  assertUploadFileSize,
+  sanitizeUploadFileName,
+} from './upload-content.util';
 import { UploadValidationService } from './upload-validation.service';
 
 @ApiTags('Uploads')
@@ -155,10 +161,11 @@ export class UploadController {
   @ApiOperation({ summary: 'Validate and import spreadsheet rows into the database' })
   @ApiOkResponse({ description: 'Import batch summary; triggers forecast recalculation' })
   importBody(@CurrentUser() user: AuthUser, @Body() body: ImportUploadDto) {
+    const csvContent = assertUploadCsvContent(body.csvContent);
     return this.imports.importCsv({
       templateType: body.templateType,
-      csvContent: body.csvContent,
-      fileName: body.fileName,
+      csvContent,
+      fileName: sanitizeUploadFileName(body.fileName, 'upload.csv'),
       companyId: user.companyId!,
       companyCurrency: body.companyCurrency,
     });
@@ -180,19 +187,21 @@ export class UploadController {
     },
   })
   @ApiOperation({ summary: 'Validate an uploaded CSV or Excel file (multipart)' })
-  @UseInterceptors(FileInterceptor('file'))
+  @UseInterceptors(
+    FileInterceptor('file', {
+      limits: { fileSize: MAX_UPLOAD_FILE_BYTES },
+    }),
+  )
   validateFile(
     @UploadedFile() file: Express.Multer.File | undefined,
     @Body('templateType') templateTypeRaw: string,
     @Body('companyCurrency') companyCurrency?: string,
   ) {
-    if (!file?.buffer) {
-      throw new BadRequestException('Spreadsheet file is required (field name: file)');
-    }
+    assertUploadFileSize(file?.buffer?.byteLength ?? file?.size);
     const templateType = parseTemplateType(templateTypeRaw);
     let csvContent: string;
     try {
-      csvContent = spreadsheetToCsvString(file.buffer, file.originalname);
+      csvContent = spreadsheetToCsvString(file!.buffer, file!.originalname);
     } catch (err) {
       throw new BadRequestException(
         err instanceof Error ? err.message : 'Could not read spreadsheet file',
@@ -206,11 +215,9 @@ export class UploadController {
     csvContent: string,
     companyCurrency?: string,
   ) {
-    if (!csvContent?.trim()) {
-      throw new BadRequestException('Spreadsheet content is empty');
-    }
+    const content = assertUploadCsvContent(csvContent);
 
-    const result = this.validation.validate(templateType, csvContent, { companyCurrency });
+    const result = this.validation.validate(templateType, content, { companyCurrency });
 
     if (!result.valid) {
       return {

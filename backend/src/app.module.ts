@@ -1,4 +1,6 @@
 import { Module } from '@nestjs/common';
+import { APP_GUARD } from '@nestjs/core';
+import { ThrottlerGuard, ThrottlerModule } from '@nestjs/throttler';
 import { AuthModule } from './auth/auth.module';
 import { HealthController } from './health/health.controller';
 import { PrismaModule } from './prisma/prisma.module';
@@ -17,6 +19,11 @@ import { FreeCashModule } from './free-cash/free-cash.module';
 
 @Module({
   imports: [
+    ThrottlerModule.forRoot([
+      { name: 'default', ttl: 60_000, limit: 120 },
+      { name: 'auth', ttl: 60_000, limit: 10 },
+      { name: 'demo', ttl: 60_000, limit: 3 },
+    ]),
     PrismaModule,
     AuthModule,
     OnboardingModule,
@@ -33,5 +40,6 @@ import { FreeCashModule } from './free-cash/free-cash.module';
     AiModule,
   ],
   controllers: [HealthController],
+  providers: [{ provide: APP_GUARD, useClass: ThrottlerGuard }],
 })
 export class AppModule {}

@@ -1,5 +1,6 @@
 import { parseCsv } from '../csv/parse-csv';
 import { getFutureWeekPeriods, getPastWeekPeriods } from '../rolling-budget';
+import { MAX_UPLOAD_CSV_CHARS, MAX_UPLOAD_ROWS } from './upload-limits';
 import type { UploadTemplateType, UploadValidationError } from './types';
 import { UPLOAD_TEMPLATES } from './templates';
 import {
@@ -150,6 +151,15 @@ export function validateUpload<T = unknown>(
 ): UploadValidationResult<T> {
   const template = UPLOAD_TEMPLATES[templateType];
   const errors: UploadValidationError[] = [];
+
+  if (csvContent.length > MAX_UPLOAD_CSV_CHARS) {
+    return buildValidationFailure(templateType, [
+      {
+        message: `File exceeds maximum upload size (${MAX_UPLOAD_CSV_CHARS} characters)`,
+      },
+    ]);
+  }
+
   const parsed = parseCsv(csvContent);
 
   if (parsed.headers.length === 0) {
@@ -161,6 +171,12 @@ export function validateUpload<T = unknown>(
 
   if (parsed.rows.length === 0) {
     errors.push({ message: 'File must contain at least one data row' });
+  }
+
+  if (parsed.rows.length > MAX_UPLOAD_ROWS) {
+    errors.push({
+      message: `File exceeds maximum of ${MAX_UPLOAD_ROWS} data rows`,
+    });
   }
 
   if (errors.length > 0) {

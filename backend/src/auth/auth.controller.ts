@@ -1,5 +1,6 @@
 import { Body, Controller, Get, Post } from '@nestjs/common';
 import { ApiOperation, ApiTags } from '@nestjs/swagger';
+import { Throttle } from '@nestjs/throttler';
 import { AuthService } from './auth.service';
 import { CurrentUser } from './current-user.decorator';
 import { Public } from './decorators';
@@ -12,6 +13,7 @@ export class AuthController {
   constructor(private readonly auth: AuthService) {}
 
   @Public()
+  @Throttle({ auth: { limit: 5, ttl: 60_000 } })
   @Post('register')
   @ApiOperation({ summary: 'Register a new user account (company setup happens in onboarding)' })
   register(@Body() body: RegisterDto) {
@@ -19,6 +21,7 @@ export class AuthController {
   }
 
   @Public()
+  @Throttle({ auth: { limit: 10, ttl: 60_000 } })
   @Post('login')
   @ApiOperation({ summary: 'Login with email and password' })
   login(@Body() body: LoginDto) {
@@ -26,6 +29,7 @@ export class AuthController {
   }
 
   @Public()
+  @Throttle({ auth: { limit: 5, ttl: 60_000 } })
   @Post('forgot-password')
   @ApiOperation({
     summary: 'Request a password reset email (always returns the same message)',
@@ -35,6 +39,7 @@ export class AuthController {
   }
 
   @Public()
+  @Throttle({ auth: { limit: 10, ttl: 60_000 } })
   @Post('reset-password')
   @ApiOperation({ summary: 'Set a new password using a reset token' })
   resetPassword(@Body() body: ResetPasswordDto) {
@@ -42,6 +47,7 @@ export class AuthController {
   }
 
   @Public()
+  @Throttle({ demo: { limit: 3, ttl: 60_000 } })
   @Post('demo-guest')
   @ApiOperation({
     summary: 'Start a read-only demo session without registering',

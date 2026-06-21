@@ -14,9 +14,7 @@ FROM deps AS build
 COPY packages/shared packages/shared
 COPY frontend frontend
 ARG NEXT_PUBLIC_API_URL
-ARG NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY
 ENV NEXT_PUBLIC_API_URL=$NEXT_PUBLIC_API_URL
-ENV NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY=$NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY
 RUN pnpm --filter @liqvia2/shared build \
   && pnpm --filter @liqvia2/frontend build
 

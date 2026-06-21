@@ -35,7 +35,7 @@ export class MailService {
     const transporter = this.getTransporter();
 
     if (!transporter) {
-      this.logger.warn(`SMTP not configured. Password reset link for ${to}: ${resetUrl}`);
+      this.logger.warn(`SMTP not configured. Password reset requested for ${to} (link omitted from logs).`);
       return false;
     }
 

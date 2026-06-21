@@ -1,3 +1,5 @@
+import { sanitizeSpreadsheetCellValue } from '../spreadsheet/sanitize-cell';
+
 export interface ParsedCsv {
   headers: string[];
   rows: Record<string, string>[];
@@ -19,7 +21,7 @@ export function parseCsv(content: string): ParsedCsv {
   const rows = records.slice(1).map((cells) => {
     const row: Record<string, string> = {};
     headers.forEach((header, i) => {
-      row[header] = (cells[i] ?? '').trim();
+      row[header] = sanitizeSpreadsheetCellValue((cells[i] ?? '').trim());
     });
     return row;
   });

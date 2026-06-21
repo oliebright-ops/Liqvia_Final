@@ -1,5 +1,6 @@
 import { Body, Controller, Get, Post } from '@nestjs/common';
 import { ApiOperation, ApiTags } from '@nestjs/swagger';
+import { Throttle } from '@nestjs/throttler';
 import { CurrentUser } from '../auth/current-user.decorator';
 import { SkipCompanyAccess } from '../auth/decorators';
 import { AuthUser } from '../auth/auth.types';
@@ -27,6 +28,7 @@ export class OnboardingController {
   }
 
   @Post('demo-mode')
+  @Throttle({ demo: { limit: 3, ttl: 60_000 } })
   @ApiOperation({ summary: 'Enter demo mode with pre-populated sample data' })
   demoMode(@CurrentUser() user: AuthUser) {
     return this.onboarding.enableDemoMode(user);

@@ -5,6 +5,7 @@ import type { Express } from 'express';
 import { AppModule } from './app.module';
 import { runMigrations } from './run-migrations';
 import { runDemoSeedOnStartup } from './demo/demo-seed.runner';
+import { applySecurityMiddleware } from './security/apply-security-middleware';
 import { setupSwagger } from './setup-swagger';
 
 export interface NestAppOptions {
@@ -33,6 +34,8 @@ export async function createNestApplication(
   const app = await NestFactory.create(AppModule, {
     logger: embedded ? ['error', 'warn'] : undefined,
   });
+
+  applySecurityMiddleware(app);
 
   if (migrate) {
     await runDemoSeedOnStartup(app);

@@ -7,6 +7,7 @@ import {
 import { UserRole } from '@prisma/client';
 import * as bcrypt from 'bcryptjs';
 import { DEFAULT_DEMO_COMPANY_ID } from '@liqvia2/shared';
+import { isDemoGuestEnabled } from '../demo/demo-access';
 import { PrismaService } from '../prisma/prisma.service';
 import { TreasuryEngineService } from '../treasury/treasury-engine.service';
 import { AuthService } from '../auth/auth.service';
@@ -74,6 +75,10 @@ export class OnboardingService {
   }
 
   async enableDemoMode(user: AuthUser): Promise<AuthResponse> {
+    if (!isDemoGuestEnabled()) {
+      throw new ForbiddenException('Demo access is currently unavailable');
+    }
+
     const demo = await this.prisma.company.findUnique({
       where: { id: DEFAULT_DEMO_COMPANY_ID },
     });

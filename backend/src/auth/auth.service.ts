@@ -2,6 +2,7 @@ import { createHash, randomBytes } from 'node:crypto';
 import {
   BadRequestException,
   ConflictException,
+  ForbiddenException,
   Injectable,
   NotFoundException,
   UnauthorizedException,
@@ -10,6 +11,7 @@ import { JwtService } from '@nestjs/jwt';
 import { UserRole } from '@prisma/client';
 import { DEFAULT_DEMO_COMPANY_ID } from '@liqvia2/shared';
 import * as bcrypt from 'bcryptjs';
+import { isDemoGuestEnabled } from '../demo/demo-access';
 import { PrismaService } from '../prisma/prisma.service';
 import { AuthResponse, AuthUser, JwtPayload } from './auth.types';
 import { ForgotPasswordDto, LoginDto, RegisterDto, ResetPasswordDto } from './dto/auth.dto';
@@ -81,6 +83,10 @@ export class AuthService {
   }
 
   async createDemoGuest(): Promise<AuthResponse> {
+    if (!isDemoGuestEnabled()) {
+      throw new ForbiddenException('Demo access is currently unavailable');
+    }
+
     const demo = await this.prisma.company.findUnique({
       where: { id: DEFAULT_DEMO_COMPANY_ID },
     });

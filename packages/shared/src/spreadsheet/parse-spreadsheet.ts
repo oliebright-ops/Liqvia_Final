@@ -1,4 +1,10 @@
 import * as XLSX from 'xlsx';
+import {
+  MAX_UPLOAD_COLUMNS,
+  MAX_UPLOAD_FILE_BYTES,
+  MAX_UPLOAD_ROWS,
+  formatBytesLimit,
+} from '../uploads/upload-limits';
 
 const EXCEL_EXTENSIONS = ['.xlsx', '.xls'] as const;
 
@@ -26,6 +32,12 @@ function toUint8Array(input: ArrayBuffer | Uint8Array): Uint8Array {
 }
 
 function excelBufferToCsv(bytes: Uint8Array): string {
+  if (bytes.byteLength > MAX_UPLOAD_FILE_BYTES) {
+    throw new Error(
+      `Excel file is too large (maximum ${formatBytesLimit(MAX_UPLOAD_FILE_BYTES)})`,
+    );
+  }
+
   let workbook: XLSX.WorkBook;
   try {
     workbook = XLSX.read(bytes, { type: 'array', raw: false, cellDates: false });
@@ -39,9 +51,28 @@ function excelBufferToCsv(bytes: Uint8Array): string {
   }
 
   const sheet = workbook.Sheets[sheetName];
+  const ref = sheet['!ref'];
+  if (ref) {
+    const range = XLSX.utils.decode_range(ref);
+    const rowCount = range.e.r - range.s.r + 1;
+    const colCount = range.e.c - range.s.c + 1;
+    if (rowCount > MAX_UPLOAD_ROWS + 1) {
+      throw new Error(`Excel file exceeds maximum of ${MAX_UPLOAD_ROWS} data rows`);
+    }
+    if (colCount > MAX_UPLOAD_COLUMNS) {
+      throw new Error(`Excel file exceeds maximum of ${MAX_UPLOAD_COLUMNS} columns`);
+    }
+  }
+
   const csv = XLSX.utils.sheet_to_csv(sheet, { blankrows: false });
   if (!csv.trim()) {
     throw new Error('Excel worksheet is empty');
+  }
+
+  if (csv.length > MAX_UPLOAD_FILE_BYTES) {
+    throw new Error(
+      `Converted spreadsheet is too large (maximum ${formatBytesLimit(MAX_UPLOAD_FILE_BYTES)})`,
+    );
   }
 
   return csv;

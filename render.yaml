@@ -28,6 +28,8 @@ services:
         generateValue: true
       - key: JWT_EXPIRES_IN
         value: 7d
+      - key: DEMO_GUEST_ENABLED
+        value: "true"
       # Set to your public URL after first deploy, e.g. https://liqvia2.onrender.com
       - key: APP_URL
         sync: false
