@@ -590,6 +590,7 @@
     "done": {
       "title": "Настройка завершена",
       "subtitle": "Ваша казначейская панель готова. Мы сгенерировали начальный прогноз денежных потоков.",
+      "goUploads": "Открыть центр загрузки",
       "goDashboard": "Перейти к панели"
     },
     "nav": {
@@ -619,6 +620,14 @@
     "selectTemplateHint": "У каждого шаблона строгие названия столбцов и правила валидации.",
     "columns": "столбцов",
     "downloadTemplate": "Скачать образец CSV",
+    "downloadTemplateCsv": "Скачать шаблон CSV",
+    "downloadTemplateExcel": "Скачать шаблон Excel",
+    "templatesSectionTitle": "Скачать шаблоны",
+    "templatesSectionHint": "Используйте эти CSV или Excel файлы как основу. Заголовки столбцов должны совпадать точно.",
+    "templatesCollapsedHint": "Нажмите, чтобы развернуть CSV и Excel шаблоны для всех типов данных.",
+    "templatesExpandedTitle": "Все шаблоны загрузки",
+    "templatesCount": "{count} типов",
+    "templatesWelcomeBadge": "Начните здесь",
     "uploadFile": "Загрузить файл",
     "requiredColumns": "Обязательные столбцы",
     "dropzone": "Нажмите для выбора CSV или Excel",

@@ -590,6 +590,7 @@
     "done": {
       "title": "You're all set",
       "subtitle": "Your treasury workspace is ready. We've generated your initial cash forecast.",
+      "goUploads": "Open upload center",
       "goDashboard": "Go to dashboard"
     },
     "nav": {
@@ -619,6 +620,14 @@
     "selectTemplateHint": "Each template has strict column names and validation rules.",
     "columns": "columns",
     "downloadTemplate": "Download sample CSV",
+    "downloadTemplateCsv": "Download CSV template",
+    "downloadTemplateExcel": "Download Excel template",
+    "templatesSectionTitle": "Download templates",
+    "templatesSectionHint": "Use these CSV or Excel files as starting points. Column headers must match exactly.",
+    "templatesCollapsedHint": "Click to expand CSV and Excel templates for every data type.",
+    "templatesExpandedTitle": "All upload templates",
+    "templatesCount": "{count} types",
+    "templatesWelcomeBadge": "Start here",
     "uploadFile": "Upload file",
     "requiredColumns": "Required columns",
     "dropzone": "Click to select a CSV or Excel file",

@@ -2,11 +2,12 @@
 
 import { useCallback, useEffect, useState } from 'react';
 import { UPLOAD_TEMPLATES, UploadTemplateType, UPLOAD_FILE_ACCEPT, validateUpload } from '@liqvia2/shared';
-import { apiGet, apiPost, apiUrl } from '@/lib/api';
+import { apiGet, apiPost } from '@/lib/api';
 import { readUploadFile } from '@/lib/read-upload-file';
 import { notifyWorkspaceRefresh } from '@/lib/workspace-refresh';
 import { useTranslations } from '@/lib/i18n';
 import { OnboardingNav } from '../onboarding-nav';
+import { downloadTemplateSample } from '@/components/uploads/upload-template-library';
 
 type UploadBatch = {
   id: string;
@@ -107,16 +108,25 @@ export function UploadStep({
                 <p className="text-xs text-slate-500">
                   {done ? t('onboarding.upload.completed') : t('onboarding.upload.pending')}
                 </p>
+                <p className="mt-1 text-xs text-slate-600">
+                  {t('upload.requiredColumns')}: {meta.headers.join(', ')}
+                </p>
               </div>
               <div className="flex flex-wrap gap-2">
-                <a
-                  href={apiUrl(`/uploads/templates/${type}/sample`)}
-                  target="_blank"
-                  rel="noreferrer"
+                <button
+                  type="button"
                   className="rounded-md border border-slate-600 px-3 py-1.5 text-xs font-medium text-slate-300 hover:border-slate-500"
+                  onClick={() => void downloadTemplateSample(type, 'csv')}
                 >
-                  {t('onboarding.upload.downloadTemplate')}
-                </a>
+                  {t('upload.downloadTemplateCsv')}
+                </button>
+                <button
+                  type="button"
+                  className="rounded-md border border-slate-600 px-3 py-1.5 text-xs font-medium text-slate-300 hover:border-slate-500"
+                  onClick={() => void downloadTemplateSample(type, 'xlsx')}
+                >
+                  {t('upload.downloadTemplateExcel')}
+                </button>
                 <label className="cursor-pointer rounded-md bg-slate-700 px-3 py-1.5 text-xs font-medium text-white hover:bg-slate-600">
                   {busy ? '…' : t('onboarding.upload.uploadFile')}
                   <input

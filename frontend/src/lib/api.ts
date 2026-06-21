@@ -92,3 +92,34 @@ export async function apiDelete<T>(path: string): Promise<T> {
   });
   return parseResponse<T>(res);
 }
+
+function fileNameFromContentDisposition(header: string | null, fallback: string): string {
+  if (!header) return fallback;
+  const match = header.match(/filename="([^"]+)"/);
+  return match?.[1] ?? fallback;
+}
+
+/** Download a protected file endpoint (plain links cannot send the JWT from localStorage). */
+export async function downloadAuthenticatedFile(
+  path: string,
+  fallbackFileName: string,
+): Promise<void> {
+  const res = await apiFetch(path, { headers: authHeaders() });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    throw new Error(
+      typeof err.message === 'string' ? err.message : `Download failed (${res.status})`,
+    );
+  }
+  const blob = await res.blob();
+  const fileName = fileNameFromContentDisposition(
+    res.headers.get('Content-Disposition'),
+    fallbackFileName,
+  );
+  const url = URL.createObjectURL(blob);
+  const anchor = document.createElement('a');
+  anchor.href = url;
+  anchor.download = fileName;
+  anchor.click();
+  URL.revokeObjectURL(url);
+}

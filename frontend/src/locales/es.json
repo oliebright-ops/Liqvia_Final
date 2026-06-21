@@ -563,6 +563,7 @@
     "done": {
       "title": "Todo listo",
       "subtitle": "Su espacio de tesorería está preparado. Hemos generado su previsión de caja inicial.",
+      "goUploads": "Abrir centro de cargas",
       "goDashboard": "Ir al panel"
     },
     "nav": {
@@ -592,6 +593,14 @@
     "selectTemplateHint": "Cada plantilla tiene nombres de columna estrictos y reglas de validación.",
     "columns": "columnas",
     "downloadTemplate": "Descargar CSV de ejemplo",
+    "downloadTemplateCsv": "Descargar plantilla CSV",
+    "downloadTemplateExcel": "Descargar plantilla Excel",
+    "templatesSectionTitle": "Descargar plantillas",
+    "templatesSectionHint": "Use estos archivos CSV o Excel como punto de partida. Los encabezados deben coincidir exactamente.",
+    "templatesCollapsedHint": "Haga clic para ver plantillas CSV y Excel de cada tipo de datos.",
+    "templatesExpandedTitle": "Todas las plantillas de carga",
+    "templatesCount": "{count} tipos",
+    "templatesWelcomeBadge": "Empiece aquí",
     "uploadFile": "Subir archivo",
     "requiredColumns": "Columnas requeridas",
     "dropzone": "Haga clic para seleccionar un archivo CSV o Excel",

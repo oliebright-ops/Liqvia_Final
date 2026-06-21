@@ -5,6 +5,7 @@ import {
   Get,
   Param,
   Post,
+  Query,
   Res,
   UploadedFile,
   UseGuards,
@@ -20,11 +21,10 @@ import {
   ApiTags,
 } from '@nestjs/swagger';
 import type { Response } from 'express';
-import { createReadStream, existsSync } from 'fs';
-import { join } from 'path';
 import {
-  getFutureWeekPeriods,
-  getPastWeekPeriods,
+  buildTemplateSampleCsv,
+  buildTemplateSampleXlsx,
+  getTemplateSampleFileName,
   spreadsheetToCsvString,
   UPLOAD_TEMPLATES,
   UPLOAD_TEMPLATE_TYPES,
@@ -50,7 +50,7 @@ export class UploadController {
 
   @Get('templates')
   @Permissions('uploads:read')
-  @ApiOperation({ summary: 'List CSV upload templates and required column headers' })
+  @ApiOperation({ summary: 'List upload templates and required column headers' })
   listTemplates() {
     return UPLOAD_TEMPLATE_TYPES.map((type) => {
       const t = UPLOAD_TEMPLATES[type];
@@ -59,44 +59,41 @@ export class UploadController {
         label: t.label,
         headers: t.headers,
         samplePath: `/api/uploads/templates/${t.type}/sample`,
+        sampleXlsxPath: `/api/uploads/templates/${t.type}/sample?format=xlsx`,
       };
     });
   }
 
   @Get('templates/:type/sample')
   @Permissions('uploads:read')
-  @ApiOperation({ summary: 'Download sample CSV for a template type' })
+  @ApiOperation({ summary: 'Download sample CSV or Excel template for a data type' })
   @ApiParam({ name: 'type', enum: UPLOAD_TEMPLATE_TYPES })
-  downloadSample(@Param('type') type: string, @Res() res: Response) {
+  downloadSample(
+    @Param('type') type: string,
+    @Query('format') format: string | undefined,
+    @Res() res: Response,
+  ) {
     const templateType = parseTemplateType(type);
-    const template = UPLOAD_TEMPLATES[templateType];
+    const asOfDate = new Date().toISOString().slice(0, 10);
+    const wantsXlsx = format?.toLowerCase() === 'xlsx';
 
+    if (wantsXlsx) {
+      const buffer = buildTemplateSampleXlsx(templateType, asOfDate);
+      const fileName = getTemplateSampleFileName(templateType, 'xlsx');
+      res.setHeader(
+        'Content-Type',
+        'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+      );
+      res.setHeader('Content-Disposition', `attachment; filename="${fileName}"`);
+      res.send(Buffer.from(buffer));
+      return;
+    }
+
+    const csv = buildTemplateSampleCsv(templateType, asOfDate);
+    const fileName = getTemplateSampleFileName(templateType, 'csv');
     res.setHeader('Content-Type', 'text/csv');
-    res.setHeader('Content-Disposition', `attachment; filename="${template.sampleFileName}"`);
-
-    if (
-      templateType === 'weekly_actuals' ||
-      templateType === 'prior_period_budget' ||
-      templateType === 'budget'
-    ) {
-      const asOfDate = new Date().toISOString().slice(0, 10);
-      res.send(buildPastWeekSampleCsv(templateType, getPastWeekPeriods(asOfDate)));
-      return;
-    }
-
-    if (templateType === 'rolling_budget') {
-      const asOfDate = new Date().toISOString().slice(0, 10);
-      res.send(buildFutureWeekSampleCsv(getFutureWeekPeriods(asOfDate)));
-      return;
-    }
-
-    const filePath = join(__dirname, '..', '..', '..', 'samples', template.sampleFileName);
-
-    if (!existsSync(filePath)) {
-      throw new BadRequestException(`Sample file not found for ${templateType}`);
-    }
-
-    createReadStream(filePath).pipe(res);
+    res.setHeader('Content-Disposition', `attachment; filename="${fileName}"`);
+    res.send(csv);
   }
 
   @Post('validate')
@@ -227,41 +224,6 @@ export class UploadController {
       summary: `${result.rowCount} row(s) validated successfully.`,
     };
   }
-}
-
-function buildPastWeekSampleCsv(
-  templateType: 'weekly_actuals' | 'prior_period_budget' | 'budget',
-  periods: string[],
-): string {
-  const template = UPLOAD_TEMPLATES[templateType];
-  const lines = [template.headers.join(',')];
-  for (const period of periods) {
-    if (templateType === 'weekly_actuals') {
-      lines.push(`${period},revenue,,24000`);
-      lines.push(`${period},payroll,5000,10800`);
-      lines.push(`${period},expenses,,7900`);
-    } else if (templateType === 'budget') {
-      lines.push(`${period},revenue,4000,25000,operating`);
-      lines.push(`${period},payroll,5000,11000,operating`);
-      lines.push(`${period},expenses,,8000,operating`);
-    } else {
-      lines.push(`${period},revenue,4000,25000`);
-      lines.push(`${period},payroll,5000,11000`);
-      lines.push(`${period},expenses,,8000`);
-    }
-  }
-  return `${lines.join('\n')}\n`;
-}
-
-function buildFutureWeekSampleCsv(periods: string[]): string {
-  const template = UPLOAD_TEMPLATES.rolling_budget;
-  const lines = [template.headers.join(',')];
-  for (const period of periods) {
-    lines.push(`${period},revenue,4000,26000`);
-    lines.push(`${period},payroll,5000,11200`);
-    lines.push(`${period},expenses,,8200`);
-  }
-  return `${lines.join('\n')}\n`;
 }
 
 function parseTemplateType(value: string): UploadTemplateType {

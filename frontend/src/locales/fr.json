@@ -563,6 +563,7 @@
     "done": {
       "title": "Tout est prêt",
       "subtitle": "Votre espace de travail de trésorerie est prêt. Nous avons généré votre prévision de trésorerie initiale.",
+      "goUploads": "Ouvrir le centre d'import",
       "goDashboard": "Aller au tableau de bord"
     },
     "nav": {
@@ -592,6 +593,14 @@
     "selectTemplateHint": "Chaque modèle a des noms de colonnes stricts et des règles de validation.",
     "columns": "colonnes",
     "downloadTemplate": "Télécharger un CSV d'exemple",
+    "downloadTemplateCsv": "Télécharger le modèle CSV",
+    "downloadTemplateExcel": "Télécharger le modèle Excel",
+    "templatesSectionTitle": "Télécharger les modèles",
+    "templatesSectionHint": "Utilisez ces fichiers CSV ou Excel comme point de départ. Les en-têtes de colonnes doivent correspondre exactement.",
+    "templatesCollapsedHint": "Cliquez pour afficher les modèles CSV et Excel pour chaque type de données.",
+    "templatesExpandedTitle": "Tous les modèles d'import",
+    "templatesCount": "{count} types",
+    "templatesWelcomeBadge": "Commencer ici",
     "uploadFile": "Importer un fichier",
     "requiredColumns": "Colonnes obligatoires",
     "dropzone": "Cliquez pour sélectionner un fichier CSV ou Excel",

@@ -8,6 +8,7 @@ import { AuthResponse, OnboardingContext } from '@/lib/auth-types';
 import { useAuth } from '@/lib/auth-context';
 import { useLocale, useTranslations } from '@/lib/i18n';
 import { createInitialOnboardingState } from '@/lib/onboarding-state';
+import { markUploadCenterWelcome } from '@/lib/upload-templates-preference';
 import { OnboardingShell } from './onboarding-shell';
 import { WelcomeStep } from './steps/welcome-step';
 import { SelectCompanyStep } from './steps/select-company-step';
@@ -122,6 +123,7 @@ export function OnboardingWizard() {
     try {
       await apiPost('/onboarding/complete', {});
       await refreshUser();
+      markUploadCenterWelcome();
       goTo('done');
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to complete setup');

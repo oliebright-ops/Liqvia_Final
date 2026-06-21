@@ -1,6 +1,7 @@
 'use client';
 
 import { useCallback, useEffect, useState } from 'react';
+import { useSearchParams } from 'next/navigation';
 import {
   UPLOAD_TEMPLATES,
   UploadTemplateType,
@@ -8,7 +9,7 @@ import {
   UPLOAD_FILE_ACCEPT,
   validateUpload,
 } from '@liqvia2/shared';
-import { apiGet, apiPost, apiUrl } from '@/lib/api';
+import { apiGet, apiPost } from '@/lib/api';
 import { readUploadFile } from '@/lib/read-upload-file';
 import { useAuth } from '@/lib/auth-context';
 import { notifyWorkspaceRefresh } from '@/lib/workspace-refresh';
@@ -19,6 +20,10 @@ import { Alert } from '@/components/ui/alert';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import {
+  downloadTemplateSample,
+} from '@/components/uploads/upload-template-library';
+import { UploadTemplatesPanel } from '@/components/uploads/upload-templates-panel';
 
 type UploadBatchSummary = {
   id: string;
@@ -51,6 +56,8 @@ const TEMPLATE_TYPES = (Object.keys(UPLOAD_TEMPLATES) as UploadTemplateType[]).f
 
 export function UploadCenter() {
   const t = useTranslations();
+  const searchParams = useSearchParams();
+  const welcomeFromUrl = searchParams.get('welcome') === '1';
   const { can } = useAuth();
   const canUpload = can('uploads:write');
   const canWipe = can('settings:admin');
@@ -179,8 +186,8 @@ export function UploadCenter() {
     }
   };
 
-  const downloadSample = () => {
-    window.open(apiUrl(`/uploads/templates/${templateType}/sample`), '_blank');
+  const downloadSample = (format: 'csv' | 'xlsx') => {
+    void downloadTemplateSample(templateType, format);
   };
 
   const confirmImport = async () => {
@@ -282,6 +289,8 @@ export function UploadCenter() {
         </Alert>
       )}
 
+      <UploadTemplatesPanel forceInitialOpen={welcomeFromUrl} />
+
       <Card>
         <CardHeader>
           <CardTitle>{t('upload.rollingTitle')}</CardTitle>
@@ -338,8 +347,11 @@ export function UploadCenter() {
               })}
             </div>
             <div className="flex flex-wrap gap-3">
-              <Button type="button" variant="outline" onClick={downloadSample}>
-                {t('upload.downloadTemplate')}
+              <Button type="button" variant="outline" onClick={() => downloadSample('csv')}>
+                {t('upload.downloadTemplateCsv')}
+              </Button>
+              <Button type="button" variant="outline" onClick={() => downloadSample('xlsx')}>
+                {t('upload.downloadTemplateExcel')}
               </Button>
             </div>
           </CardContent>
