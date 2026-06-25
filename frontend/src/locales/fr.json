@@ -72,6 +72,53 @@
         "cashPosition": "Position de trésorerie en direct",
         "liquidityAlerts": "Alertes de liquidité",
         "cashRunway": "Autonomie de trésorerie en semaines"
+      },
+      "forecastMethodology": {
+        "eyebrow": "Méthodologie de prévision",
+        "headline": "Prévisions de trésorerie sur 13 semaines — transparentes",
+        "intro": "Liqvia construit votre prévision à partir des mêmes données clients, fournisseurs, banque et actuals hebdomadaires que votre équipe finance utilise déjà.",
+        "stepLabel": "Étape {step}",
+        "howItWorks": {
+          "title": "Comment les prévisions sont générées",
+          "body": "Chaque import actualise un modèle hebdomadaire à partir de votre trésorerie d'ouverture.",
+          "b1": "Point de départ : trésorerie d'ouverture (soldes bancaires) et ageing créances/dettes importés.",
+          "b2": "Encaissements aux échéances créances, décaissements aux échéances dettes — semaine par semaine.",
+          "b3": "Burn rolling des actuals récents, puis recalcul de l'autonomie et du statut de liquidité."
+        },
+        "assumptions": {
+          "title": "Hypothèses de prévision",
+          "body": "Hypothèses alignées sur les pratiques de trésorerie PME, visibles dans le produit.",
+          "b1": "Créances en retard : encaissement en semaine 1 ; les autres suivent leurs échéances.",
+          "b2": "Dettes selon la priorité fournisseur — paie et taxes avant dépenses flexibles.",
+          "b3": "Avec actuals hebdomadaires : extension via moyenne récente (4 semaines par défaut)."
+        },
+        "accuracy": {
+          "title": "Précision et validation",
+          "body": "Nous privilégions l'explicabilité plutôt que des scores opaques.",
+          "b1": "Règles clés couvertes par des tests unitaires à exemples numériques fixes.",
+          "b2": "Comparez prévision et réel dans Budget vs Actual avec budget et actuals importés.",
+          "b3": "Scénarios pour stress-test — et backtest in-app sur Cash Forecast après import d'actuals hebdo."
+        }
+      },
+      "scenarioExamples": {
+        "eyebrow": "Modélisation de scénarios",
+        "headline": "Répondre au « et si ? » en langage simple",
+        "intro": "Stress-testez votre prévision de base avec des curseurs — sans reconstruire Excel.",
+        "sliderHint": "Dans Scénarios : « {label} » ou ajustez les curseurs.",
+        "ctaApp": "Ouvrir Scénarios",
+        "ctaSignup": "Se connecter pour lancer le vôtre",
+        "revenue_drop_20": {
+          "question": "Et si le chiffre d'affaires baisse de 20 % ?",
+          "model": "Liqvia réduit les encaissements attendus de 20 % et recalcule trésorerie de clôture et autonomie à 13 semaines."
+        },
+        "hire_three": {
+          "question": "Et si nous embauchons 3 personnes ?",
+          "model": "Modélisez l'embauche comme hausse de masse salariale — p. ex. +12 % — et voyez l'autonomie restante."
+        },
+        "payments_slow_15": {
+          "question": "Et si les clients paient 15 jours plus tard ?",
+          "model": "Liqvia décale les dates d'encaissement de 15 jours et montre le trou de trésorerie."
+        }
       }
     },
     "signedIn": {
@@ -107,7 +154,57 @@
     "locking": "Verrouillage…",
     "versionLocked": "Version verrouillée active",
     "lockedVersion": "Affichage de la version verrouillée",
-    "liveVersion": "Affichage de la prévision en direct"
+    "liveVersion": "Affichage de la prévision en direct",
+    "assumptionsPanel": {
+      "title": "Hypothèses de prévision",
+      "subtitle": "Comment cette prévision est construite — mêmes règles que la méthodologie.",
+      "expand": "Afficher",
+      "collapse": "Masquer",
+      "stepLabel": "Étape {step}",
+      "howItWorks": {
+        "title": "Génération de la prévision",
+        "body": "Chaque import actualise un modèle hebdomadaire depuis la trésorerie d'ouverture.",
+        "b1": "Départ des soldes et de l'aging CR/CP importé.",
+        "b2": "Encaissements aux échéances clients ; décaissements fournisseurs.",
+        "b3": "Burn glissant depuis les actuals hebdo et recalcul du runway."
+      },
+      "assumptions": {
+        "title": "Hypothèses clés",
+        "body": "Pratique trésorerie PME standard.",
+        "b1": "Créances en retard en semaine 1 ; le reste aux échéances.",
+        "b2": "Paiements priorisés (paie et taxes en premier).",
+        "b3": "Actuals hebdo avec moyenne récente (4 semaines par défaut)."
+      },
+      "accuracy": {
+        "title": "Précision et backtest",
+        "body": "Métriques historiques lorsque suffisamment d'actuals hebdo existent.",
+        "b1": "Backtest net cash : moyenne des semaines passées vs net réel.",
+        "b2": "MAPE budget : budget antérieur vs actuals sur 14 semaines.",
+        "b3": "Carte backtest ci-dessous après quelques semaines d'actuals."
+      }
+    },
+    "backtest": {
+      "title": "Backtest historique",
+      "subtitle": "Dans quelle mesure une moyenne mobile aurait prédit le net cash hebdo récent.",
+      "quality_insufficient": "Données insuffisantes",
+      "quality_partial": "Historique partiel",
+      "quality_good": "Échantillon fiable",
+      "insufficientHint": "Importez des actuals hebdo (et budget antérieur pour le MAPE) pour débloquer les métriques.",
+      "netWeeks": "Semaines de backtest",
+      "netWeeksHint": "Moyenne mobile sur {weeks} semaines",
+      "netError": "Erreur nette moyenne",
+      "netErrorHint": "Écart absolu moyen vs net cash réel",
+      "netErrorPct": "Erreur nette moyenne %",
+      "netErrorPctHint": "Erreur en % lorsque le net cash est non nul",
+      "budgetErrorPct": "MAPE budget",
+      "budgetErrorPctHint": "Sur {count} lignes budget vs actual sur 14 semaines",
+      "notAvailable": "—",
+      "recentWeeks": "Échantillon récent",
+      "colPeriod": "Semaine",
+      "colPredicted": "Net prévu",
+      "colActual": "Net réel",
+      "colError": "Erreur"
+    }
   },
   "budget": {
     "pageSubtitle": "Analyse des écarts par catégorie budgétaire.",
@@ -352,7 +449,26 @@
     "deltaW13": "Variation de la trésorerie semaine 13",
     "scenarioRunway": "Autonomie du scénario",
     "chartTitle": "Comparaison des projections sur 13 semaines",
-    "failed": "Échec de l'exécution du scénario"
+    "failed": "Échec de l'exécution du scénario",
+    "readOnly": "Accès en lecture seule aux scénarios.",
+    "presetSectionTitle": "Scénarios rapides",
+    "presetSectionHint": "Questions PME concrètes — cliquez pour charger les curseurs, puis exécutez.",
+    "presets": {
+      "revenue_drop_20": "CA −20 %",
+      "hire_three": "3 embauches (~12 % masse salariale)",
+      "payments_slow_15": "Paiements +15 jours"
+    },
+    "headcountCalc": {
+      "title": "Calculateur effectifs → paie",
+      "subtitle": "Convertissez embauches et salaire en % d'augmentation de la masse salariale.",
+      "hires": "Nouvelles embauches",
+      "salary": "Salaire annuel par personne",
+      "teamSize": "Taille actuelle de l'équipe",
+      "usingPayrollData": "Masse salariale annuelle estimée depuis vos actuals : {amount}.",
+      "usingTeamSize": "Ratio effectifs (pas d'actuals paie) — équipe de {size}.",
+      "resultLabel": "Hausse de la paie :",
+      "apply": "Appliquer au curseur"
+    }
   },
   "ai": {
     "title": "Analyse AI CFO",

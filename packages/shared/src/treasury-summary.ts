@@ -11,6 +11,7 @@ import {
   type ReceivableMetricInput,
 } from './dashboard-metrics';
 import { buildForecastModel, ForecastModelResult } from './forecast-model';
+import { computeForecastBacktest, type ForecastBacktestResult } from './forecast-backtest';
 import { buildFreeCashReport, mergeFreeCashAlerts } from './free-cash';
 import { clampForecastHorizon, DEFAULT_FORECAST_HORIZON } from './treasury';
 import type { LiquidityStatus, TreasuryAlert, WeeklyForecastLine } from './treasury';
@@ -50,6 +51,7 @@ export interface SummaryReport {
   };
   forecast: WeeklyForecastLine[];
   forecastModel: ForecastModelResult;
+  forecastBacktest: ForecastBacktestResult;
   budgetVsActual: {
     totalBudget: number;
     totalActual: number;
@@ -198,6 +200,13 @@ export function buildTreasurySummary(raw: TreasuryRawSnapshot): SummaryReport {
     raw.currency,
   );
 
+  const forecastBacktest = computeForecastBacktest({
+    asOfDate: raw.asOfDate,
+    lookbackWeeks: raw.forecastLookbackWeeks ?? 4,
+    weeklyActuals: raw.weeklyActuals,
+    budgetVarianceLines: raw.budgetVsActual.lines,
+  });
+
   const summary: SummaryReport = {
     companyId: raw.companyId,
     companyName: raw.companyName,
@@ -225,6 +234,7 @@ export function buildTreasurySummary(raw: TreasuryRawSnapshot): SummaryReport {
     },
     forecast,
     forecastModel,
+    forecastBacktest,
     budgetVsActual: raw.budgetVsActual,
     kpis: {
       ...raw.kpis,

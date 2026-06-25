@@ -5,11 +5,13 @@ import { apiPost } from '@/lib/api';
 import { useAuth } from '@/lib/auth-context';
 import { useDashboard } from '@/hooks/use-dashboard';
 import { ScenarioComparison, formatMoney } from '@/lib/dashboard-types';
+import { DEFAULT_SCENARIO_VARS, SCENARIO_PRESETS } from '@/lib/scenario-presets';
+import { HeadcountPayrollCalculator } from '@/components/treasury/headcount-payroll-calculator';
 import { ScenarioProjectionChart } from '@/components/charts/scenario-projection-chart';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { PageHeader } from './page-header';
-import { useLanguage } from '@/lib/i18n';
+import { useLanguage, useTranslations } from '@/lib/i18n';
 
 const SLIDERS = [
   { key: 'revenueDeclinePercent', labelKey: 'revenueDecline', max: 100 },
@@ -21,17 +23,17 @@ const SLIDERS = [
 export function ScenariosPage() {
   const { can } = useAuth();
   const { t } = useLanguage();
+  const translate = useTranslations();
   const chart = t.chart as Record<string, string>;
   const scenarioT = t.scenario as Record<string, string>;
   const nav = t.nav as Record<string, string>;
   const dash = t.dashboard as Record<string, string>;
   const { data } = useDashboard();
-  const [vars, setVars] = useState({
-    revenueDeclinePercent: 10,
-    payrollIncreasePercent: 5,
-    receivableDelayDays: 14,
-    expenseGrowthPercent: 5,
-  });
+  const [vars, setVars] = useState(DEFAULT_SCENARIO_VARS);
+  const [activePreset, setActivePreset] = useState<string | null>(null);
+  const [headcountHires, setHeadcountHires] = useState(3);
+  const [headcountSalary, setHeadcountSalary] = useState(45000);
+  const [headcountTeamSize, setHeadcountTeamSize] = useState(25);
   const [result, setResult] = useState<ScenarioComparison | null>(null);
   const [running, setRunning] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -72,6 +74,52 @@ export function ScenariosPage() {
             <CardDescription>{scenarioT.subtitle}</CardDescription>
           </CardHeader>
           <CardContent className="space-y-5">
+            <div>
+              <p className="text-xs font-medium text-muted-foreground">
+                {scenarioT.presetSectionTitle}
+              </p>
+              <p className="mt-1 text-xs text-muted-foreground">{scenarioT.presetSectionHint}</p>
+              <div className="mt-3 flex flex-wrap gap-2">
+                {SCENARIO_PRESETS.map((preset) => (
+                  <button
+                    key={preset.id}
+                    type="button"
+                    onClick={() => {
+                      setVars(preset.vars);
+                      setActivePreset(preset.id);
+                      setResult(null);
+                      if (preset.id === 'hire_three') {
+                        setHeadcountHires(3);
+                        setHeadcountSalary(45000);
+                        setHeadcountTeamSize(25);
+                      }
+                    }}
+                    className={`rounded-lg border px-3 py-2 text-left text-xs transition-colors ${
+                      activePreset === preset.id
+                        ? 'border-primary bg-primary/10 text-primary'
+                        : 'border-border bg-card hover:border-primary/40'
+                    }`}
+                  >
+                    <span className="block font-medium">
+                      {translate(`scenario.presets.${preset.id}`)}
+                    </span>
+                  </button>
+                ))}
+              </div>
+            </div>
+            <HeadcountPayrollCalculator
+              data={data}
+              hires={headcountHires}
+              annualSalary={headcountSalary}
+              teamSize={headcountTeamSize}
+              onHiresChange={setHeadcountHires}
+              onSalaryChange={setHeadcountSalary}
+              onTeamSizeChange={setHeadcountTeamSize}
+              onApplyPercent={(percent) => {
+                setActivePreset(null);
+                setVars((v) => ({ ...v, payrollIncreasePercent: percent }));
+              }}
+            />
             <div className="grid gap-5 sm:grid-cols-2">
               {SLIDERS.map((s) => (
                 <label key={s.key} className="block">
@@ -86,7 +134,10 @@ export function ScenariosPage() {
                     min={0}
                     max={s.max}
                     value={vars[s.key as keyof typeof vars]}
-                    onChange={(e) => setVars((v) => ({ ...v, [s.key]: Number(e.target.value) }))}
+                    onChange={(e) => {
+                      setActivePreset(null);
+                      setVars((v) => ({ ...v, [s.key]: Number(e.target.value) }));
+                    }}
                     className="mt-2 w-full accent-primary"
                   />
                 </label>

@@ -72,6 +72,53 @@
         "cashPosition": "Live cash position",
         "liquidityAlerts": "Liquidity alerts",
         "cashRunway": "Cash runway in weeks"
+      },
+      "forecastMethodology": {
+        "eyebrow": "Forecast methodology",
+        "headline": "Transparent 13-week cash forecasts — not a black box",
+        "intro": "Liqvia builds your forecast from the same AR, AP, bank, and weekly actual data your finance team already maintains. Every rule is documented, testable, and visible in the app.",
+        "stepLabel": "Step {step}",
+        "howItWorks": {
+          "title": "How forecasts are generated",
+          "body": "Each upload refreshes a rolling weekly cash model tied to your company’s opening balance.",
+          "b1": "Start from opening cash (bank balances) and your uploaded AR/AP ageing.",
+          "b2": "Schedule inflows on receivable due dates and outflows on payable due dates, week by week.",
+          "b3": "Layer in rolling burn from recent weekly actuals, then recalculate runway and liquidity status."
+        },
+        "assumptions": {
+          "title": "Forecast assumptions",
+          "body": "Assumptions follow standard SME treasury practice and match what you see in the product.",
+          "b1": "Overdue receivables are assumed to collect in week 1; future items follow stated due dates.",
+          "b2": "Payables respect supplier priority — payroll and tax before flexible suppliers.",
+          "b3": "When uploaded, weekly actuals extend the forecast using a recent-week average (default 4 weeks)."
+        },
+        "accuracy": {
+          "title": "Accuracy & validation",
+          "body": "We focus on explainability and continuous improvement — not opaque accuracy claims.",
+          "b1": "Core treasury rules are covered by automated unit tests with fixed numeric examples.",
+          "b2": "Upload prior-period budget and weekly actuals to compare forecast drivers vs reality in Budget vs Actual.",
+          "b3": "Use Scenarios to stress-test assumptions — and check the in-app backtest on Cash Forecast once weekly actuals are uploaded."
+        }
+      },
+      "scenarioExamples": {
+        "eyebrow": "Scenario modelling",
+        "headline": "Answer “what if?” in plain English",
+        "intro": "Stress-test your baseline forecast with sliders — no spreadsheet rebuild. Start from real SME questions, then see week-13 cash and runway side by side.",
+        "sliderHint": "In Scenarios: apply “{label}” or fine-tune the sliders yourself.",
+        "ctaApp": "Open Scenarios",
+        "ctaSignup": "Sign in to run yours",
+        "revenue_drop_20": {
+          "question": "What if revenue drops 20%?",
+          "model": "Liqvia reduces expected receivable collections by 20% and recalculates your 13-week closing cash and runway."
+        },
+        "hire_three": {
+          "question": "What if we hire 3 people?",
+          "model": "Model hiring as a payroll cost increase — e.g. +12% payroll on your current team — and see how many weeks of cash remain."
+        },
+        "payments_slow_15": {
+          "question": "What if customer payments slow by 15 days?",
+          "model": "Liqvia shifts receivable collection dates 15 days later, showing the cash gap before collections land."
+        }
       }
     },
     "signedIn": {
@@ -107,7 +154,57 @@
     "locking": "Locking…",
     "versionLocked": "Locked version active",
     "lockedVersion": "Viewing locked version",
-    "liveVersion": "Viewing live forecast"
+    "liveVersion": "Viewing live forecast",
+    "assumptionsPanel": {
+      "title": "Forecast assumptions",
+      "subtitle": "How this forecast is built — same rules as the marketing methodology page.",
+      "expand": "Show details",
+      "collapse": "Hide details",
+      "stepLabel": "Step {step}",
+      "howItWorks": {
+        "title": "How forecasts are generated",
+        "body": "Each upload refreshes a rolling weekly cash model tied to your opening balance.",
+        "b1": "Start from opening cash and uploaded AR/AP ageing.",
+        "b2": "Schedule inflows on receivable due dates and outflows on payable due dates.",
+        "b3": "Layer rolling burn from recent weekly actuals, then recalculate runway."
+      },
+      "assumptions": {
+        "title": "Key assumptions",
+        "body": "Standard SME treasury rules — visible and testable.",
+        "b1": "Overdue receivables collect in week 1; future items follow due dates.",
+        "b2": "Payables respect supplier priority (payroll and tax first).",
+        "b3": "Weekly actuals extend the forecast using a recent-week average (default 4 weeks)."
+      },
+      "accuracy": {
+        "title": "Accuracy & backtesting",
+        "body": "We show historical error metrics when enough weekly actuals exist.",
+        "b1": "Rolling net-cash backtest compares prior-week averages to actual weekly net cash.",
+        "b2": "Budget variance MAPE uses uploaded prior-period budget vs weekly actuals.",
+        "b3": "See the backtest card below once you have at least a few weeks of actuals."
+      }
+    },
+    "backtest": {
+      "title": "Historical backtest",
+      "subtitle": "How well a simple rolling-average model would have predicted recent weekly net cash.",
+      "quality_insufficient": "Not enough data",
+      "quality_partial": "Partial history",
+      "quality_good": "Reliable sample",
+      "insufficientHint": "Upload weekly actuals (and prior-period budget for variance MAPE) to unlock backtest metrics.",
+      "netWeeks": "Backtest weeks",
+      "netWeeksHint": "Using a {weeks}-week rolling average",
+      "netError": "Mean net error",
+      "netErrorHint": "Average absolute difference vs actual weekly net cash",
+      "netErrorPct": "Mean net error %",
+      "netErrorPctHint": "Percent error where actual net cash was non-zero",
+      "budgetErrorPct": "Budget MAPE",
+      "budgetErrorPctHint": "From {count} budget vs actual lines in the 14-week window",
+      "notAvailable": "—",
+      "recentWeeks": "Recent backtest sample",
+      "colPeriod": "Week",
+      "colPredicted": "Predicted net",
+      "colActual": "Actual net",
+      "colError": "Error"
+    }
   },
   "budget": {
     "pageSubtitle": "Variance analysis across budget categories.",
@@ -353,7 +450,25 @@
     "scenarioRunway": "Scenario runway",
     "chartTitle": "13-week projection comparison",
     "failed": "Scenario run failed",
-    "readOnly": "You have view-only access to scenarios."
+    "readOnly": "You have view-only access to scenarios.",
+    "presetSectionTitle": "Quick-start scenarios",
+    "presetSectionHint": "Real-world questions for SMEs — tap to load sliders, then run.",
+    "presets": {
+      "revenue_drop_20": "Revenue drops 20%",
+      "hire_three": "Hire 3 people (~12% payroll)",
+      "payments_slow_15": "Payments slow 15 days"
+    },
+    "headcountCalc": {
+      "title": "Headcount → payroll calculator",
+      "subtitle": "Convert hires and salary into a payroll increase % for the slider.",
+      "hires": "New hires",
+      "salary": "Annual salary per hire",
+      "teamSize": "Current team size",
+      "usingPayrollData": "Using estimated annual payroll from your weekly actuals: {amount}.",
+      "usingTeamSize": "Using team-size ratio (no payroll actuals found) — team of {size}.",
+      "resultLabel": "Payroll increase:",
+      "apply": "Apply to slider"
+    }
   },
   "ai": {
     "title": "AI CFO Insight",

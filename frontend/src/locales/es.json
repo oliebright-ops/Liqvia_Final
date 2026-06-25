@@ -72,6 +72,53 @@
         "cashPosition": "Posición de caja en vivo",
         "liquidityAlerts": "Alertas de liquidez",
         "cashRunway": "Autonomía de caja en semanas"
+      },
+      "forecastMethodology": {
+        "eyebrow": "Metodología de previsión",
+        "headline": "Previsiones de caja de 13 semanas transparentes",
+        "intro": "Liqvia construye su previsión a partir de los mismos datos de CxC, CxP, banco y actuals semanales que ya mantiene su equipo.",
+        "stepLabel": "Paso {step}",
+        "howItWorks": {
+          "title": "Cómo se generan las previsiones",
+          "body": "Cada carga actualiza un modelo semanal vinculado al saldo inicial de caja.",
+          "b1": "Parte del efectivo inicial (saldos bancarios) y ageing de CxC/CxP cargado.",
+          "b2": "Programa entradas por vencimientos de CxC y salidas por vencimientos de CxP, semana a semana.",
+          "b3": "Añade burn rolling de actuals recientes y recalcula autonomía y liquidez."
+        },
+        "assumptions": {
+          "title": "Supuestos de la previsión",
+          "body": "Supuestos alineados con la práctica de tesorería para pymes.",
+          "b1": "CxC vencida se cobra en la semana 1; el resto según fechas de vencimiento.",
+          "b2": "CxP respeta prioridad de proveedor — nómina e impuestos antes que gastos flexibles.",
+          "b3": "Con actuals semanales cargados, se usa un promedio reciente (4 semanas por defecto)."
+        },
+        "accuracy": {
+          "title": "Precisión y validación",
+          "body": "Priorizamos explicabilidad frente a cifras opacas de precisión.",
+          "b1": "Reglas clave cubiertas por pruebas unitarias con ejemplos numéricos fijos.",
+          "b2": "Compare previsión vs realidad en Presupuesto vs Actual con budget y actuals cargados.",
+          "b3": "Use Escenarios para stress-test — y el backtest in-app en Cash Forecast tras subir actuals semanales."
+        }
+      },
+      "scenarioExamples": {
+        "eyebrow": "Modelización de escenarios",
+        "headline": "Responda al «¿y si…?» en lenguaje claro",
+        "intro": "Stress-test de su previsión base con controles deslizantes — sin reconstruir hojas de cálculo.",
+        "sliderHint": "En Escenarios: aplique «{label}» o ajuste los controles.",
+        "ctaApp": "Abrir Escenarios",
+        "ctaSignup": "Iniciar sesión para ejecutar el suyo",
+        "revenue_drop_20": {
+          "question": "¿Y si los ingresos caen un 20%?",
+          "model": "Liqvia reduce las cobranzas esperadas un 20% y recalcula la caja de cierre y autonomía a 13 semanas."
+        },
+        "hire_three": {
+          "question": "¿Y si contratamos a 3 personas?",
+          "model": "Modele contrataciones como aumento de nómina — p. ej. +12% — y vea cuántas semanas de caja quedan."
+        },
+        "payments_slow_15": {
+          "question": "¿Y si los clientes pagan 15 días más tarde?",
+          "model": "Liqvia retrasa las fechas de cobro 15 días y muestra el hueco de caja."
+        }
       }
     },
     "signedIn": {
@@ -107,7 +154,57 @@
     "locking": "Bloqueando…",
     "versionLocked": "Versión bloqueada activa",
     "lockedVersion": "Viendo versión bloqueada",
-    "liveVersion": "Viendo previsión en vivo"
+    "liveVersion": "Viendo previsión en vivo",
+    "assumptionsPanel": {
+      "title": "Supuestos del forecast",
+      "subtitle": "Cómo se construye esta previsión — mismas reglas que en la metodología.",
+      "expand": "Mostrar",
+      "collapse": "Ocultar",
+      "stepLabel": "Paso {step}",
+      "howItWorks": {
+        "title": "Cómo se genera el forecast",
+        "body": "Cada carga actualiza un modelo semanal desde el saldo inicial.",
+        "b1": "Parte del efectivo y del ageing AR/AP cargado.",
+        "b2": "Entradas por vencimiento de cobros; salidas por pagos.",
+        "b3": "Burn rodante desde actuals semanales y recálculo de runway."
+      },
+      "assumptions": {
+        "title": "Supuestos clave",
+        "body": "Práctica estándar de tesorería para pymes.",
+        "b1": "Cobros vencidos en semana 1; el resto por fecha de vencimiento.",
+        "b2": "Pagos con prioridad (nómina e impuestos primero).",
+        "b3": "Actuals semanales con media reciente (4 semanas por defecto)."
+      },
+      "accuracy": {
+        "title": "Precisión y backtest",
+        "body": "Métricas históricas cuando hay suficientes actuals semanales.",
+        "b1": "Backtest net cash: media previa vs net cash real semanal.",
+        "b2": "MAPE presupuesto: budget previo vs actuals en 14 semanas.",
+        "b3": "Tarjeta de backtest abajo tras unas semanas de actuals."
+      }
+    },
+    "backtest": {
+      "title": "Backtest histórico",
+      "subtitle": "Qué tan bien habría predicho una media móvil el net cash semanal reciente.",
+      "quality_insufficient": "Datos insuficientes",
+      "quality_partial": "Historial parcial",
+      "quality_good": "Muestra fiable",
+      "insufficientHint": "Sube actuals semanales (y budget previo para MAPE) para ver métricas.",
+      "netWeeks": "Semanas de backtest",
+      "netWeeksHint": "Media móvil de {weeks} semanas",
+      "netError": "Error neto medio",
+      "netErrorHint": "Diferencia absoluta media vs net cash real",
+      "netErrorPct": "Error neto medio %",
+      "netErrorPctHint": "Error porcentual cuando el net cash no es cero",
+      "budgetErrorPct": "MAPE presupuesto",
+      "budgetErrorPctHint": "De {count} líneas budget vs actual en 14 semanas",
+      "notAvailable": "—",
+      "recentWeeks": "Muestra reciente",
+      "colPeriod": "Semana",
+      "colPredicted": "Net previsto",
+      "colActual": "Net real",
+      "colError": "Error"
+    }
   },
   "budget": {
     "pageSubtitle": "Análisis de variaciones por categorías presupuestarias.",
@@ -352,7 +449,26 @@
     "deltaW13": "Cambio en caja semana 13",
     "scenarioRunway": "Autonomía del escenario",
     "chartTitle": "Comparación de proyección a 13 semanas",
-    "failed": "Error al ejecutar el escenario"
+    "failed": "Error al ejecutar el escenario",
+    "readOnly": "Acceso de solo lectura a escenarios.",
+    "presetSectionTitle": "Escenarios rápidos",
+    "presetSectionHint": "Preguntas habituales para pymes — toque para cargar controles y ejecutar.",
+    "presets": {
+      "revenue_drop_20": "Ingresos −20%",
+      "hire_three": "3 contrataciones (~12% nómina)",
+      "payments_slow_15": "Pagos +15 días"
+    },
+    "headcountCalc": {
+      "title": "Calculadora headcount → nómina",
+      "subtitle": "Convierte contrataciones y salario en % de aumento de nómina.",
+      "hires": "Nuevas contrataciones",
+      "salary": "Salario anual por persona",
+      "teamSize": "Tamaño actual del equipo",
+      "usingPayrollData": "Nómina anual estimada desde actuals: {amount}.",
+      "usingTeamSize": "Ratio por tamaño de equipo (sin actuals de nómina) — equipo de {size}.",
+      "resultLabel": "Aumento de nómina:",
+      "apply": "Aplicar al slider"
+    }
   },
   "ai": {
     "title": "Asistente CFO con IA",

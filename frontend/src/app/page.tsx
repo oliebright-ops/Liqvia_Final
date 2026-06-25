@@ -7,7 +7,9 @@ import { AppShell } from '@/components/layout/app-shell';
 import { Button } from '@/components/ui/button';
 import { CredibilityBannerSection } from '@/components/home/credibility-banner-section';
 import { DashboardPreviewSection } from '@/components/home/dashboard-preview-section';
+import { ForecastMethodologySection } from '@/components/home/forecast-methodology-section';
 import { HeroCtaSection } from '@/components/home/hero-cta-section';
+import { ScenarioExamplesSection } from '@/components/home/scenario-examples-section';
 import { SecurityTrustSection } from '@/components/home/security-trust-section';
 import { useAuth } from '@/lib/auth-context';
 import { resolvePostAuthPath } from '@/lib/auth-types';
@@ -73,6 +75,9 @@ export default function HomePage() {
         <SecurityTrustSection />
         <CredibilityBannerSection />
       </div>
+
+      <ForecastMethodologySection />
+      <ScenarioExamplesSection />
 
       <ul className="mx-auto mt-8 max-w-lg space-y-2 text-sm text-muted-foreground sm:mt-10">
         {(

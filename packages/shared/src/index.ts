@@ -3,6 +3,8 @@ export * from './permissions';
 export * from './onboarding';
 export * from './treasury';
 export * from './forecast-model';
+export * from './forecast-backtest';
+export * from './scenario-utils';
 export * from './uploads';
 export * from './kpi';
 export * from './treasury-rules';

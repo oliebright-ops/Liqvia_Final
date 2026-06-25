@@ -4,7 +4,9 @@ import { useState } from 'react';
 import { Lock } from 'lucide-react';
 import { apiPost } from '@/lib/api';
 import { useAuth } from '@/lib/auth-context';
-import { useForecastModel } from '@/hooks/use-forecast-model';
+import { useTreasurySummary } from '@/hooks/use-treasury-summary';
+import { ForecastAssumptionsPanel } from '@/components/forecast/forecast-assumptions-panel';
+import { ForecastBacktestCard } from '@/components/forecast/forecast-backtest-card';
 import { ForecastAreaChart } from '@/components/charts/forecast-area-chart';
 import { ForecastGrid } from '@/components/forecast/forecast-grid';
 import { ForecastSummary } from '@/components/forecast/forecast-summary';
@@ -23,7 +25,9 @@ export function CashForecastPage() {
   const empty = t.empty as Record<string, string>;
   const nav = t.nav as Record<string, string>;
   const { user } = useAuth();
-  const { model, currency, loading, refetch } = useForecastModel();
+  const { data: summary, loading, refetch } = useTreasurySummary();
+  const model = summary?.forecastModel ?? null;
+  const currency = summary?.currency ?? 'USD';
   const [locking, setLocking] = useState(false);
   const [lockedActive, setLockedActive] = useState(false);
 
@@ -71,6 +75,12 @@ export function CashForecastPage() {
       </div>
 
       <ForecastSummary model={model} currency={currency} t={t} format={format} />
+
+      <ForecastAssumptionsPanel />
+
+      {summary?.forecastBacktest && (
+        <ForecastBacktestCard backtest={summary.forecastBacktest} currency={currency} />
+      )}
 
       <Card>
         <CardHeader>
