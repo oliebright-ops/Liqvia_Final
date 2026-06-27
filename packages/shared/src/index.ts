@@ -6,6 +6,7 @@ export * from './forecast-model';
 export * from './forecast-diagnostics';
 export * from './forecast-backtest';
 export * from './scenario-utils';
+export * from './scenario-variables';
 export * from './uploads';
 export * from './kpi';
 export * from './treasury-rules';

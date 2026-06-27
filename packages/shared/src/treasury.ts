@@ -84,9 +84,16 @@ export interface ForecastCalculationInput {
 
 export interface ScenarioVariables {
   revenueDeclinePercent: number;
+  revenueGrowthPercent: number;
   payrollIncreasePercent: number;
   receivableDelayDays: number;
+  payableDelayDays: number;
   expenseGrowthPercent: number;
+  taxIncreasePercent: number;
+  oneOffInflowAmount: number;
+  oneOffInflowWeek: number;
+  oneOffOutflowAmount: number;
+  oneOffOutflowWeek: number;
 }
 
 /** Apply scenario sliders to baseline forecast inputs (returns a new input). */
@@ -94,29 +101,85 @@ export function applyScenarioToInput(
   input: ForecastCalculationInput,
   vars: ScenarioVariables,
 ): ForecastCalculationInput {
-  const revenueFactor = 1 - clampPercent(vars.revenueDeclinePercent) / 100;
+  const revenueFactor =
+    (1 - clampPercent(vars.revenueDeclinePercent) / 100) *
+    (1 + clampPercent(vars.revenueGrowthPercent, 50) / 100);
   const payrollFactor = 1 + clampPercent(vars.payrollIncreasePercent) / 100;
   const expenseFactor = 1 + clampPercent(vars.expenseGrowthPercent) / 100;
-  const delayDays = Math.max(0, Math.round(vars.receivableDelayDays));
+  const taxFactor = 1 + clampPercent(vars.taxIncreasePercent) / 100;
+  const arDelayDays = Math.max(0, Math.round(vars.receivableDelayDays));
+  const apDelayDays = Math.max(0, Math.round(vars.payableDelayDays));
+
+  const weeklyAdjustments = mergeWeeklyAdjustments(input.weeklyAdjustments, [
+    {
+      weekIndex: clampWeekIndex(vars.oneOffInflowWeek),
+      inflows: Math.max(0, vars.oneOffInflowAmount),
+    },
+    {
+      weekIndex: clampWeekIndex(vars.oneOffOutflowWeek),
+      outflows: Math.max(0, vars.oneOffOutflowAmount),
+    },
+  ]);
 
   return {
     ...input,
+    weeklyAdjustments,
     receivables: input.receivables.map((r) => ({
+      ...r,
       outstandingAmount: r.outstandingAmount * revenueFactor,
-      invoiceDate: shiftIsoDate(r.invoiceDate, delayDays),
-      dueDate: r.dueDate ? shiftIsoDate(r.dueDate, delayDays) : undefined,
+      invoiceDate: shiftIsoDate(r.invoiceDate, arDelayDays),
+      dueDate: r.dueDate ? shiftIsoDate(r.dueDate, arDelayDays) : undefined,
     })),
     payables: input.payables.map((p) => ({
       ...p,
       outstandingAmount:
-        p.outstandingAmount * (p.supplierPriority === 'payroll' ? payrollFactor : expenseFactor),
+        p.outstandingAmount *
+        (p.supplierPriority === 'payroll'
+          ? payrollFactor
+          : p.supplierPriority === 'tax'
+            ? taxFactor
+            : expenseFactor),
+      dueDate: shiftIsoDate(p.dueDate, apDelayDays),
     })),
   };
 }
 
-function clampPercent(n: number): number {
+function mergeWeeklyAdjustments(
+  existing: ForecastCalculationInput['weeklyAdjustments'],
+  extras: Array<{ weekIndex: number; inflows?: number; outflows?: number }>,
+): ForecastCalculationInput['weeklyAdjustments'] {
+  const map = new Map<number, { inflows: number; outflows: number }>();
+  for (const row of existing ?? []) {
+    map.set(row.weekIndex, {
+      inflows: row.inflows ?? 0,
+      outflows: row.outflows ?? 0,
+    });
+  }
+  for (const extra of extras) {
+    if ((extra.inflows ?? 0) <= 0 && (extra.outflows ?? 0) <= 0) continue;
+    const prev = map.get(extra.weekIndex) ?? { inflows: 0, outflows: 0 };
+    map.set(extra.weekIndex, {
+      inflows: prev.inflows + (extra.inflows ?? 0),
+      outflows: prev.outflows + (extra.outflows ?? 0),
+    });
+  }
+  if (map.size === 0) return existing;
+  return [...map.entries()]
+    .sort(([a], [b]) => a - b)
+    .map(([weekIndex, amounts]) => ({
+      weekIndex,
+      inflows: amounts.inflows > 0 ? amounts.inflows : undefined,
+      outflows: amounts.outflows > 0 ? amounts.outflows : undefined,
+    }));
+}
+
+function clampWeekIndex(week: number): number {
+  return Math.min(DEFAULT_FORECAST_HORIZON, Math.max(1, Math.round(week)));
+}
+
+function clampPercent(n: number, max = 100): number {
   if (Number.isNaN(n)) return 0;
-  return Math.min(Math.max(n, 0), 100);
+  return Math.min(Math.max(n, 0), max);
 }
 
 function shiftIsoDate(iso: string, days: number): string {

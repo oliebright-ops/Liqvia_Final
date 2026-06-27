@@ -4,7 +4,7 @@ import { AuthUser } from '../auth/auth.types';
 import { CurrentUser } from '../auth/current-user.decorator';
 import { Permissions } from '../auth/decorators';
 import { WorkspaceGuard } from '../auth/workspace.guard';
-import { CreateScenarioDto } from '../dto/scenario.dto';
+import { CreateScenarioDto, PreviewScenarioDto } from '../dto/scenario.dto';
 import { ScenarioService } from './scenario.service';
 
 @ApiTags('Scenarios')
@@ -26,6 +26,15 @@ export class ScenarioController {
   @ApiParam({ name: 'companyId', example: 'demo-consulting' })
   listByCompany(@Param('companyId') companyId: string) {
     return this.scenarios.listScenarios(companyId);
+  }
+
+  @Post('preview')
+  @Permissions('scenarios:read')
+  @ApiOperation({
+    summary: 'Preview baseline vs stressed forecast without saving (debounced slider updates)',
+  })
+  preview(@CurrentUser() user: AuthUser, @Body() body: PreviewScenarioDto) {
+    return this.scenarios.previewScenario(user.companyId!, body.variables);
   }
 
   @Post()

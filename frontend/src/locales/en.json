@@ -185,7 +185,7 @@
     },
     "backtest": {
       "title": "Historical backtest",
-      "subtitle": "How well a simple rolling-average model would have predicted recent weekly net cash.",
+      "subtitle": "How well a simple rolling-average model would have predicted recent weekly net cash — this is forecast accuracy vs actuals, not a scenario stress test.",
       "quality_insufficient": "Not enough data",
       "quality_partial": "Partial history",
       "quality_good": "Reliable sample",
@@ -492,28 +492,160 @@
   },
   "scenario": {
     "title": "Scenario modelling",
-    "subtitle": "Adjust the sliders to stress-test your 13-week forecast.",
+    "subtitle": "Stress-test your 13-week forecast with flexible presets, live preview, and saved comparisons.",
     "revenueDecline": "Revenue decline (%)",
+    "revenueGrowth": "Revenue growth (%)",
     "payrollIncrease": "Payroll increase (%)",
     "receivableDelay": "Receivable delay (days)",
+    "payableDelay": "Payable deferral (days)",
     "expenseGrowth": "Expense growth (%)",
+    "taxIncrease": "Tax increase (%)",
+    "oneOffInflow": "One-off inflow (amount)",
+    "oneOffInflowWeek": "Inflow week (1–13)",
+    "oneOffOutflow": "One-off outflow (amount)",
+    "oneOffOutflowWeek": "Outflow week (1–13)",
     "run": "Run scenario",
     "running": "Running…",
+    "previewing": "Recalculating preview…",
+    "previewHint": "Type exact values or use sliders — forecast updates ~0.7s after you stop editing. Save to keep a named scenario.",
+    "save": "Save scenario",
+    "saving": "Saving…",
+    "nameLabel": "Scenario name",
+    "namePlaceholder": "e.g. Q3 pessimistic",
+    "defaultName": "Scenario {date}",
     "resultTitle": "Scenario impact",
+    "resultHint": "Compared to your current baseline forecast (same opening cash and uploaded data).",
     "baselineW13": "Baseline week-13 cash",
     "scenarioW13": "Scenario week-13 cash",
     "deltaW13": "Change in week-13 cash",
     "scenarioRunway": "Scenario runway",
+    "runwayDelta": "Δ {delta} weeks vs baseline",
     "chartTitle": "13-week projection comparison",
+    "compareTitle": "Multi-scenario comparison",
+    "compareHint": "Pin up to two saved scenarios to compare week-13 cash against your current slider preview.",
+    "compareColScenario": "Scenario",
+    "compareCurrent": "Current sliders (preview)",
     "failed": "Scenario run failed",
     "readOnly": "You have view-only access to scenarios.",
-    "presetSectionTitle": "Quick-start scenarios",
-    "presetSectionHint": "Real-world questions for SMEs — tap to load sliders, then run.",
+    "presetSectionHint": "Pick a preset by concern, fine-tune sliders, then save optimistic or pessimistic cases for side-by-side review.",
+    "paramGroups": {
+      "revenue": "Revenue",
+      "collections": "Collections timing",
+      "payables": "Payables & costs",
+      "oneoff": "One-off cash events"
+    },
+    "categories": {
+      "revenue": "Revenue & collections",
+      "payroll": "People & payroll",
+      "costs": "Costs & suppliers",
+      "oneoff": "One-off events",
+      "combined": "Combined stress tests"
+    },
     "presets": {
+      "baseline_clear": "Baseline (no stress)",
       "revenue_drop_20": "Revenue drops 20%",
+      "revenue_growth_10": "Revenue grows 10%",
       "hire_three": "Hire 3 people (~12% payroll)",
       "payments_slow_15": "Payments slow 15 days",
-      "overdue_ar_stress": "Overdue AR +30 days delay"
+      "overdue_ar_stress": "Overdue AR +30 days delay",
+      "double_shock": "Revenue −20% + 15-day delay",
+      "seasonal_slowdown": "Seasonal dip (−10%, +7d)",
+      "hiring_spike": "Hire 5 people (~20% payroll)",
+      "cost_inflation": "Payroll +5%, expenses +10%",
+      "supplier_crunch": "Supplier costs +25%",
+      "defer_ap_30": "Defer payables 30 days",
+      "extend_runway_45": "Defer payables 45 days",
+      "tax_hike_15": "Tax payables +15%",
+      "capex_75k_w4": "Capex €75k in week 4",
+      "funding_100k_w2": "Funding €100k in week 2",
+      "new_office_fitout": "Office fit-out +120k",
+      "optimistic_combo": "Optimistic combo",
+      "combined_pessimistic": "Pessimistic combo",
+      "worst_case_full": "Worst case (full stress)"
+    },
+    "saved": {
+      "title": "Saved scenarios",
+      "subtitle": "Load a prior run or pin up to two for comparison.",
+      "empty": "No saved scenarios yet — adjust sliders and click Save.",
+      "load": "Load",
+      "refresh": "Refresh",
+      "pin": "Pin",
+      "unpin": "Unpin",
+      "pinHint": "Add to comparison table",
+      "pinLimit": "Unpin a scenario first (max 2)",
+      "deltaW13": "Δ week-13 vs current baseline",
+      "varsSummary": "Rev −{revenue}% / +{growth}% · AR +{delay}d · AP +{apDelay}d · payroll +{payroll}% · exp +{expense}%"
+    },
+    "mechanics": {
+      "title": "How scenarios work",
+      "subtitle": "What each control changes, when it applies, and how to read the results.",
+      "recalcTitle": "When does the forecast update?",
+      "recalcBody": "Type values or use sliders — preview recalculates after a short pause (~0.7s). Nothing is saved until you click Save scenario. Baseline forecast on Cash Forecast is never overwritten.",
+      "slidersTitle": "What each parameter changes",
+      "timingLabel": "Timing:",
+      "sliders": {
+        "revenueDecline": {
+          "label": "Revenue decline (%)",
+          "changes": "Scales down the outstanding amount on every open receivable in your AR upload — including overdue invoices counted in week 1.",
+          "timing": "Prospective volume stress on today’s open AR. Does not rewrite historical weekly actuals."
+        },
+        "revenueGrowth": {
+          "label": "Revenue growth (%)",
+          "changes": "Scales up outstanding receivable amounts — useful for optimistic or upsell scenarios.",
+          "timing": "Prospective on open AR only; combines with revenue decline if both are set."
+        },
+        "payrollIncrease": {
+          "label": "Payroll increase (%)",
+          "changes": "Increases outstanding amounts on payables tagged as payroll in your AP upload.",
+          "timing": "Prospective — affects scheduled payroll outflows from today forward. Rolling payroll from weekly actuals is unchanged."
+        },
+        "receivableDelay": {
+          "label": "Receivable delay (days)",
+          "changes": "Shifts invoice and due dates on open receivables forward — collections move into later forecast weeks (similar to slower DSO).",
+          "timing": "Prospective timing shift only; AR amounts stay the same unless revenue decline/growth is also set."
+        },
+        "payableDelay": {
+          "label": "Payable deferral (days)",
+          "changes": "Shifts AP due dates forward — payments move to later weeks (short-term cash relief).",
+          "timing": "Prospective timing shift on open AP; amounts unchanged unless expense/payroll/tax growth is also set."
+        },
+        "expenseGrowth": {
+          "label": "Expense growth (%)",
+          "changes": "Increases outstanding amounts on non-payroll, non-tax payables (suppliers, rent, etc.) in your AP upload.",
+          "timing": "Prospective — scheduled supplier outflows rise. Recurring outflows inferred from weekly actuals are unchanged."
+        },
+        "taxIncrease": {
+          "label": "Tax increase (%)",
+          "changes": "Increases outstanding amounts on payables tagged as tax in your AP upload.",
+          "timing": "Prospective — scheduled tax outflows rise independently of general expense growth."
+        },
+        "oneOffInflow": {
+          "label": "One-off inflow (amount)",
+          "changes": "Adds a lump-sum cash inflow in the chosen forecast week (e.g. equity, grant, asset sale).",
+          "timing": "Single event in week N only; does not repeat."
+        },
+        "oneOffInflowWeek": {
+          "label": "Inflow week (1–13)",
+          "changes": "Selects which forecast week receives the one-off inflow.",
+          "timing": "Week index within the 13-week horizon."
+        },
+        "oneOffOutflow": {
+          "label": "One-off outflow (amount)",
+          "changes": "Adds a lump-sum cash outflow in the chosen week (e.g. capex, acquisition deposit).",
+          "timing": "Single event in week N only; does not repeat."
+        },
+        "oneOffOutflowWeek": {
+          "label": "Outflow week (1–13)",
+          "changes": "Selects which forecast week pays the one-off outflow.",
+          "timing": "Week index within the 13-week horizon."
+        }
+      },
+      "w13Title": "How to read week-13 cash delta",
+      "w13Body": "Week-13 closing cash is the end point of the 13-week horizon using today’s opening cash and uploaded AR/AP. The delta is scenario minus baseline — negative means the stress test leaves you with less cash at the horizon. Runway delta uses the same weekly burn logic as the dashboard.",
+      "unaffectedTitle": "What scenarios do not change",
+      "unaffectedBody": "Uploaded weekly actuals, bank opening balance logic, baseline Cash Forecast records, and historical backtest metrics. Scenarios are a parallel what-if layer.",
+      "backtestTitle": "Backtest vs scenario",
+      "backtestBody": "Historical backtest on Cash Forecast compares past weekly net cash to a simple rolling-average prediction — it measures forecast accuracy, not a scenario outcome. Use scenarios here for forward what-if; use backtest after uploading weekly actuals to judge historical fit."
     },
     "headcountCalc": {
       "title": "Headcount → payroll calculator",

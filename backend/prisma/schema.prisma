@@ -432,9 +432,16 @@ model Scenario {
   companyId               String
   name                    String
   revenueDeclinePercent   Decimal  @default(0) @db.Decimal(5, 2)
+  revenueGrowthPercent    Decimal  @default(0) @db.Decimal(5, 2)
   payrollIncreasePercent  Decimal  @default(0) @db.Decimal(5, 2)
   receivableDelayDays     Int      @default(0)
+  payableDelayDays        Int      @default(0)
   expenseGrowthPercent    Decimal  @default(0) @db.Decimal(5, 2)
+  taxIncreasePercent      Decimal  @default(0) @db.Decimal(5, 2)
+  oneOffInflowAmount      Decimal  @default(0) @db.Decimal(18, 2)
+  oneOffInflowWeek        Int      @default(1)
+  oneOffOutflowAmount     Decimal  @default(0) @db.Decimal(18, 2)
+  oneOffOutflowWeek       Int      @default(1)
   createdAt               DateTime @default(now())
   updatedAt               DateTime @updatedAt
   createdById             String?

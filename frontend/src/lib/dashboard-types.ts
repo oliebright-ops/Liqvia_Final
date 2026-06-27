@@ -1,4 +1,4 @@
-import type { SummaryReport } from '@liqvia2/shared';
+import type { ScenarioVariables, SummaryReport } from '@liqvia2/shared';
 import { formatCurrency } from '@liqvia2/shared';
 
 export type { SummaryReport };
@@ -43,12 +43,7 @@ export interface BudgetVarianceLine {
 export interface ScenarioComparison {
   scenarioId: string;
   name: string;
-  variables: {
-    revenueDeclinePercent: number;
-    payrollIncreasePercent: number;
-    receivableDelayDays: number;
-    expenseGrowthPercent: number;
-  };
+  variables: ScenarioVariables;
   baseline: {
     lines: WeeklyForecastLine[];
     week13ClosingCash: number | null;

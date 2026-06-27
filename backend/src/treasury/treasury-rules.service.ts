@@ -14,9 +14,16 @@ export class TreasuryRulesService {
       liquidityThresholds: LIQUIDITY_THRESHOLDS,
       scenarioVariables: [
         'revenueDeclinePercent',
+        'revenueGrowthPercent',
         'payrollIncreasePercent',
         'receivableDelayDays',
+        'payableDelayDays',
         'expenseGrowthPercent',
+        'taxIncreasePercent',
+        'oneOffInflowAmount',
+        'oneOffInflowWeek',
+        'oneOffOutflowAmount',
+        'oneOffOutflowWeek',
       ],
     };
   }
