@@ -28,6 +28,9 @@ export interface TreasuryAiContext {
   arDue30Days: number | null;
   arDelayed90Days: number | null;
   apOverdue: number;
+  freeAvailableCash?: number;
+  fixedOutflowsHorizon?: number;
+  horizonWeeks?: number;
   topBudgetVariances: Array<{ category: string; variancePercent: number | null }>;
   recentTransactions: Array<{
     date: string;
@@ -95,6 +98,9 @@ export interface QueryAnalysis {
     | 'budget'
     | 'runway'
     | 'payroll'
+    | 'cash_position'
+    | 'risks'
+    | 'expenses'
     | 'general';
   horizonMonths?: number;
   relevantTransactions: TreasuryAiTransaction[];
@@ -168,6 +174,9 @@ export function buildTreasuryContext(dashboard: DashboardPayload): TreasuryAiCon
     arDue30Days: dashboard.risk.arDue30,
     arDelayed90Days: dashboard.risk.arDelayed90,
     apOverdue: dashboard.risk.apOverdue,
+    freeAvailableCash: dashboard.liquidity.freeAvailableCash,
+    fixedOutflowsHorizon: dashboard.liquidity.fixedOutflowsHorizon,
+    horizonWeeks: dashboard.liquidity.horizonWeeks,
     topBudgetVariances: dashboard.budgetVsActual.lines
       .slice()
       .sort((a, b) => Math.abs(b.varianceAmount) - Math.abs(a.varianceAmount))
@@ -218,46 +227,36 @@ export function extractHorizonMonths(q: string): number {
   return 2;
 }
 
-export function analyzeUserQuery(question: string, context: TreasuryAiContext): QueryAnalysis {
+export function analyzeUserQuery(
+  question: string,
+  context: TreasuryAiContext,
+  explicitIntent?: string,
+): QueryAnalysis {
   const q = question.toLowerCase();
-  const matchedTerms = extractSearchTerms(q);
+  const matchedTerms = extractSearchTerms(question);
   const amounts = extractAmounts(q);
   const horizonMonths = extractHorizonMonths(q);
 
   let intent: QueryAnalysis['intent'] = 'general';
-  if (isPayrollQuestion(q)) intent = 'payroll';
+  if (explicitIntent === 'cash_position') intent = 'cash_position';
+  else if (explicitIntent === 'risks') intent = 'risks';
+  else if (explicitIntent === 'expenses') intent = 'expenses';
+  else if (explicitIntent === 'runway') intent = 'runway';
+  else if (explicitIntent === 'receivables') intent = 'receivables';
+  else if (explicitIntent === 'payables') intent = 'payables';
+  else if (explicitIntent === 'budget') intent = 'budget';
+  else if (explicitIntent === 'payroll') intent = 'payroll';
+  else if (isPayrollQuestion(q)) intent = 'payroll';
+  else if (isPayablesQuestion(q)) intent = 'payables';
+  else if (isReceivablesQuestion(q)) intent = 'receivables';
+  else if (isRunwayQuestion(q)) intent = 'runway';
+  else if (isCashPositionQuestion(q)) intent = 'cash_position';
+  else if (isRisksQuestion(q)) intent = 'risks';
+  else if (isExpensesQuestion(q)) intent = 'expenses';
+  else if (isBudgetQuestion(q)) intent = 'budget';
   else if (isTransactionQuestion(q)) intent = 'transaction_lookup';
-  else if (
-    q.includes('outflow') ||
-    q.includes('spent') ||
-    q.includes('expense') ||
-    q.includes('debit')
-  )
-    intent = 'outflow_summary';
-  else if (
-    q.includes('inflow') ||
-    q.includes('receipt') ||
-    q.includes('received') ||
-    q.includes('credit')
-  )
-    intent = 'inflow_summary';
-  else if (
-    q.includes('payable') ||
-    q.includes('supplier') ||
-    q.includes('vendor') ||
-    q.includes('bill')
-  )
-    intent = 'payables';
-  else if (
-    q.includes('receivable') ||
-    q.includes('invoice') ||
-    q.includes('customer') ||
-    q.includes('overdue')
-  )
-    intent = 'receivables';
-  else if (q.includes('budget') || q.includes('actual') || q.includes('variance'))
-    intent = 'budget';
-  else if (q.includes('runway') || q.includes('burn')) intent = 'runway';
+  else if (isOutflowQuestion(q)) intent = 'outflow_summary';
+  else if (isInflowQuestion(q)) intent = 'inflow_summary';
 
   const pool =
     intent === 'outflow_summary'
@@ -290,12 +289,11 @@ export function analyzeUserQuery(question: string, context: TreasuryAiContext): 
 }
 
 function isTransactionQuestion(q: string): boolean {
-  if (isPayrollQuestion(q)) return false;
+  if (isPayrollQuestion(q) || isPayablesQuestion(q) || isReceivablesQuestion(q)) return false;
   return (
     q.includes('outflow') ||
     q.includes('inflow') ||
     q.includes('transaction') ||
-    q.includes('payment') ||
     q.includes('transfer') ||
     q.includes('what is') ||
     q.includes('what was') ||
@@ -305,11 +303,53 @@ function isTransactionQuestion(q: string): boolean {
   );
 }
 
+function isPayablesQuestion(q: string): boolean {
+  return /payable|supplier|vendor|bill|поставщ|кредитор|оплат.*постав|счет.*постав|fournisseur|proveedor/.test(
+    q,
+  );
+}
+
+function isReceivablesQuestion(q: string): boolean {
+  return /receivable|invoice|customer|overdue|дебитор|просроч.*дебитор|клиент.*долг|cr en retard|cobro/.test(
+    q,
+  );
+}
+
+function isRunwayQuestion(q: string): boolean {
+  return /runway|burn|запас.*ден|autonom|горизонт.*кас|autonomía|autonomie/.test(q);
+}
+
+function isCashPositionQuestion(q: string): boolean {
+  return /cash position|summarize.*cash|cash summary|позици.*кас|сводк.*кас|trésorerie|posición.*efectivo/.test(
+    q,
+  );
+}
+
+function isRisksQuestion(q: string): boolean {
+  return /risk|risks|риск|financial risk|should i be aware|опасн|preocup|préoccup/.test(q);
+}
+
+function isExpensesQuestion(q: string): boolean {
+  return /expense|expenses|top \d|spent|outflow|расход|затрат|gasto|dépense|debit/.test(q);
+}
+
+function isBudgetQuestion(q: string): boolean {
+  return /budget|actual|variance|бюджет|отклон|presupuesto|écart/.test(q);
+}
+
+function isOutflowQuestion(q: string): boolean {
+  return /outflow|spent|debit|расход|salida/.test(q) && !isPayablesQuestion(q);
+}
+
+function isInflowQuestion(q: string): boolean {
+  return /inflow|receipt|received|credit|поступ|entrada|encaissement/.test(q);
+}
+
 function extractSearchTerms(q: string): string[] {
   return q
-    .replace(/[^a-z0-9\s£$€.-]/gi, ' ')
+    .replace(/[^\p{L}\p{N}\s£$€.-]/gu, ' ')
     .split(/\s+/)
-    .map((t) => t.trim())
+    .map((t) => t.trim().toLowerCase())
     .filter((t) => t.length >= 3 && !STOP_WORDS.has(t));
 }
 
@@ -534,17 +574,25 @@ export function formatTransactionAnswer(
 
 export const AI_CFO_SYSTEM_PROMPT = `You are AI CFO — the executive treasury intelligence layer for Liqvia.
 
-Your role: answer treasury questions using ONLY the JSON context provided (bank transactions, receivables, payables, budget lines, forecast, alerts).
+Your role: analyze ONLY the JSON treasury context injected with each request (bankTransactions, receivablesDetail, payablesDetail, budgetLines, forecastWeeks, weeklyActuals, alerts, queryAnalysis).
 
 Rules:
-- Never invent figures, counterparties, or transaction purposes.
-- For questions about a specific payment, outflow, inflow, or transaction: search cashTransactions, recentOutflows, recentInflows, and queryAnalysis.relevantTransactions. Cite date, amount, account, and description.
-- If queryAnalysis is present, prioritise its relevantTransactions, relevantPayables, and relevantReceivables.
-- Cross-reference modules: a large outflow may relate to payablesDetail or budgetLines in the same period/category.
-- If no matching row exists, say clearly that the data is not in the workspace and suggest uploading bank transactions or checking Bank Accounts.
-- Use Markdown: bullet lists and short tables where helpful.
-- Tone: calm, precise, executive-friendly.
-- Acknowledge uncertainty where data is incomplete.`;
+1. Never invent figures, counterparties, dates, or transaction purposes.
+2. Every answer must cite at least two specific numbers from the context for the user's company (amounts, dates, counterparties, or counts).
+3. If data is missing for the question, say so explicitly and name which upload is needed (AR ageing, AP ageing, bank transactions, weekly actuals).
+4. One clear insight per response — focus on what is urgent for THIS company, not generic treasury advice.
+5. Recommend one actionable next step tied to cited data (e.g. collect a named overdue invoice).
+6. For transaction questions, search cashTransactions, recentOutflows, recentInflows, and queryAnalysis.relevantTransactions.
+7. If queryAnalysis is present, use its intent and relevantTransactions / relevantPayables / relevantReceivables.
+8. Use Markdown bullet lists. Tone: calm, precise, executive-friendly.
+9. Respond in the user's locale language when locale is provided in the context payload.`;
+
+export function buildSystemPrompt(locale?: string): string {
+  const localeLine = locale
+    ? `\n10. Respond in ${locale === 'ru' ? 'Russian' : locale === 'es' ? 'Spanish' : locale === 'fr' ? 'French' : 'English'}.`
+    : '';
+  return AI_CFO_SYSTEM_PROMPT + localeLine;
+}
 
 export const MAX_CHAT_MESSAGES = 10;
 

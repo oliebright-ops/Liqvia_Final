@@ -19,6 +19,7 @@ export class AiDataService {
   async buildContext(
     companyId: string = DEFAULT_DEMO_COMPANY_ID,
     userQuestion?: string,
+    explicitIntent?: string,
   ): Promise<TreasuryAiContext> {
     const [dashboard, bankAccounts, movements, weeklyActualRows] = await Promise.all([
       this.dashboard.getDashboard(companyId),
@@ -181,7 +182,7 @@ export class AiDataService {
     };
 
     if (userQuestion?.trim()) {
-      enriched.queryAnalysis = analyzeUserQuery(userQuestion, enriched);
+      enriched.queryAnalysis = analyzeUserQuery(userQuestion, enriched, explicitIntent);
     }
 
     return enriched;

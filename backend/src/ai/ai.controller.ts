@@ -20,7 +20,12 @@ export class AiController {
   })
   insight(@CurrentUser() user: AuthUser, @Body() body: unknown) {
     const dto = aiInsightSchema.parse(body);
-    return this.ai.generateInsight(dto.companyId ?? user.companyId!, dto.question);
+    return this.ai.generateInsight(
+      dto.companyId ?? user.companyId!,
+      dto.question,
+      dto.locale,
+      dto.intent,
+    );
   }
 
   @Post('chat')

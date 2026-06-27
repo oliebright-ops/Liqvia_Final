@@ -22,10 +22,10 @@ const QUICK_PROMPT_KEYS = [
 
 export function AiCfoPage() {
   const { user } = useAuth();
-  const { t } = useLanguage();
+  const { t, locale } = useLanguage();
   const ai = t.ai as Record<string, string>;
   const quick = t.aiQuick as Record<string, string>;
-  const { messages, loading, error, send, clear } = useAiChat();
+  const { messages, loading, error, send, clear, lastSource } = useAiChat();
 
   useEffect(() => {
     clear();
@@ -33,11 +33,11 @@ export function AiCfoPage() {
   const [input, setInput] = useState('');
   const endRef = useRef<HTMLDivElement>(null);
 
-  async function submit(text?: string) {
+  async function submit(text?: string, intentKey?: (typeof QUICK_PROMPT_KEYS)[number]) {
     const value = text ?? input;
     if (!value.trim() || loading) return;
     setInput('');
-    await send(value);
+    await send(value, { locale, intent: intentKey });
     endRef.current?.scrollIntoView({ behavior: 'smooth' });
   }
 
@@ -52,7 +52,7 @@ export function AiCfoPage() {
             variant="outline"
             className="px-2 py-1 text-xs"
             disabled={loading}
-            onClick={() => void submit(quick[key])}
+            onClick={() => void submit(quick[key], key)}
           >
             {quick[key]}
           </Button>
@@ -72,7 +72,12 @@ export function AiCfoPage() {
               </Button>
             )}
           </div>
-          <CardDescription>{ai.subtitle}</CardDescription>
+          <CardDescription>
+            {ai.subtitle}
+            {lastSource === 'rule_based' && (
+              <span className="mt-1 block text-[11px] text-muted-foreground">{ai.sourceRule}</span>
+            )}
+          </CardDescription>
         </CardHeader>
         <CardContent className="flex flex-1 flex-col gap-4">
           <div className="flex-1 space-y-4 overflow-y-auto rounded-lg border border-border bg-muted/20 p-4">

@@ -10,9 +10,10 @@ export function useAiChat() {
   const [messages, setMessages] = useState<AiChatMessage[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [lastSource, setLastSource] = useState<AiChatResponse['source'] | null>(null);
 
   const send = useCallback(
-    async (content: string) => {
+    async (content: string, options?: { locale?: string; intent?: string }) => {
       const trimmed = content.trim();
       if (!trimmed) return;
       setLoading(true);
@@ -20,8 +21,13 @@ export function useAiChat() {
       const next = [...messages, { role: 'user' as const, content: trimmed }].slice(-MAX_MESSAGES);
       setMessages(next);
       try {
-        const res = await apiPost<AiChatResponse>('/ai/chat', { messages: next });
+        const res = await apiPost<AiChatResponse>('/ai/chat', {
+          messages: next,
+          locale: options?.locale,
+          intent: options?.intent,
+        });
         setMessages(res.messages.slice(-MAX_MESSAGES));
+        setLastSource(res.source);
         return res;
       } catch (e) {
         setError(e instanceof Error ? e.message : 'Failed to send');
@@ -34,7 +40,10 @@ export function useAiChat() {
     [messages],
   );
 
-  const clear = useCallback(() => setMessages([]), []);
+  const clear = useCallback(() => {
+    setMessages([]);
+    setLastSource(null);
+  }, []);
 
-  return { messages, loading, error, send, clear };
+  return { messages, loading, error, send, clear, lastSource };
 }
