@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { TrendingDown, Users, Clock } from 'lucide-react';
-import { SCENARIO_PRESETS } from '@/lib/scenario-presets';
+import { MARKETING_SCENARIO_PRESETS } from '@/lib/scenario-presets';
 import { useTranslations } from '@/lib/i18n';
 import { Button } from '@/components/ui/button';
 
@@ -30,7 +30,7 @@ export function ScenarioExamplesSection() {
       </div>
 
       <ul className="mt-10 grid gap-5 sm:grid-cols-3">
-        {SCENARIO_PRESETS.map((preset) => {
+        {MARKETING_SCENARIO_PRESETS.map((preset) => {
           const Icon = PRESET_ICONS[preset.id as keyof typeof PRESET_ICONS];
           return (
             <li key={preset.id}>

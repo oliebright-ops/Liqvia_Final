@@ -101,6 +101,7 @@ export class TreasuryDataService {
       outstandingAmount: Number(p.outstandingAmount),
       billDate: p.billDate.toISOString().slice(0, 10),
       dueDate: p.dueDate.toISOString().slice(0, 10),
+      supplierPriority: p.supplierPriority,
     }));
 
     const currentCash = this.kpis.calculateCurrentCash(balances);

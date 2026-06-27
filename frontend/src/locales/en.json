@@ -171,8 +171,8 @@
       "assumptions": {
         "title": "Key assumptions",
         "body": "Standard SME treasury rules — visible and testable.",
-        "b1": "Overdue receivables collect in week 1; future items follow due dates.",
-        "b2": "Payables respect supplier priority (payroll and tax first).",
+          "b1": "Overdue receivables are assumed to collect in week 1 — see Risk insights for exposure; use Scenarios to stress-test delays.",
+          "b2": "Payables respect supplier priority tiers from your AP upload — payroll and tax first.",
         "b3": "Weekly actuals extend the forecast using a recent-week average (default 4 weeks)."
       },
       "accuracy": {
@@ -204,6 +204,62 @@
       "colPredicted": "Predicted net",
       "colActual": "Actual net",
       "colError": "Error"
+    },
+    "riskInsights": {
+      "title": "Forecast risk insights",
+      "subtitle": "Read-only analysis of key assumptions — baseline forecast numbers are unchanged.",
+      "overdueBadge": "Overdue AR exposure",
+      "arTitle": "Receivable collection assumptions",
+      "arBody": "The baseline forecast schedules cash on due dates. Overdue invoices are assumed to collect in week 1, which can be optimistic for construction and other slow-paying sectors.",
+      "overdueWeek1": "Overdue AR in week 1",
+      "overdueWeek1Hint": "{count} overdue invoice(s) forced into week 1",
+      "scheduledOnDue": "AR on due dates",
+      "scheduledOnDueHint": "Not yet overdue — scheduled by due date within the horizon",
+      "weightedExpectation": "Weighted collection (info)",
+      "weightedExpectationHint": "70/20/10 age-weighted view — not used in the baseline forecast",
+      "avgOverdueDays": "Avg days overdue",
+      "avgOverdueDaysHint": "Average lateness of overdue open invoices",
+      "overdueWarning": "If overdue collections slip, up to {amount} may not arrive in week 1. Use Scenarios → receivable delay to stress-test.",
+      "apTitle": "Payable priority breakdown",
+      "apBody": "Supplier Priority from your AP upload (payroll → tax → critical → flexible → non-essential). All payables still schedule on due dates — priority affects scenario stress, not baseline timing.",
+      "colPriority": "Priority tier",
+      "colOutstanding": "Outstanding",
+      "colOverdue": "Overdue",
+      "colHorizon": "In {horizon}w forecast",
+      "deferrableSummary": "Deferrable (flexible + non-essential): {deferrable}. Essential tiers: {essential}.",
+      "payrollGapWarning": "Week-1 payroll due ({payroll}) exceeds opening cash plus week-1 inflows by {gap} — review liquidity.",
+      "burnTitle": "Rolling operating burn",
+      "burnBody": "From weekly actuals using a {weeks}-week lookback (same driver as recurring forecast outflows).",
+      "avgInflows": "Avg weekly inflows",
+      "avgOutflows": "Avg weekly outflows",
+      "burnTrend": "Net trend",
+      "burnTrendHint": "Compares recent half vs earlier half of the lookback window",
+      "trend": {
+        "rising": "Rising",
+        "falling": "Falling",
+        "stable": "Stable",
+        "unknown": "Unknown"
+      },
+      "scenarioCta": "Stress-test collection delays and cost changes in",
+      "priority": {
+        "payroll": "Payroll",
+        "tax": "Tax",
+        "critical": "Critical",
+        "flexible": "Flexible",
+        "non_essential": "Non-essential"
+      }
+    },
+    "freeCashBreakdown": {
+      "title": "Free cash after known outflows",
+      "subtitle": "How the {horizon}-week free cash figure is built from your live forecast.",
+      "explainer": "This is current bank cash minus outflows already modelled in your baseline forecast — not a separate calculation.",
+      "openingCash": "Current cash",
+      "apOutflows": "Scheduled payables (horizon)",
+      "recurringOutflows": "Recurring operating outflows (horizon)",
+      "result": "Free cash after known outflows",
+      "noteAp": "Scheduled payables = AP ageing due dates within the forecast horizon.",
+      "noteRecurring": "Recurring outflows = rolling average from weekly actuals (when uploaded).",
+      "noteNotIncluded": "Not included: unmodelled tax, loan principal, credit lines, or contingency buffers."
     }
   },
   "budget": {
@@ -271,9 +327,9 @@
     "burnPerWeek": "Burn: {amount}/week",
     "infiniteRunway": "∞w",
     "budgetVarianceMtd": "Budget variance (MTD)",
-    "freeAvailableCash": "Free available cash",
-    "freeCashSubtitle": "After {committed} fixed outflows over {horizon}w",
-    "freeCashHint": "Current cash minus cumulative forecast outflows (scheduled payables and recurring expenses) over the selected {horizon}-week horizon.",
+    "freeAvailableCash": "Free cash after known outflows",
+    "freeCashSubtitle": "After {committed} known outflows over {horizon}w",
+    "freeCashHint": "Current cash minus scheduled payables and recurring operating outflows over the selected {horizon}-week horizon. Does not include unmodelled tax, debt, or contingency buffers.",
     "freeCashHintAria": "How free available cash is calculated",
     "horizonLabel": "Forecast horizon",
     "horizonWeeksShort": "Weeks",
@@ -456,7 +512,8 @@
     "presets": {
       "revenue_drop_20": "Revenue drops 20%",
       "hire_three": "Hire 3 people (~12% payroll)",
-      "payments_slow_15": "Payments slow 15 days"
+      "payments_slow_15": "Payments slow 15 days",
+      "overdue_ar_stress": "Overdue AR +30 days delay"
     },
     "headcountCalc": {
       "title": "Headcount → payroll calculator",
@@ -781,6 +838,37 @@
     "inUse": "In use",
     "readOnly": "You can review upload history and templates, but only uploaders and admins can import files.",
     "snapshotTitle": "Historical upload snapshot",
-    "viewActiveData": "View current data in use"
+    "viewActiveData": "View current data in use",
+    "validationSpec": {
+      "title": "Data validation rules",
+      "subtitle": "What we reject on upload — invalid rows block import; duplicates and bad amounts never reach the forecast.",
+      "footer": "Credit memos and future-dated invoices are not yet modelled separately — use positive amounts and correct due dates. Retainage is not a field today; adjust amounts manually if needed.",
+      "rules": {
+        "duplicates": {
+          "title": "Duplicate detection",
+          "body": "AR: duplicate Invoice Number. AP: duplicate Bill Number. Budget/actuals: duplicate Period + Category + Account Code. Bank: duplicate account + date + amount + direction."
+        },
+        "amounts": {
+          "title": "Amount rules",
+          "body": "AR/AP outstanding amounts must be greater than zero. Zero or negative rows are rejected. Weekly actuals may be signed (expenses negative)."
+        },
+        "dates": {
+          "title": "Date rules",
+          "body": "Due date must be on or after invoice/bill date. ISO format YYYY-MM-DD required."
+        },
+        "currency": {
+          "title": "Currency match",
+          "body": "AR, AP, and bank balance rows must match your company currency."
+        },
+        "periodWindow": {
+          "title": "Period windows",
+          "body": "Weekly actuals and prior budget must fall in the past 14 weeks. Rolling budget must fall in the next 13 weeks."
+        },
+        "supplierPriority": {
+          "title": "Supplier priority (AP)",
+          "body": "Required on AP uploads: payroll, tax, critical, flexible, or non-essential. Used in scenario stress and risk breakdown — baseline forecast still schedules by due date."
+        }
+      }
+    }
   }
 }

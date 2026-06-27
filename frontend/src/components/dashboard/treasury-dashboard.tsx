@@ -61,6 +61,8 @@ export function TreasuryDashboard() {
               horizonWeeks: freeCash.horizonWeeks,
               freeAvailableCash: freeCash.freeAvailableCash,
               fixedOutflowsHorizon: freeCash.fixedOutflowsHorizon,
+              apOutflowsHorizon: freeCash.apOutflowsHorizon,
+              recurringOutflowsHorizon: freeCash.recurringOutflowsHorizon,
             },
           }
         : summary;

@@ -12,6 +12,7 @@ import {
 } from './dashboard-metrics';
 import { buildForecastModel, ForecastModelResult } from './forecast-model';
 import { computeForecastBacktest, type ForecastBacktestResult } from './forecast-backtest';
+import { computeForecastDiagnostics, type ForecastDiagnostics } from './forecast-diagnostics';
 import { buildFreeCashReport, mergeFreeCashAlerts } from './free-cash';
 import { clampForecastHorizon, DEFAULT_FORECAST_HORIZON } from './treasury';
 import type { LiquidityStatus, TreasuryAlert, WeeklyForecastLine } from './treasury';
@@ -43,6 +44,8 @@ export interface SummaryReport {
     horizonWeeks: number;
     freeAvailableCash: number;
     fixedOutflowsHorizon: number;
+    apOutflowsHorizon: number;
+    recurringOutflowsHorizon: number;
   };
   risk: {
     arDelayed90: number | null;
@@ -52,6 +55,7 @@ export interface SummaryReport {
   forecast: WeeklyForecastLine[];
   forecastModel: ForecastModelResult;
   forecastBacktest: ForecastBacktestResult;
+  forecastDiagnostics: ForecastDiagnostics;
   budgetVsActual: {
     totalBudget: number;
     totalActual: number;
@@ -91,6 +95,7 @@ export interface TreasuryRawSnapshot {
     dueDate: string;
     outstandingAmount: number;
     billDate: string;
+    supplierPriority?: import('./treasury').ApPaymentPriority;
   }>;
   budgetVsActual: {
     totalBudget: number;
@@ -207,6 +212,18 @@ export function buildTreasurySummary(raw: TreasuryRawSnapshot): SummaryReport {
     budgetVarianceLines: raw.budgetVsActual.lines,
   });
 
+  const week1Inflows = forecastModel.weeks[0]?.forecastInflows ?? 0;
+  const forecastDiagnostics = computeForecastDiagnostics({
+    asOfDate: raw.asOfDate,
+    horizonWeeks,
+    openingCash: cashPosition.totalBalance,
+    receivables: raw.receivables,
+    payables: raw.payables,
+    weeklyActuals: raw.weeklyActuals,
+    forecastLookbackWeeks: raw.forecastLookbackWeeks,
+    week1Inflows,
+  });
+
   const summary: SummaryReport = {
     companyId: raw.companyId,
     companyName: raw.companyName,
@@ -226,6 +243,8 @@ export function buildTreasurySummary(raw: TreasuryRawSnapshot): SummaryReport {
       horizonWeeks: freeCash.horizonWeeks,
       freeAvailableCash: freeCash.freeAvailableCash,
       fixedOutflowsHorizon: freeCash.fixedOutflowsHorizon,
+      apOutflowsHorizon: freeCash.apOutflowsHorizon,
+      recurringOutflowsHorizon: freeCash.recurringOutflowsHorizon,
     },
     risk: {
       arDelayed90: arMetrics.delayed90PlusDays,
@@ -235,6 +254,7 @@ export function buildTreasurySummary(raw: TreasuryRawSnapshot): SummaryReport {
     forecast,
     forecastModel,
     forecastBacktest,
+    forecastDiagnostics,
     budgetVsActual: raw.budgetVsActual,
     kpis: {
       ...raw.kpis,

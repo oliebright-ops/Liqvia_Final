@@ -204,6 +204,51 @@
       "colPredicted": "Net previsto",
       "colActual": "Net real",
       "colError": "Error"
+    },
+    "riskInsights": {
+      "title": "Riesgos del forecast",
+      "subtitle": "Análisis de supuestos — el forecast baseline no cambia.",
+      "overdueBadge": "Exposición AR vencida",
+      "arTitle": "Supuestos de cobro",
+      "arBody": "El baseline programa cash en fechas de vencimiento. Lo vencido se asume en semana 1 — puede ser optimista.",
+      "overdueWeek1": "AR vencida en sem. 1",
+      "overdueWeek1Hint": "{count} factura(s) vencida(s) forzadas a semana 1",
+      "scheduledOnDue": "AR por vencimiento",
+      "scheduledOnDueHint": "Aún no vencido — por fecha en el horizonte",
+      "weightedExpectation": "Cobro ponderado (info)",
+      "weightedExpectationHint": "70/20/10 — no usado en el baseline",
+      "avgOverdueDays": "Días vencido (media)",
+      "avgOverdueDaysHint": "Retraso medio de facturas vencidas",
+      "overdueWarning": "Si el cobro se retrasa, hasta {amount} puede no llegar en sem. 1. Use Escenarios → retraso de cobros.",
+      "apTitle": "AP por prioridad",
+      "apBody": "Supplier Priority del upload AP. En baseline todo AP sigue due dates.",
+      "colPriority": "Prioridad",
+      "colOutstanding": "Pendiente",
+      "colOverdue": "Vencido",
+      "colHorizon": "En {horizon} sem.",
+      "deferrableSummary": "Aplazables: {deferrable}. Esenciales: {essential}.",
+      "payrollGapWarning": "Nómina sem. 1 ({payroll}) supera caja + entradas sem. 1 en {gap}.",
+      "burnTitle": "Burn rodante",
+      "burnBody": "Desde actuals semanales, lookback {weeks} sem.",
+      "avgInflows": "Entradas med./sem.",
+      "avgOutflows": "Salidas med./sem.",
+      "burnTrend": "Tendencia net",
+      "burnTrendHint": "Segunda vs primera mitad del lookback",
+      "trend": { "rising": "Sube", "falling": "Baja", "stable": "Estable", "unknown": "N/D" },
+      "scenarioCta": "Stress-test en",
+      "priority": { "payroll": "Nómina", "tax": "Impuestos", "critical": "Crítico", "flexible": "Flexible", "non_essential": "No esencial" }
+    },
+    "freeCashBreakdown": {
+      "title": "Free cash tras salidas conocidas",
+      "subtitle": "Desglose del free cash a {horizon} semanas.",
+      "explainer": "Caja actual menos salidas ya modeladas en el forecast baseline.",
+      "openingCash": "Caja actual",
+      "apOutflows": "AP programado (horizonte)",
+      "recurringOutflows": "Salidas operativas recurrentes",
+      "result": "Free cash tras salidas conocidas",
+      "noteAp": "AP programado = ageing AP por due date en el horizonte.",
+      "noteRecurring": "Recurrentes = media rodante de actuals semanales.",
+      "noteNotIncluded": "No incluido: impuestos no modelados, deuda, líneas de crédito, colchón."
     }
   },
   "budget": {
@@ -271,8 +316,8 @@
     "burnPerWeek": "Consumo: {amount}/semana",
     "infiniteRunway": "∞s",
     "budgetVarianceMtd": "Variación presupuesto (MTD)",
-    "freeAvailableCash": "Efectivo libre disponible",
-    "freeCashSubtitle": "Tras {committed} de salidas fijas en {horizon} sem.",
+    "freeAvailableCash": "Free cash tras salidas conocidas",
+    "freeCashSubtitle": "Tras {committed} salidas conocidas en {horizon} sem.",
     "freeCashHint": "Efectivo actual menos salidas acumuladas del pronóstico (cuentas por pagar programadas y gastos recurrentes) en el horizonte de {horizon} semanas seleccionado.",
     "freeCashHintAria": "Cómo se calcula el efectivo libre disponible",
     "horizonLabel": "Horizonte de previsión",
@@ -456,7 +501,8 @@
     "presets": {
       "revenue_drop_20": "Ingresos −20%",
       "hire_three": "3 contrataciones (~12% nómina)",
-      "payments_slow_15": "Pagos +15 días"
+      "payments_slow_15": "Pagos +15 días",
+      "overdue_ar_stress": "AR vencida +30 días"
     },
     "headcountCalc": {
       "title": "Calculadora headcount → nómina",
@@ -753,7 +799,21 @@
     "activeDataEmpty": "Sin datos activos para este tipo — cargue un archivo.",
     "activeDataRows": "{count} fila(s) en uso",
     "inUse": "En uso",
+    "readOnly": "Puede revisar historial y plantillas; solo cargadores y admins pueden importar.",
     "snapshotTitle": "Instantánea histórica",
-    "viewActiveData": "Ver datos actuales en uso"
+    "viewActiveData": "Ver datos actuales en uso",
+    "validationSpec": {
+      "title": "Reglas de validación",
+      "subtitle": "Qué rechazamos al cargar — filas inválidas no llegan al forecast.",
+      "footer": "Notas de crédito y retenciones no son campos separados aún.",
+      "rules": {
+        "duplicates": { "title": "Duplicados", "body": "AR: Invoice Number. AP: Bill Number. Budget: Period + Category + Account." },
+        "amounts": { "title": "Importes", "body": "AR/AP deben ser > 0." },
+        "dates": { "title": "Fechas", "body": "Due date ≥ invoice/bill date. YYYY-MM-DD." },
+        "currency": { "title": "Moneda", "body": "Debe coincidir con la moneda de la empresa." },
+        "periodWindow": { "title": "Ventanas de periodo", "body": "Actuals/budget: 14 sem. pasadas. Rolling: 13 sem. futuras." },
+        "supplierPriority": { "title": "Supplier Priority (AP)", "body": "payroll, tax, critical, flexible, non-essential." }
+      }
+    }
   }
 }

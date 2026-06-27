@@ -204,6 +204,51 @@
       "colPredicted": "Прогноз net",
       "colActual": "Факт net",
       "colError": "Ошибка"
+    },
+    "riskInsights": {
+      "title": "Риски прогноза",
+      "subtitle": "Только анализ допущений — baseline прогноз не меняется.",
+      "overdueBadge": "Просроченная дебиторка",
+      "arTitle": "Допущения по сбору дебиторки",
+      "arBody": "Baseline ставит cash по due date. Просроченное — в неделю 1 (может быть оптимистично).",
+      "overdueWeek1": "Просроченная AR в нед. 1",
+      "overdueWeek1Hint": "{count} просроченных счетов в неделю 1",
+      "scheduledOnDue": "AR по due date",
+      "scheduledOnDueHint": "Ещё не просрочено — по дате в горизонте",
+      "weightedExpectation": "Взвешенный сбор (инфо)",
+      "weightedExpectationHint": "70/20/10 — не используется в baseline",
+      "avgOverdueDays": "Сред. дней просрочки",
+      "avgOverdueDaysHint": "Средняя задержка просроченных счетов",
+      "overdueWarning": "При срыве сбора до {amount} может не прийти в нед. 1. Сценарии → задержка дебиторки.",
+      "apTitle": "Кредиторка по приоритету",
+      "apBody": "Supplier Priority из AP upload. В baseline все AP по due date.",
+      "colPriority": "Приоритет",
+      "colOutstanding": "Остаток",
+      "colOverdue": "Просрочено",
+      "colHorizon": "В {horizon} нед.",
+      "deferrableSummary": "Отложимые: {deferrable}. Обязательные: {essential}.",
+      "payrollGapWarning": "Payroll нед. 1 ({payroll}) превышает cash + притоки на {gap}.",
+      "burnTitle": "Скользящий burn",
+      "burnBody": "Из weekly actuals, lookback {weeks} нед.",
+      "avgInflows": "Сред. притоки/нед",
+      "avgOutflows": "Сред. оттоки/нед",
+      "burnTrend": "Тренд net",
+      "burnTrendHint": "Вторая vs первая половина lookback",
+      "trend": { "rising": "Рост", "falling": "Снижение", "stable": "Стабильно", "unknown": "Н/д" },
+      "scenarioCta": "Стресс-тест в",
+      "priority": { "payroll": "Payroll", "tax": "Налоги", "critical": "Критичные", "flexible": "Гибкие", "non_essential": "Необяз." }
+    },
+    "freeCashBreakdown": {
+      "title": "Free cash после известных оттоков",
+      "subtitle": "Структура free cash за {horizon} нед.",
+      "explainer": "Текущий cash минус уже смоделированные оттоки baseline прогноза.",
+      "openingCash": "Текущий cash",
+      "apOutflows": "Запланированная кредиторка",
+      "recurringOutflows": "Операционные оттоки (rolling)",
+      "result": "Free cash после известных оттоков",
+      "noteAp": "Кредиторка = AP ageing по due date в горизонте.",
+      "noteRecurring": "Операционные = rolling average из weekly actuals.",
+      "noteNotIncluded": "Не включено: налоги, долг, кредитные линии, резерв."
     }
   },
   "budget": {
@@ -271,8 +316,8 @@
     "burnPerWeek": "Расход: {amount}/нед.",
     "infiniteRunway": "∞ нед.",
     "budgetVarianceMtd": "Отклонение бюджета (с начала месяца)",
-    "freeAvailableCash": "Свободные денежные средства",
-    "freeCashSubtitle": "После {committed} фикс. оттоков за {horizon} нед.",
+    "freeAvailableCash": "Free cash после известных оттоков",
+    "freeCashSubtitle": "После {committed} известных оттоков за {horizon} нед.",
     "freeCashHint": "Текущая касса минус совокупные прогнозные оттоки (запланированные КЗ и регулярные расходы) за выбранный горизонт {horizon} нед.",
     "freeCashHintAria": "Как рассчитываются свободные денежные средства",
     "horizonLabel": "Горизонт прогноза",
@@ -456,7 +501,8 @@
     "presets": {
       "revenue_drop_20": "Выручка −20%",
       "hire_three": "3 найма (~12% ФОТ)",
-      "payments_slow_15": "Оплата +15 дней"
+      "payments_slow_15": "Оплата +15 дней",
+      "overdue_ar_stress": "Просроченная AR +30 дней"
     },
     "headcountCalc": {
       "title": "Калькулятор headcount → payroll",
@@ -779,8 +825,21 @@
     "activeDataEmpty": "Нет активных данных — загрузите файл.",
     "activeDataRows": "{count} строк в использовании",
     "inUse": "Активно",
+    "readOnly": "Вы можете просматривать историю загрузок и шаблоны, но импортировать файлы могут только загрузчики данных и администраторы.",
     "snapshotTitle": "Исторический снимок загрузки",
     "viewActiveData": "Показать текущие данные",
-    "readOnly": "Вы можете просматривать историю загрузок и шаблоны, но импортировать файлы могут только загрузчики данных и администраторы."
+    "validationSpec": {
+      "title": "Правила валидации данных",
+      "subtitle": "Что отклоняется при upload — некорректные строки не попадают в прогноз.",
+      "footer": "Credit memo и retainage пока не отдельные поля — корректируйте суммы вручную.",
+      "rules": {
+        "duplicates": { "title": "Дубликаты", "body": "AR: Invoice Number. AP: Bill Number. Budget: Period + Category + Account." },
+        "amounts": { "title": "Суммы", "body": "AR/AP > 0. Ноль и отрицательные отклоняются." },
+        "dates": { "title": "Даты", "body": "Due date ≥ invoice/bill date. Формат YYYY-MM-DD." },
+        "currency": { "title": "Валюта", "body": "AR/AP/bank должны совпадать с валютой компании." },
+        "periodWindow": { "title": "Окна периодов", "body": "Actuals/budget: прошлые 14 нед. Rolling budget: следующие 13 нед." },
+        "supplierPriority": { "title": "Supplier Priority (AP)", "body": "payroll, tax, critical, flexible, non-essential — для сценариев и risk breakdown." }
+      }
+    }
   }
 }

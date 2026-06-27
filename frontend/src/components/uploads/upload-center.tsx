@@ -23,6 +23,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import {
   downloadTemplateSample,
 } from '@/components/uploads/upload-template-library';
+import { UploadValidationSpecPanel } from '@/components/uploads/upload-validation-spec-panel';
 import { UploadTemplatesPanel } from '@/components/uploads/upload-templates-panel';
 
 type UploadBatchSummary = {
@@ -290,6 +291,7 @@ export function UploadCenter() {
       )}
 
       <UploadTemplatesPanel forceInitialOpen={welcomeFromUrl} />
+      <UploadValidationSpecPanel />
 
       <Card>
         <CardHeader>

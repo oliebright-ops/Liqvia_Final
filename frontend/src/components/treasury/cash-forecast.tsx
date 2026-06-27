@@ -5,6 +5,8 @@ import { Lock } from 'lucide-react';
 import { apiPost } from '@/lib/api';
 import { useAuth } from '@/lib/auth-context';
 import { useTreasurySummary } from '@/hooks/use-treasury-summary';
+import { ForecastRiskInsightsPanel } from '@/components/forecast/forecast-risk-insights-panel';
+import { FreeCashBreakdownPanel } from '@/components/forecast/free-cash-breakdown-panel';
 import { ForecastAssumptionsPanel } from '@/components/forecast/forecast-assumptions-panel';
 import { ForecastBacktestCard } from '@/components/forecast/forecast-backtest-card';
 import { ForecastAreaChart } from '@/components/charts/forecast-area-chart';
@@ -77,6 +79,16 @@ export function CashForecastPage() {
       <ForecastSummary model={model} currency={currency} t={t} format={format} />
 
       <ForecastAssumptionsPanel />
+
+      {summary?.forecastDiagnostics && (
+        <ForecastRiskInsightsPanel
+          diagnostics={summary.forecastDiagnostics}
+          currency={currency}
+          horizonWeeks={summary.liquidity.horizonWeeks}
+        />
+      )}
+
+      {summary && <FreeCashBreakdownPanel summary={summary} />}
 
       {summary?.forecastBacktest && (
         <ForecastBacktestCard backtest={summary.forecastBacktest} currency={currency} />

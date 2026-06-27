@@ -204,6 +204,51 @@
       "colPredicted": "Net prévu",
       "colActual": "Net réel",
       "colError": "Erreur"
+    },
+    "riskInsights": {
+      "title": "Risques de prévision",
+      "subtitle": "Analyse des hypothèses — la prévision baseline est inchangée.",
+      "overdueBadge": "Exposition CR en retard",
+      "arTitle": "Hypothèses d'encaissement",
+      "arBody": "La baseline planifie aux échéances. Le retard part en semaine 1 — souvent optimiste.",
+      "overdueWeek1": "CR en retard sem. 1",
+      "overdueWeek1Hint": "{count} facture(s) en retard forcées en semaine 1",
+      "scheduledOnDue": "CR à l'échéance",
+      "scheduledOnDueHint": "Pas encore en retard — par date dans l'horizon",
+      "weightedExpectation": "Encaissement pondéré (info)",
+      "weightedExpectationHint": "70/20/10 — non utilisé dans la baseline",
+      "avgOverdueDays": "Jours de retard (moy.)",
+      "avgOverdueDaysHint": "Retard moyen des factures en retard",
+      "overdueWarning": "Si les encaissements glissent, jusqu'à {amount} peut manquer en sem. 1. Scénarios → retard créances.",
+      "apTitle": "CP par priorité",
+      "apBody": "Supplier Priority de l'import AP. En baseline, échéances inchangées.",
+      "colPriority": "Priorité",
+      "colOutstanding": "Encours",
+      "colOverdue": "En retard",
+      "colHorizon": "Sur {horizon} sem.",
+      "deferrableSummary": "Reportables : {deferrable}. Essentiels : {essential}.",
+      "payrollGapWarning": "Paie sem. 1 ({payroll}) dépasse trésorerie + entrées sem. 1 de {gap}.",
+      "burnTitle": "Burn glissant",
+      "burnBody": "Depuis actuals hebdo, lookback {weeks} sem.",
+      "avgInflows": "Entrées moy./sem.",
+      "avgOutflows": "Sorties moy./sem.",
+      "burnTrend": "Tendance net",
+      "burnTrendHint": "Deuxième vs première moitié du lookback",
+      "trend": { "rising": "Hausse", "falling": "Baisse", "stable": "Stable", "unknown": "N/D" },
+      "scenarioCta": "Stress-test dans",
+      "priority": { "payroll": "Paie", "tax": "Taxes", "critical": "Critique", "flexible": "Flexible", "non_essential": "Non essentiel" }
+    },
+    "freeCashBreakdown": {
+      "title": "Free cash après sorties connues",
+      "subtitle": "Détail du free cash sur {horizon} semaines.",
+      "explainer": "Trésorerie actuelle moins sorties déjà modélisées dans la baseline.",
+      "openingCash": "Trésorerie actuelle",
+      "apOutflows": "CP planifiés (horizon)",
+      "recurringOutflows": "Sorties opérationnelles récurrentes",
+      "result": "Free cash après sorties connues",
+      "noteAp": "CP planifiés = ageing AP par échéance dans l'horizon.",
+      "noteRecurring": "Récurrentes = moyenne glissante des actuals hebdo.",
+      "noteNotIncluded": "Non inclus : taxes non modélisées, dette, lignes de crédit, matelas."
     }
   },
   "budget": {
@@ -271,8 +316,8 @@
     "burnPerWeek": "Consommation : {amount}/semaine",
     "infiniteRunway": "∞s",
     "budgetVarianceMtd": "Écart budgétaire (MTD)",
-    "freeAvailableCash": "Trésorerie libre disponible",
-    "freeCashSubtitle": "Après {committed} de sorties fixes sur {horizon} sem.",
+    "freeAvailableCash": "Free cash après sorties connues",
+    "freeCashSubtitle": "Après {committed} sorties connues sur {horizon} sem.",
     "freeCashHint": "Trésorerie actuelle moins les sorties cumulées du prévisionnel (dettes planifiées et charges récurrentes) sur l'horizon de {horizon} semaines sélectionné.",
     "freeCashHintAria": "Comment la trésorerie libre disponible est calculée",
     "horizonLabel": "Horizon de prévision",
@@ -456,7 +501,8 @@
     "presets": {
       "revenue_drop_20": "CA −20 %",
       "hire_three": "3 embauches (~12 % masse salariale)",
-      "payments_slow_15": "Paiements +15 jours"
+      "payments_slow_15": "Paiements +15 jours",
+      "overdue_ar_stress": "CR en retard +30 jours"
     },
     "headcountCalc": {
       "title": "Calculateur effectifs → paie",
@@ -753,7 +799,21 @@
     "activeDataEmpty": "Aucune donnée active — importez un fichier.",
     "activeDataRows": "{count} ligne(s) en cours d'utilisation",
     "inUse": "En cours",
+    "readOnly": "Consultation de l'historique et des modèles ; seuls les importateurs et admins peuvent importer.",
     "snapshotTitle": "Instantané d'import historique",
-    "viewActiveData": "Voir les données actuelles en cours"
+    "viewActiveData": "Voir les données actuelles en cours",
+    "validationSpec": {
+      "title": "Règles de validation",
+      "subtitle": "Ce qui est rejeté à l'import — les lignes invalides n'atteignent pas la prévision.",
+      "footer": "Avoirs et retenues de garantie ne sont pas encore des champs séparés.",
+      "rules": {
+        "duplicates": { "title": "Doublons", "body": "CR : Invoice Number. CP : Bill Number. Budget : Period + Category + Account." },
+        "amounts": { "title": "Montants", "body": "CR/CP doivent être > 0." },
+        "dates": { "title": "Dates", "body": "Échéance ≥ date facture. YYYY-MM-DD." },
+        "currency": { "title": "Devise", "body": "Doit correspondre à la devise de l'entreprise." },
+        "periodWindow": { "title": "Fenêtres de période", "body": "Actuals/budget : 14 sem. passées. Rolling : 13 sem. futures." },
+        "supplierPriority": { "title": "Supplier Priority (CP)", "body": "payroll, tax, critical, flexible, non_essential." }
+      }
+    }
   }
 }
