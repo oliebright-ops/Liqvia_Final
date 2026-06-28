@@ -14,7 +14,8 @@ import { apiGet, apiPost, apiDelete } from '@/lib/api';
 import { readUploadFile } from '@/lib/read-upload-file';
 import { useAuth } from '@/lib/auth-context';
 import { notifyWorkspaceRefresh } from '@/lib/workspace-refresh';
-import { useTranslations } from '@/lib/i18n';
+import { useLanguage, useTranslations } from '@/lib/i18n';
+import { translateUploadValidationErrors } from '@/lib/translate-upload-validation';
 import { useDashboard } from '@/hooks/use-dashboard';
 import { PageHeader } from '@/components/treasury/page-header';
 import { Alert } from '@/components/ui/alert';
@@ -58,6 +59,7 @@ const TEMPLATE_TYPES = (Object.keys(UPLOAD_TEMPLATES) as UploadTemplateType[]).f
 
 export function UploadCenter() {
   const t = useTranslations();
+  const { locale } = useLanguage();
   const searchParams = useSearchParams();
   const welcomeFromUrl = searchParams.get('welcome') === '1';
   const { can } = useAuth();
@@ -147,18 +149,27 @@ export function UploadCenter() {
 
   const asOfDate = new Date().toISOString().slice(0, 10);
 
+  const localizeValidation = useCallback(
+    (result: UploadValidationResult) => ({
+      ...result,
+      errors: translateUploadValidationErrors(result.errors, locale),
+    }),
+    [locale],
+  );
+
   const runValidation = useCallback(
     (content: string) => {
       const result = validateUpload(templateType, content, {
         companyCurrency: currency,
         asOfDate,
       });
-      const summary = result.valid
-        ? t('upload.validateSuccess', { count: String(result.rowCount) })
-        : t('upload.validateErrors', { count: String(result.errors.length) });
-      setValidation({ ...result, summary });
+      const localized = localizeValidation(result);
+      const summary = localized.valid
+        ? t('upload.validateSuccess', { count: String(localized.rowCount) })
+        : t('upload.validateErrors', { count: String(localized.errors.length) });
+      setValidation({ ...localized, summary });
     },
-    [templateType, currency, t, asOfDate],
+    [templateType, currency, t, asOfDate, localizeValidation],
   );
 
   const onFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -183,7 +194,9 @@ export function UploadCenter() {
     showActiveView(type);
     setImportMessage(null);
     if (csvContent) {
-      const result = validateUpload(type, csvContent, { companyCurrency: currency, asOfDate });
+      const result = localizeValidation(
+        validateUpload(type, csvContent, { companyCurrency: currency, asOfDate }),
+      );
       const summary = result.valid
         ? t('upload.validateSuccess', { count: String(result.rowCount) })
         : t('upload.validateErrors', { count: String(result.errors.length) });
@@ -805,6 +818,10 @@ function DataTable({ rows, keys }: { rows: Record<string, unknown>[]; keys: read
 }
 
 function StatusBadge({ status }: { status: string }) {
+  const t = useTranslations();
   const variant = status === 'completed' ? 'success' : status === 'failed' ? 'error' : 'warning';
-  return <Badge variant={variant}>{status}</Badge>;
+  const labelKey = `upload.batchStatus.${status}` as const;
+  const label = t(labelKey);
+  const text = label === labelKey ? status : label;
+  return <Badge variant={variant}>{text}</Badge>;
 }

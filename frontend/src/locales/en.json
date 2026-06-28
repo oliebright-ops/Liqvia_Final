@@ -967,6 +967,12 @@
     "historyHint": "Click any upload to view the stored snapshot. Latest per type is highlighted above.",
     "historyEmpty": "No uploads yet",
     "rows": "rows",
+    "batchStatus": {
+      "completed": "Completed",
+      "failed": "Failed",
+      "importing": "Importing",
+      "pending": "Pending"
+    },
     "latestTitle": "Latest upload by type",
     "latestHint": "Most recent completed import for each data type — click to view the full snapshot",
     "latestBadge": "Latest",

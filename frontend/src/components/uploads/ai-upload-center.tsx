@@ -16,7 +16,8 @@ import { apiPost, apiUrl } from '@/lib/api';
 import { getAccessToken } from '@/lib/auth-storage';
 import { useAuth } from '@/lib/auth-context';
 import { notifyWorkspaceRefresh } from '@/lib/workspace-refresh';
-import { useTranslations } from '@/lib/i18n';
+import { useTranslations, useLanguage } from '@/lib/i18n';
+import { translateUploadValidationErrors } from '@/lib/translate-upload-validation';
 import { useDashboard } from '@/hooks/use-dashboard';
 import { PageHeader } from '@/components/treasury/page-header';
 import { Alert } from '@/components/ui/alert';
@@ -79,6 +80,7 @@ function formatLabel(detectedFormat: string, templateType: AiUploadTemplateType)
 
 export function AiUploadCenter() {
   const t = useTranslations();
+  const { locale } = useLanguage();
   const { can } = useAuth();
   const { data: dashboard } = useDashboard();
   const canUpload = can('uploads:write');
@@ -172,7 +174,16 @@ export function AiUploadCenter() {
               : t('upload.ai.failed');
         throw new Error(message);
       }
-      setResult(data as AiNormalizeResponse);
+      setResult({
+        ...(data as AiNormalizeResponse),
+        validation: {
+          ...(data as AiNormalizeResponse).validation,
+          errors: translateUploadValidationErrors(
+            (data as AiNormalizeResponse).validation.errors,
+            locale,
+          ),
+        },
+      });
     } catch (e) {
       setResult(null);
       setError(e instanceof Error ? e.message : t('upload.ai.failed'));
@@ -188,7 +199,7 @@ export function AiUploadCenter() {
     defaultAccountName,
     defaultAccountMasked,
     currency,
-    t,
+    locale,
   ]);
 
   async function confirmImport() {
