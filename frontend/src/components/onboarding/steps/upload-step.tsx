@@ -6,6 +6,7 @@ import { apiGet, apiPost } from '@/lib/api';
 import { readUploadFile } from '@/lib/read-upload-file';
 import { notifyWorkspaceRefresh } from '@/lib/workspace-refresh';
 import { useTranslations } from '@/lib/i18n';
+import { BankAccountsSummary } from '@/lib/module-types';
 import { OnboardingNav } from '../onboarding-nav';
 import { downloadTemplateSample } from '@/components/uploads/upload-template-library';
 
@@ -38,6 +39,7 @@ export function UploadStep({
 }) {
   const t = useTranslations();
   const [batches, setBatches] = useState<UploadBatch[]>([]);
+  const [bankSummary, setBankSummary] = useState<BankAccountsSummary | null>(null);
   const [activeType, setActiveType] = useState<UploadTemplateType | null>(null);
   const [importing, setImporting] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
@@ -51,13 +53,24 @@ export function UploadStep({
     }
   }, []);
 
+  const loadBankAccounts = useCallback(async () => {
+    try {
+      const data = await apiGet<BankAccountsSummary>('/bank-accounts');
+      setBankSummary(data);
+    } catch {
+      setBankSummary(null);
+    }
+  }, []);
+
   useEffect(() => {
-    loadBatches();
-  }, [loadBatches]);
+    void loadBatches();
+    void loadBankAccounts();
+  }, [loadBatches, loadBankAccounts]);
 
   const completedTypes = new Set(
     batches.filter((b) => b.status === 'completed').map((b) => b.templateType),
   );
+  const manualBankBalancesReady = (bankSummary?.accountCount ?? 0) > 0;
 
   async function onFileSelected(type: UploadTemplateType, file: File) {
     setActiveType(type);
@@ -96,7 +109,9 @@ export function UploadStep({
       <ul className="mt-6 space-y-3">
         {RECOMMENDED.map((type) => {
           const meta = UPLOAD_TEMPLATES[type];
-          const done = completedTypes.has(type);
+          const uploaded = completedTypes.has(type);
+          const manualDone = type === 'bank_balances' && manualBankBalancesReady && !uploaded;
+          const done = uploaded || manualDone;
           const busy = importing && activeType === type;
           return (
             <li
@@ -106,11 +121,22 @@ export function UploadStep({
               <div>
                 <p className="font-medium text-slate-100">{meta.label}</p>
                 <p className="text-xs text-slate-500">
-                  {done ? t('onboarding.upload.completed') : t('onboarding.upload.pending')}
+                  {done
+                    ? manualDone
+                      ? t('onboarding.upload.manualSetup')
+                      : t('onboarding.upload.completed')
+                    : t('onboarding.upload.pending')}
                 </p>
-                <p className="mt-1 text-xs text-slate-600">
-                  {t('upload.requiredColumns')}: {meta.headers.join(', ')}
-                </p>
+                {manualDone && (
+                  <p className="mt-1 text-xs text-emerald-500/90">
+                    {t('onboarding.upload.bankBalancesManualHint')}
+                  </p>
+                )}
+                {!manualDone && (
+                  <p className="mt-1 text-xs text-slate-600">
+                    {t('upload.requiredColumns')}: {meta.headers.join(', ')}
+                  </p>
+                )}
               </div>
               <div className="flex flex-wrap gap-2">
                 <button

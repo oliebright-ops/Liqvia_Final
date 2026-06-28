@@ -1,11 +1,12 @@
 import { Module } from '@nestjs/common';
 import { AuthModule } from '../auth/auth.module';
+import { BankAccountsModule } from '../bank-accounts/bank-accounts.module';
 import { TreasuryModule } from '../treasury/treasury.module';
 import { OnboardingController } from './onboarding.controller';
 import { OnboardingService } from './onboarding.service';
 
 @Module({
-  imports: [AuthModule, TreasuryModule],
+  imports: [AuthModule, TreasuryModule, BankAccountsModule],
   controllers: [OnboardingController],
   providers: [OnboardingService],
 })

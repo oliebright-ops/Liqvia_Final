@@ -6,8 +6,10 @@ import {
   FORECAST_HORIZONS,
   INDUSTRIES,
   OnboardingCompanyInput,
+  sumBankAccountOpeningBalances,
 } from '@liqvia2/shared';
 import { useTranslations } from '@/lib/i18n';
+import { ManualBankAccountsEditor } from '../manual-bank-accounts-editor';
 import { OnboardingNav } from '../onboarding-nav';
 
 const inputClass =
@@ -24,8 +26,17 @@ export function CompanyStep({
   onNext: () => void;
 }) {
   const t = useTranslations();
-
+  const bankAccounts = value.bankAccounts ?? [];
   const canProceed = value.name.trim().length > 0;
+
+  function updateBankAccounts(accounts: OnboardingCompanyInput['bankAccounts']) {
+    const nextAccounts = accounts ?? [];
+    onChange({
+      ...value,
+      bankAccounts: nextAccounts,
+      openingCashBalance: sumBankAccountOpeningBalances(nextAccounts),
+    });
+  }
 
   return (
     <div>
@@ -62,7 +73,17 @@ export function CompanyStep({
             {t('onboarding.company.currency')}
             <select
               value={value.currency}
-              onChange={(e) => onChange({ ...value, currency: e.target.value })}
+              onChange={(e) => {
+                const currency = e.target.value;
+                onChange({
+                  ...value,
+                  currency,
+                  bankAccounts: bankAccounts.map((account) => ({
+                    ...account,
+                    currency: account.currency === value.currency ? currency : account.currency,
+                  })),
+                });
+              }}
               className={inputClass}
             >
               {CURRENCIES.map((c) => (
@@ -89,40 +110,27 @@ export function CompanyStep({
           </label>
         </div>
 
-        <div className="grid gap-4 sm:grid-cols-2">
-          <label className={labelClass}>
-            {t('onboarding.company.forecastHorizon')}
-            <select
-              value={value.forecastHorizonWeeks}
-              onChange={(e) => onChange({ ...value, forecastHorizonWeeks: Number(e.target.value) })}
-              className={inputClass}
-            >
-              {FORECAST_HORIZONS.map((w) => (
-                <option key={w} value={w}>
-                  {w} {t('onboarding.company.weeks')}
-                </option>
-              ))}
-            </select>
-          </label>
+        <label className={labelClass}>
+          {t('onboarding.company.forecastHorizon')}
+          <select
+            value={value.forecastHorizonWeeks}
+            onChange={(e) => onChange({ ...value, forecastHorizonWeeks: Number(e.target.value) })}
+            className={inputClass}
+          >
+            {FORECAST_HORIZONS.map((w) => (
+              <option key={w} value={w}>
+                {w} {t('onboarding.company.weeks')}
+              </option>
+            ))}
+          </select>
+        </label>
 
-          <label className={labelClass}>
-            {t('onboarding.company.openingCash')} ({value.currency})
-            <input
-              type="number"
-              min={0}
-              step="any"
-              value={value.openingCashBalance || ''}
-              onChange={(e) =>
-                onChange({
-                  ...value,
-                  openingCashBalance: e.target.value === '' ? 0 : Number(e.target.value),
-                })
-              }
-              placeholder={t('onboarding.company.openingCashPlaceholder')}
-              className={inputClass}
-            />
-          </label>
-        </div>
+        <ManualBankAccountsEditor
+          accounts={bankAccounts}
+          onChange={updateBankAccounts}
+          defaultCurrency={value.currency}
+          variant="onboarding"
+        />
       </div>
 
       <OnboardingNav

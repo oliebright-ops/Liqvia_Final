@@ -45,14 +45,37 @@ export const ONBOARDING_STEPS = SETUP_STEPS;
 
 export const DEMO_COMPANY_ID = 'demo-consulting';
 
+export interface OnboardingBankAccountInput {
+  name: string;
+  accountNumberMasked: string;
+  /** Defaults to company base currency when omitted. */
+  currency?: string;
+  openingBalance: number;
+}
+
 export interface OnboardingCompanyInput {
   name: string;
   industry: string;
   currency: string;
   fiscalYearStart: number;
   forecastHorizonWeeks: number;
+  /** Total opening cash — derived from bankAccounts when provided. */
   openingCashBalance: number;
   locale?: string;
+  bankAccounts?: OnboardingBankAccountInput[];
+}
+
+export function createDefaultBankAccountRow(currency?: string): OnboardingBankAccountInput {
+  return {
+    name: 'Operating Account',
+    accountNumberMasked: '****0001',
+    currency,
+    openingBalance: 0,
+  };
+}
+
+export function sumBankAccountOpeningBalances(accounts: OnboardingBankAccountInput[]): number {
+  return accounts.reduce((total, account) => total + (Number(account.openingBalance) || 0), 0);
 }
 
 export interface OnboardingAdminInput {

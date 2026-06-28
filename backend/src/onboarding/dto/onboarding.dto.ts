@@ -21,6 +21,34 @@ export class OnboardingCompanyDto {
 
   @ApiPropertyOptional({ example: 'en' })
   locale?: string;
+
+  @ApiPropertyOptional({
+    type: 'array',
+    items: {
+      type: 'object',
+      properties: {
+        name: { type: 'string', example: 'Operating Account' },
+        accountNumberMasked: { type: 'string', example: '****1234' },
+        currency: { type: 'string', example: 'GBP' },
+        openingBalance: { type: 'number', example: 250000 },
+      },
+    },
+  })
+  bankAccounts?: OnboardingBankAccountDto[];
+}
+
+export class OnboardingBankAccountDto {
+  @ApiProperty({ example: 'Operating Account' })
+  name!: string;
+
+  @ApiPropertyOptional({ example: '****1234' })
+  accountNumberMasked?: string;
+
+  @ApiPropertyOptional({ example: 'GBP' })
+  currency?: string;
+
+  @ApiProperty({ example: 250000 })
+  openingBalance!: number;
 }
 
 export class OnboardingTeamMemberDto {
@@ -77,4 +105,7 @@ export class AddEntityDto {
     description: 'Switch active workspace to the new entity after creation',
   })
   switchToNew?: boolean;
+
+  @ApiPropertyOptional({ type: [OnboardingBankAccountDto] })
+  bankAccounts?: OnboardingBankAccountDto[];
 }

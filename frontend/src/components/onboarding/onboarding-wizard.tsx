@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { OnboardingPhase } from '@liqvia2/shared';
+import { OnboardingPhase, sumBankAccountOpeningBalances } from '@liqvia2/shared';
 import { apiGet, apiPost } from '@/lib/api';
 import { AuthResponse, OnboardingContext } from '@/lib/auth-types';
 import { useAuth } from '@/lib/auth-context';
@@ -104,8 +104,15 @@ export function OnboardingWizard() {
     setError(null);
     try {
       const members = state.teamMembers.filter((m) => m.name.trim() && m.email.trim());
+      const bankAccounts = (state.company.bankAccounts ?? []).filter((account) => account.name.trim());
+      const openingCashBalance =
+        bankAccounts.length > 0 ? sumBankAccountOpeningBalances(bankAccounts) : state.company.openingCashBalance;
       const res = await apiPost<AuthResponse>('/onboarding/create-company', {
-        company: state.company,
+        company: {
+          ...state.company,
+          openingCashBalance,
+          bankAccounts: bankAccounts.length > 0 ? bankAccounts : undefined,
+        },
         teamMembers: members.length > 0 ? members : undefined,
       });
       await applyAuthResponse(res);

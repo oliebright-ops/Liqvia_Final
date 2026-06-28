@@ -1,4 +1,4 @@
-import { FISCAL_MONTHS, OnboardingCompanyInput, OnboardingTeamMemberInput } from '@liqvia2/shared';
+import { FISCAL_MONTHS, createDefaultBankAccountRow, OnboardingCompanyInput, OnboardingTeamMemberInput } from '@liqvia2/shared';
 
 export interface OnboardingWizardState {
   company: OnboardingCompanyInput;
@@ -15,6 +15,7 @@ export function createInitialOnboardingState(): OnboardingWizardState {
       forecastHorizonWeeks: 13,
       openingCashBalance: 0,
       locale: 'en',
+      bankAccounts: [createDefaultBankAccountRow('GBP')],
     },
     teamMembers: [],
   };

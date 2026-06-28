@@ -4,7 +4,7 @@ import { useCallback, useEffect, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { CURRENCIES } from '@liqvia2/shared';
+import { CURRENCIES, createDefaultBankAccountRow, OnboardingBankAccountInput, sumBankAccountOpeningBalances } from '@liqvia2/shared';
 import { apiDelete, apiGet, apiPatch, apiPost } from '@/lib/api';
 import { notifyWorkspaceRefresh } from '@/lib/workspace-refresh';
 import { useAuth } from '@/lib/auth-context';
@@ -30,6 +30,7 @@ import { EmptyState } from '@/components/ui/empty-state';
 import { FinancialTable } from '@/components/ui/financial-table';
 import { PageHeader } from '@/components/treasury/page-header';
 import { RoleAccessMatrix, roleLabel, YourAccessCard } from '@/components/settings/role-access-guide';
+import { ManualBankAccountsEditor } from '@/components/onboarding/manual-bank-accounts-editor';
 import { cn } from '@/lib/utils';
 
 type Tab = 'profile' | 'access' | 'entities' | 'company' | 'team' | 'coa';
@@ -171,6 +172,9 @@ function EntitiesTab() {
   const [loading, setLoading] = useState(true);
   const [switching, setSwitching] = useState<string | null>(null);
   const [created, setCreated] = useState(false);
+  const [bankAccounts, setBankAccounts] = useState<OnboardingBankAccountInput[]>([
+    createDefaultBankAccountRow('GBP'),
+  ]);
 
   const form = useForm<EntityFormValues>({
     resolver: zodResolver(entityFormSchema),
@@ -207,9 +211,16 @@ function EntitiesTab() {
   }
 
   async function onSubmit(values: EntityFormValues) {
+    const namedAccounts = bankAccounts.filter((account) => account.name.trim());
+    const openingCashBalance =
+      namedAccounts.length > 0
+        ? sumBankAccountOpeningBalances(namedAccounts)
+        : values.openingCashBalance;
     const res = await apiPost<AuthResponse>('/onboarding/add-entity', {
       ...values,
       industry: values.industry || undefined,
+      openingCashBalance,
+      bankAccounts: namedAccounts.length > 0 ? namedAccounts : undefined,
     });
     await applyAuthResponse(res);
     await loadLinks();
@@ -225,6 +236,7 @@ function EntitiesTab() {
       openingCashBalance: 0,
       switchToNew: true,
     });
+    setBankAccounts([createDefaultBankAccountRow(values.currency)]);
     if (values.switchToNew) {
       router.push('/dashboard');
     }
@@ -316,11 +328,12 @@ function EntitiesTab() {
               />
             </div>
             <div className="sm:col-span-2">
-              <label className="text-xs text-muted-foreground">{set.entitiesOpeningCash}</label>
-              <input
-                type="number"
-                {...form.register('openingCashBalance')}
-                className={fieldClass()}
+              <p className="text-xs text-muted-foreground">{set.entitiesBankAccountsHint}</p>
+              <ManualBankAccountsEditor
+                accounts={bankAccounts}
+                onChange={setBankAccounts}
+                defaultCurrency={form.watch('currency') || 'GBP'}
+                variant="settings"
               />
             </div>
             <label className="flex items-center gap-2 text-sm sm:col-span-2">

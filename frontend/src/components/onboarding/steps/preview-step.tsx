@@ -16,6 +16,14 @@ type PreviewData = {
     forecastHorizonWeeks: number;
     openingCashBalance: number | null;
   };
+  bankAccounts: Array<{
+    name: string;
+    bankName: string;
+    accountNumberMasked: string;
+    currency: string;
+    openingBalance: number;
+    currentBalance: number;
+  }>;
   users: Array<{ name: string; email: string; role: string }>;
   uploads: Array<{ templateType: string; fileName: string; status: string }>;
 };
@@ -50,7 +58,7 @@ export function PreviewStep({
     return <p className="text-red-400">{t('common.previewLoadFailed')}</p>;
   }
 
-  const { company, users, uploads } = preview;
+  const { company, bankAccounts, users, uploads } = preview;
   const completedUploads = uploads.filter((u) => u.status === 'completed');
 
   return (
@@ -84,6 +92,32 @@ export function PreviewStep({
               }
             />
           </dl>
+        </section>
+
+        <section>
+          <h3 className="text-sm font-medium uppercase tracking-wide text-slate-500">
+            {t('onboarding.preview.bankAccountsSection', { count: String(bankAccounts.length) })}
+          </h3>
+          {bankAccounts.length === 0 ? (
+            <p className="mt-3 text-sm text-slate-500">{t('onboarding.preview.noBankAccounts')}</p>
+          ) : (
+            <ul className="mt-3 space-y-2">
+              {bankAccounts.map((account) => (
+                <li
+                  key={`${account.accountNumberMasked}-${account.name}`}
+                  className="flex flex-wrap items-center justify-between gap-2 rounded-lg border border-slate-700 px-3 py-2 text-sm"
+                >
+                  <span className="text-slate-200">
+                    {account.name}{' '}
+                    <span className="text-slate-500">({account.accountNumberMasked})</span>
+                  </span>
+                  <span className="font-mono text-slate-300">
+                    {account.currentBalance.toLocaleString()} {account.currency}
+                  </span>
+                </li>
+              ))}
+            </ul>
+          )}
         </section>
 
         <section>

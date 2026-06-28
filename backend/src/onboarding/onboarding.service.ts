@@ -5,14 +5,16 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import { UserRole } from '@prisma/client';
+import type { Prisma } from '@prisma/client';
 import * as bcrypt from 'bcryptjs';
 import { DEFAULT_DEMO_COMPANY_ID } from '@liqvia2/shared';
 import { isDemoGuestEnabled } from '../demo/demo-access';
 import { PrismaService } from '../prisma/prisma.service';
+import { BankAccountsService } from '../bank-accounts/bank-accounts.service';
 import { TreasuryEngineService } from '../treasury/treasury-engine.service';
 import { AuthService } from '../auth/auth.service';
 import { AuthResponse, AuthUser } from '../auth/auth.types';
-import { AddEntityDto, OnboardingCreateCompanyDto, SelectCompanyDto } from './dto/onboarding.dto';
+import { AddEntityDto, OnboardingCreateCompanyDto, OnboardingBankAccountDto, SelectCompanyDto } from './dto/onboarding.dto';
 
 const BCRYPT_ROUNDS = 10;
 const ADMIN_ROLES: UserRole[] = [UserRole.admin, UserRole.owner];
@@ -23,6 +25,7 @@ export class OnboardingService {
     private readonly prisma: PrismaService,
     private readonly auth: AuthService,
     private readonly treasury: TreasuryEngineService,
+    private readonly bankAccounts: BankAccountsService,
   ) {}
 
   async getContext(userId: string) {
@@ -113,6 +116,14 @@ export class OnboardingService {
     }
 
     const asOfDate = new Date().toISOString().slice(0, 10);
+    const manualBankAccounts = this.normalizeBankAccountInputs(
+      dto.company.bankAccounts,
+      dto.company.currency,
+    );
+    const openingCashBalance =
+      manualBankAccounts.length > 0
+        ? this.sumOpeningBalances(manualBankAccounts)
+        : dto.company.openingCashBalance;
 
     const updatedUser = await this.prisma.$transaction(async (tx) => {
       const company = await tx.company.create({
@@ -123,7 +134,7 @@ export class OnboardingService {
           locale: dto.company.locale ?? 'en',
           fiscalYearStart: dto.company.fiscalYearStart,
           forecastHorizonWeeks: dto.company.forecastHorizonWeeks,
-          openingCashBalance: dto.company.openingCashBalance,
+          openingCashBalance,
           onboardingCompleted: false,
         },
       });
@@ -137,24 +148,9 @@ export class OnboardingService {
         },
       });
 
-      const bankAccount = await tx.bankAccount.create({
-        data: {
-          companyId: company.id,
-          name: 'Primary Operating Account',
-          accountNumberMasked: '****0001',
-          currency: dto.company.currency,
-        },
-      });
-
-      await tx.cashMovement.create({
-        data: {
-          companyId: company.id,
-          bankAccountId: bankAccount.id,
-          movementDate: new Date(asOfDate),
-          amount: dto.company.openingCashBalance,
-          isInflow: dto.company.openingCashBalance >= 0,
-          description: 'Opening cash balance',
-        },
+      await this.seedInitialBankAccounts(tx, company.id, dto.company.currency, asOfDate, {
+        bankAccounts: manualBankAccounts.length > 0 ? manualBankAccounts : undefined,
+        openingCashBalance: dto.company.openingCashBalance,
       });
 
       for (const member of dto.teamMembers ?? []) {
@@ -213,6 +209,11 @@ export class OnboardingService {
   async addEntity(user: AuthUser, dto: AddEntityDto): Promise<AuthResponse> {
     const asOfDate = new Date().toISOString().slice(0, 10);
     const switchToNew = dto.switchToNew !== false;
+    const manualBankAccounts = this.normalizeBankAccountInputs(dto.bankAccounts, dto.currency);
+    const openingCashBalance =
+      manualBankAccounts.length > 0
+        ? this.sumOpeningBalances(manualBankAccounts)
+        : dto.openingCashBalance;
 
     const updatedUser = await this.prisma.$transaction(async (tx) => {
       const company = await tx.company.create({
@@ -223,7 +224,7 @@ export class OnboardingService {
           locale: dto.locale ?? 'en',
           fiscalYearStart: dto.fiscalYearStart,
           forecastHorizonWeeks: dto.forecastHorizonWeeks,
-          openingCashBalance: dto.openingCashBalance,
+          openingCashBalance,
           onboardingCompleted: false,
         },
       });
@@ -237,27 +238,10 @@ export class OnboardingService {
         },
       });
 
-      const bankAccount = await tx.bankAccount.create({
-        data: {
-          companyId: company.id,
-          name: 'Primary Operating Account',
-          accountNumberMasked: '****0001',
-          currency: dto.currency,
-        },
+      await this.seedInitialBankAccounts(tx, company.id, dto.currency, asOfDate, {
+        bankAccounts: manualBankAccounts.length > 0 ? manualBankAccounts : undefined,
+        openingCashBalance: dto.openingCashBalance,
       });
-
-      if (dto.openingCashBalance !== 0) {
-        await tx.cashMovement.create({
-          data: {
-            companyId: company.id,
-            bankAccountId: bankAccount.id,
-            movementDate: new Date(asOfDate),
-            amount: Math.abs(dto.openingCashBalance),
-            isInflow: dto.openingCashBalance >= 0,
-            description: 'Opening cash balance',
-          },
-        });
-      }
 
       if (switchToNew) {
         return tx.userProfile.update({
@@ -314,7 +298,7 @@ export class OnboardingService {
       where: { id: user.companyId },
     });
 
-    const [users, batches] = await Promise.all([
+    const [users, batches, bankSummary] = await Promise.all([
       this.prisma.userProfile.findMany({
         where: { companyId: user.companyId },
         orderBy: { createdAt: 'asc' },
@@ -332,6 +316,7 @@ export class OnboardingService {
           createdAt: true,
         },
       }),
+      this.bankAccounts.listForCompany(user.companyId),
     ]);
 
     const completedTemplates = new Set(
@@ -349,6 +334,14 @@ export class OnboardingService {
       },
       users,
       uploads: batches,
+      bankAccounts: bankSummary.accounts.map((account) => ({
+        name: account.accountName,
+        bankName: account.bankName,
+        accountNumberMasked: account.accountNumberMasked,
+        currency: account.currency,
+        openingBalance: account.openingBalance,
+        currentBalance: account.currentBalance,
+      })),
       completedTemplateCount: completedTemplates.size,
       recommendedTemplates: ['trial_balance', 'bank_balances', 'ar_ageing', 'ap_ageing', 'budget'],
     };
@@ -525,5 +518,96 @@ export class OnboardingService {
       return 'select';
     }
     return 'welcome';
+  }
+
+  private normalizeBankAccountInputs(
+    accounts: OnboardingBankAccountDto[] | undefined,
+    companyCurrency: string,
+  ): Array<Required<Pick<OnboardingBankAccountDto, 'name' | 'openingBalance'>> & {
+    accountNumberMasked: string;
+    currency: string;
+  }> {
+    return (accounts ?? [])
+      .map((account) => ({
+        name: account.name?.trim() ?? '',
+        accountNumberMasked: account.accountNumberMasked?.trim() || '****0000',
+        currency: account.currency?.trim() || companyCurrency,
+        openingBalance: Number(account.openingBalance) || 0,
+      }))
+      .filter((account) => account.name.length > 0);
+  }
+
+  private sumOpeningBalances(
+    accounts: Array<{ openingBalance: number }>,
+  ): number {
+    return accounts.reduce((total, account) => total + account.openingBalance, 0);
+  }
+
+  private async seedInitialBankAccounts(
+    tx: Prisma.TransactionClient,
+    companyId: string,
+    companyCurrency: string,
+    asOfDate: string,
+    options: {
+      bankAccounts?: Array<{
+        name: string;
+        accountNumberMasked: string;
+        currency: string;
+        openingBalance: number;
+      }>;
+      openingCashBalance?: number;
+    },
+  ): Promise<void> {
+    const rows = options.bankAccounts ?? [];
+
+    if (rows.length > 0) {
+      for (const row of rows) {
+        const account = await tx.bankAccount.create({
+          data: {
+            companyId,
+            name: row.name,
+            accountNumberMasked: row.accountNumberMasked,
+            currency: row.currency,
+          },
+        });
+
+        if (row.openingBalance !== 0) {
+          await tx.cashMovement.create({
+            data: {
+              companyId,
+              bankAccountId: account.id,
+              movementDate: new Date(asOfDate),
+              amount: Math.abs(row.openingBalance),
+              isInflow: row.openingBalance >= 0,
+              description: 'Opening cash balance',
+            },
+          });
+        }
+      }
+      return;
+    }
+
+    const opening = Number(options.openingCashBalance) || 0;
+    const bankAccount = await tx.bankAccount.create({
+      data: {
+        companyId,
+        name: 'Primary Operating Account',
+        accountNumberMasked: '****0001',
+        currency: companyCurrency,
+      },
+    });
+
+    if (opening !== 0) {
+      await tx.cashMovement.create({
+        data: {
+          companyId,
+          bankAccountId: bankAccount.id,
+          movementDate: new Date(asOfDate),
+          amount: Math.abs(opening),
+          isInflow: opening >= 0,
+          description: 'Opening cash balance',
+        },
+      });
+    }
   }
 }
