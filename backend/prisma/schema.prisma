@@ -43,6 +43,7 @@ enum UploadTemplateType {
   prior_period_budget
   rolling_budget
   weekly_actuals
+  expense_report
 }
 
 enum PeriodGranularity {

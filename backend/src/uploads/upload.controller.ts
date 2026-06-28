@@ -24,6 +24,8 @@ import {
 } from '@nestjs/swagger';
 import type { Response } from 'express';
 import {
+  AI_UPLOAD_TEMPLATE_TYPES,
+  AiUploadTemplateType,
   buildTemplateSampleCsv,
   buildTemplateSampleXlsx,
   getTemplateSampleFileName,
@@ -113,11 +115,13 @@ export class UploadController {
   @UseGuards(WorkspaceGuard)
   @Permissions('uploads:write')
   @ApiOperation({
-    summary: 'AI Upload Centre — normalize heterogeneous bank exports to canonical bank_transactions CSV',
+    summary: 'AI Upload Centre — normalize heterogeneous exports to a canonical upload template CSV',
   })
   normalizeAi(@CurrentUser() user: AuthUser, @Body() body: AiNormalizeUploadDto) {
     const csvContent = assertUploadCsvContent(body.csvContent);
+    const templateType = parseAiTemplateType(body.templateType);
     return this.aiUpload.normalizeCsvContent(csvContent, {
+      templateType,
       sourceHint: body.sourceHint,
       defaultBankAccountName: body.defaultBankAccountName,
       defaultAccountMasked: body.defaultAccountMasked,
@@ -131,7 +135,7 @@ export class UploadController {
   @UseGuards(WorkspaceGuard)
   @Permissions('uploads:write')
   @ApiConsumes('multipart/form-data')
-  @ApiOperation({ summary: 'AI Upload Centre — normalize uploaded CSV, Excel, or PDF bank export file' })
+  @ApiOperation({ summary: 'AI Upload Centre — normalize uploaded CSV, Excel, or PDF export file' })
   @UseInterceptors(
     FileInterceptor('file', {
       limits: { fileSize: MAX_UPLOAD_FILE_BYTES },
@@ -140,14 +144,17 @@ export class UploadController {
   normalizeAiFile(
     @CurrentUser() user: AuthUser,
     @UploadedFile() file: Express.Multer.File | undefined,
+    @Body('templateType') templateTypeRaw?: string,
     @Body('sourceHint') sourceHintRaw?: string,
     @Body('defaultBankAccountName') defaultBankAccountName?: string,
     @Body('defaultAccountMasked') defaultAccountMasked?: string,
     @Body('companyCurrency') companyCurrency?: string,
   ) {
     assertUploadFileSize(file?.buffer?.byteLength ?? file?.size);
+    const templateType = parseAiTemplateType(templateTypeRaw);
     const sourceHint = parseSourceHint(sourceHintRaw);
     return this.aiUpload.normalizeFileBuffer(file!.buffer, sanitizeUploadFileName(file!.originalname, 'upload.csv'), {
+      templateType,
       sourceHint,
       defaultBankAccountName,
       defaultAccountMasked,
@@ -161,7 +168,7 @@ export class UploadController {
   @Permissions('uploads:write')
   @ApiConsumes('multipart/form-data')
   @ApiOperation({
-    summary: 'AI Upload Centre — normalize multiple CSV, Excel, or PDF bank export files',
+    summary: 'AI Upload Centre — normalize multiple CSV, Excel, or PDF export files',
   })
   @UseInterceptors(
     FilesInterceptor('files', MAX_AI_UPLOAD_FILES, {
@@ -171,6 +178,7 @@ export class UploadController {
   normalizeAiFiles(
     @CurrentUser() user: AuthUser,
     @UploadedFiles() files: Express.Multer.File[] | undefined,
+    @Body('templateType') templateTypeRaw?: string,
     @Body('sourceHint') sourceHintRaw?: string,
     @Body('defaultBankAccountName') defaultBankAccountName?: string,
     @Body('defaultAccountMasked') defaultAccountMasked?: string,
@@ -183,6 +191,7 @@ export class UploadController {
     for (const file of batch) {
       assertUploadFileSize(file.buffer?.byteLength ?? file.size);
     }
+    const templateType = parseAiTemplateType(templateTypeRaw);
     const sourceHint = parseSourceHint(sourceHintRaw);
     return this.aiUpload.normalizeMultipleFileBuffers(
       batch.map((file) => ({
@@ -190,6 +199,7 @@ export class UploadController {
         fileName: sanitizeUploadFileName(file.originalname, 'upload.csv'),
       })),
       {
+        templateType,
         sourceHint,
         defaultBankAccountName,
         defaultAccountMasked,
@@ -201,13 +211,14 @@ export class UploadController {
   @Post('ai/import')
   @UseGuards(WorkspaceGuard)
   @Permissions('uploads:write')
-  @ApiOperation({ summary: 'Import AI-normalized canonical bank_transactions CSV' })
+  @ApiOperation({ summary: 'Import AI-normalized canonical upload CSV' })
   importNormalized(@CurrentUser() user: AuthUser, @Body() body: AiImportNormalizedDto) {
     const csvContent = assertUploadCsvContent(body.canonicalCsv);
+    const templateType = parseAiTemplateType(body.templateType);
     return this.imports.importCsv({
-      templateType: 'bank_transactions',
+      templateType,
       csvContent,
-      fileName: sanitizeUploadFileName(body.fileName, 'ai-bank-transactions.csv'),
+      fileName: sanitizeUploadFileName(body.fileName, `ai-${templateType}.csv`),
       companyId: user.companyId!,
       companyCurrency: body.companyCurrency,
     });
@@ -342,6 +353,16 @@ export class UploadController {
       summary: `${result.rowCount} row(s) validated successfully.`,
     };
   }
+}
+
+function parseAiTemplateType(value: string | undefined): AiUploadTemplateType {
+  const type = value ?? 'bank_transactions';
+  if (AI_UPLOAD_TEMPLATE_TYPES.includes(type as AiUploadTemplateType)) {
+    return type as AiUploadTemplateType;
+  }
+  throw new BadRequestException(
+    `Invalid templateType. Must be one of: ${AI_UPLOAD_TEMPLATE_TYPES.join(', ')}`,
+  );
 }
 
 function parseSourceHint(value: string | undefined) {

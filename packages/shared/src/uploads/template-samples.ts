@@ -1,5 +1,5 @@
 import * as XLSX from 'xlsx';
-import { getFutureWeekPeriods, getPastWeekPeriods } from '../rolling-budget';
+import { getFutureWeekPeriods, getPastWeekPeriods, periodToWeekStart } from '../rolling-budget';
 import { UPLOAD_TEMPLATES } from './templates';
 import type { UploadTemplateType } from './types';
 
@@ -67,6 +67,18 @@ function buildFutureWeekSampleRows(periods: string[]): string[][] {
   return rows;
 }
 
+function buildExpenseReportSampleRows(periods: string[]): string[][] {
+  const samples = [
+    ['Office Supplies Co', 'Stationery and toner', 'expenses', '420'],
+    ['Payroll Provider', 'January payroll run', 'payroll', '11000'],
+    ['Cloud Services Ltd', 'SaaS subscriptions', 'expenses', '890'],
+  ] as const;
+  return periods.slice(0, samples.length).map((period, index) => {
+    const sample = samples[index]!;
+    return [periodToWeekStart(period), sample[0], sample[1], sample[2], sample[3], 'USD'];
+  });
+}
+
 function sampleRowsForTemplate(templateType: UploadTemplateType, asOfDate: string): string[][] {
   if (
     templateType === 'weekly_actuals' ||
@@ -74,6 +86,9 @@ function sampleRowsForTemplate(templateType: UploadTemplateType, asOfDate: strin
     templateType === 'budget'
   ) {
     return buildPastWeekSampleRows(templateType, getPastWeekPeriods(asOfDate));
+  }
+  if (templateType === 'expense_report') {
+    return buildExpenseReportSampleRows(getPastWeekPeriods(asOfDate));
   }
   if (templateType === 'rolling_budget') {
     return buildFutureWeekSampleRows(getFutureWeekPeriods(asOfDate));

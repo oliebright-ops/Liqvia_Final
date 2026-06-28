@@ -7,7 +7,8 @@ export type UploadTemplateType =
   | 'budget'
   | 'prior_period_budget'
   | 'rolling_budget'
-  | 'weekly_actuals';
+  | 'weekly_actuals'
+  | 'expense_report';
 
 export type SupplierPriority = 'payroll' | 'tax' | 'critical' | 'flexible' | 'non_essential';
 

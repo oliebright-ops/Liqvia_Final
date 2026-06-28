@@ -1,16 +1,21 @@
 import { BadRequestException, Injectable, Logger } from '@nestjs/common';
 import {
   AiBankNormalizeResult,
+  AiDataNormalizeResult,
+  AI_UPLOAD_TEMPLATE_TYPES,
+  AiUploadTemplateType,
   BankColumnMapping,
   BankSignConvention,
   BankSourceFormat,
   isAiUploadFileName,
   isPdfFileName,
-  mergeAiBankNormalizeResults,
-  normalizeBankUploadCsv,
+  mergeAiUploadResults,
+  normalizeAiUploadCsv,
   parseCsv,
   pdfTextToCsv,
   spreadsheetToCsvString,
+  UploadTemplateType,
+  UPLOAD_TEMPLATES,
   validateUpload,
 } from '@liqvia2/shared';
 import { extractPdfContent } from './pdf-extract';
@@ -18,27 +23,37 @@ import { extractPdfContent } from './pdf-extract';
 export type AiUploadFileResult = {
   fileName: string;
   rowCount: number;
-  detectedFormat: BankSourceFormat;
-  confidence: AiBankNormalizeResult['confidence'];
+  detectedFormat: string;
+  confidence: AiDataNormalizeResult['confidence'];
 };
 
-export type AiUploadNormalizeResponse = Omit<AiBankNormalizeResult, 'canonicalCsv' | 'unifiedRows'> & {
+export type AiUploadNormalizeResponse = {
+  templateType: UploadTemplateType;
+  detectedFormat: string;
+  signConvention?: string;
+  mapping: Record<string, string | undefined>;
+  confidence: 'high' | 'medium' | 'low';
+  source: 'rules' | 'ai';
+  warnings: string[];
+  skippedRows: number;
+  rowCount: number;
+  previewRows: Record<string, unknown>[];
   validation: ReturnType<typeof validateUpload>;
   canonicalCsv: string;
   model?: string;
-  source: 'rules' | 'ai';
   filesProcessed?: number;
   fileResults?: AiUploadFileResult[];
 };
 
 type AiMappingResponse = {
-  mapping: BankColumnMapping;
-  signConvention: BankSignConvention;
-  detectedFormat: BankSourceFormat;
+  mapping: Record<string, string | undefined>;
+  signConvention?: BankSignConvention;
+  detectedFormat?: string;
   notes?: string;
 };
 
 type NormalizeOptions = {
+  templateType: AiUploadTemplateType;
   sourceHint?: BankSourceFormat;
   defaultBankAccountName?: string;
   defaultAccountMasked?: string;
@@ -53,9 +68,9 @@ export class AiUploadService {
 
   normalizeCsvContent(
     csvContent: string,
-    options: NormalizeOptions,
+    options: Omit<NormalizeOptions, 'fileName' | 'fromPdf'> & { fileName?: string },
   ): Promise<AiUploadNormalizeResponse> {
-    return this.normalizeContent(csvContent, options);
+    return this.normalizeContent(csvContent, { ...options, fileName: options.fileName });
   }
 
   async normalizeFileBuffer(
@@ -63,6 +78,7 @@ export class AiUploadService {
     fileName: string,
     options: Omit<NormalizeOptions, 'fileName' | 'fromPdf'>,
   ): Promise<AiUploadNormalizeResponse> {
+    this.assertTemplateSupported(options.templateType);
     const { csvContent, preWarnings } = await this.fileBufferToCsv(buffer, fileName);
     const response = await this.normalizeContent(csvContent, {
       ...options,
@@ -79,6 +95,8 @@ export class AiUploadService {
     files: Array<{ buffer: Buffer; fileName: string }>,
     options: Omit<NormalizeOptions, 'fileName' | 'fromPdf'>,
   ): Promise<AiUploadNormalizeResponse> {
+    this.assertTemplateSupported(options.templateType);
+
     if (files.length === 0) {
       throw new BadRequestException('At least one file is required (field name: files)');
     }
@@ -107,7 +125,7 @@ export class AiUploadService {
       };
     }
 
-    const normalized: AiBankNormalizeResult[] = [];
+    const normalized: Array<AiBankNormalizeResult | AiDataNormalizeResult> = [];
     const fileResults: AiUploadFileResult[] = [];
     const failures: string[] = [];
     let model: string | undefined;
@@ -127,8 +145,9 @@ export class AiUploadService {
         normalized.push(result);
         fileResults.push({
           fileName: file.fileName,
-          rowCount: result.rowCount,
-          detectedFormat: result.detectedFormat,
+          rowCount: 'rowCount' in result ? result.rowCount : 0,
+          detectedFormat:
+            'detectedFormat' in result ? String(result.detectedFormat) : options.templateType,
           confidence: result.confidence,
         });
       } catch (err) {
@@ -143,26 +162,23 @@ export class AiUploadService {
       );
     }
 
-    const merged = mergeAiBankNormalizeResults(normalized, {
-      fileNames: fileResults.map((file) => file.fileName),
-    });
+    const merged = mergeAiUploadResults(options.templateType, normalized, fileResults.map((f) => f.fileName));
     if (failures.length > 0) {
       merged.warnings.push(`Skipped ${failures.length} file(s): ${failures.join('; ')}`);
     }
 
-    const validation = validateUpload('bank_transactions', merged.canonicalCsv, {
-      companyCurrency: options.companyCurrency,
-    });
-
-    const { unifiedRows: _u, ...rest } = merged;
-    return {
-      ...rest,
-      validation,
-      canonicalCsv: merged.canonicalCsv,
-      model,
+    return this.finalizeResponse(options.templateType, merged, options.companyCurrency, model, {
       filesProcessed: fileResults.length,
       fileResults,
-    };
+    });
+  }
+
+  private assertTemplateSupported(templateType: UploadTemplateType) {
+    if (!AI_UPLOAD_TEMPLATE_TYPES.includes(templateType as AiUploadTemplateType)) {
+      throw new BadRequestException(
+        `AI Upload Centre does not support template type "${templateType}". Supported: ${AI_UPLOAD_TEMPLATE_TYPES.join(', ')}`,
+      );
+    }
   }
 
   private async fileBufferToCsv(
@@ -232,21 +248,15 @@ export class AiUploadService {
       try {
         const aiCsv = await this.inferCsvFromPdfTextWithOpenAi(apiKey, text, fileName);
         if (aiCsv) {
-          const aiParsed = pdfTextToCsv(aiCsv);
-          if (aiParsed.rowCount > parsed.rowCount) {
-            parsed = { ...aiParsed, warnings: ['PDF rows extracted with AI assistance.', ...aiParsed.warnings] };
+          const direct = parseCsv(aiCsv.trim());
+          if (direct.rows.length > parsed.rowCount) {
+            parsed = {
+              csv: aiCsv.trim(),
+              confidence: direct.rows.length >= 3 ? 'medium' : 'low',
+              warnings: ['PDF rows extracted with AI assistance.'],
+              rowCount: direct.rows.length,
+            };
             warnings.push('PDF table parsed with AI assistance.');
-          } else {
-            const direct = parseCsv(aiCsv.trim());
-            if (direct.rows.length > parsed.rowCount) {
-              parsed = {
-                csv: aiCsv.trim(),
-                confidence: direct.rows.length >= 3 ? 'medium' : 'low',
-                warnings: ['PDF rows extracted with AI assistance.'],
-                rowCount: direct.rows.length,
-              };
-              warnings.push('PDF table parsed with AI assistance.');
-            }
           }
         }
       } catch (err) {
@@ -269,23 +279,48 @@ export class AiUploadService {
     options: NormalizeOptions,
   ): Promise<AiUploadNormalizeResponse> {
     const { result, model } = await this.normalizeContentToResult(csvContent, options);
-    const validation = validateUpload('bank_transactions', result.canonicalCsv, {
-      companyCurrency: options.companyCurrency,
+    return this.finalizeResponse(options.templateType, result, options.companyCurrency, model);
+  }
+
+  private finalizeResponse(
+    templateType: UploadTemplateType,
+    result: AiBankNormalizeResult | AiDataNormalizeResult,
+    companyCurrency?: string,
+    model?: string,
+    extras?: Pick<AiUploadNormalizeResponse, 'filesProcessed' | 'fileResults'>,
+  ): AiUploadNormalizeResponse {
+    const validation = validateUpload(templateType, result.canonicalCsv, {
+      companyCurrency,
     });
-    const { unifiedRows: _u, ...rest } = result;
+
+    const signConvention =
+      'signConvention' in result ? result.signConvention : undefined;
+    const detectedFormat =
+      'detectedFormat' in result ? String(result.detectedFormat) : templateType;
+
     return {
-      ...rest,
+      templateType,
+      detectedFormat,
+      signConvention,
+      mapping: result.mapping,
+      confidence: result.confidence,
+      source: result.source,
+      warnings: result.warnings,
+      skippedRows: result.skippedRows,
+      rowCount: result.rowCount,
+      previewRows: result.previewRows,
       validation,
       canonicalCsv: result.canonicalCsv,
       model,
+      ...extras,
     };
   }
 
   private async normalizeContentToResult(
     csvContent: string,
     options: NormalizeOptions,
-  ): Promise<{ result: AiBankNormalizeResult; model?: string }> {
-    let result = normalizeBankUploadCsv(csvContent, {
+  ): Promise<{ result: AiBankNormalizeResult | AiDataNormalizeResult; model?: string }> {
+    let result = normalizeAiUploadCsv(options.templateType, csvContent, {
       sourceHint: options.sourceHint,
       defaultBankAccountName: options.defaultBankAccountName,
       defaultAccountMasked: options.defaultAccountMasked,
@@ -296,26 +331,29 @@ export class AiUploadService {
     let model: string | undefined;
     const needsAiMapping =
       apiKey &&
-      (result.confidence === 'low' || result.rowCount === 0 || (options.fromPdf && result.confidence !== 'high'));
+      (result.confidence === 'low' ||
+        result.rowCount === 0 ||
+        ((options.fromPdf || options.templateType !== 'bank_transactions') &&
+          result.confidence !== 'high'));
 
     if (needsAiMapping) {
       try {
         const ai = await this.inferMappingWithOpenAi(apiKey!, csvContent, options);
         if (ai) {
-          result = normalizeBankUploadCsv(csvContent, {
+          result = normalizeAiUploadCsv(options.templateType, csvContent, {
             sourceHint: options.sourceHint,
             defaultBankAccountName: options.defaultBankAccountName,
             defaultAccountMasked: options.defaultAccountMasked,
             defaultCurrency: options.companyCurrency,
-            aiMapping: ai.mapping,
+            aiMapping: ai.mapping as BankColumnMapping,
             aiSignConvention: ai.signConvention,
           });
           result = {
             ...result,
-            detectedFormat: ai.detectedFormat,
+            detectedFormat: ai.detectedFormat ?? ('detectedFormat' in result ? result.detectedFormat : options.templateType),
             source: 'ai',
             warnings: ai.notes ? [ai.notes, ...result.warnings] : result.warnings,
-          };
+          } as AiBankNormalizeResult | AiDataNormalizeResult;
           model = process.env.OPENAI_MODEL ?? 'gpt-4o-mini';
         }
       } catch (err) {
@@ -362,9 +400,7 @@ Preserve amounts and signs exactly as shown in the PDF.`,
       }),
     });
 
-    if (!res.ok) {
-      throw new Error(`OpenAI HTTP ${res.status}`);
-    }
+    if (!res.ok) throw new Error(`OpenAI HTTP ${res.status}`);
 
     const data = (await res.json()) as {
       choices?: Array<{ message?: { content?: string } }>;
@@ -380,12 +416,25 @@ Preserve amounts and signs exactly as shown in the PDF.`,
   private async inferMappingWithOpenAi(
     apiKey: string,
     csvContent: string,
-    options: { sourceHint?: BankSourceFormat; fileName?: string },
+    options: NormalizeOptions,
   ): Promise<AiMappingResponse | null> {
     const parsed = parseCsv(csvContent.trim());
     const sampleRows = parsed.rows.slice(0, 8);
+    const canonicalHeaders = UPLOAD_TEMPLATES[options.templateType].headers;
 
     const model = process.env.OPENAI_MODEL ?? 'gpt-4o-mini';
+    const systemPrompt =
+      options.templateType === 'bank_transactions'
+        ? `You map heterogeneous bank transaction exports to canonical fields.
+Return JSON: { "detectedFormat": "xero|onec|paycom|sap|oracle|cba|amex|generic", "signConvention": "signed_negative_in|signed_positive_in|debit_credit_columns|direction_column|split_in_out_columns", "mapping": { optional source header names for canonical fields }, "notes": "short string" }.
+Canonical fields: bankAccountName, accountNumberMasked, transactionDate, description, payee, amount, debit, credit, direction, spent, received, currency.
+Rules: use exact header strings from the sample.`
+        : `You map heterogeneous finance exports to canonical Liqvia upload columns.
+Return JSON: { "detectedFormat": "generic|xero|quickbooks|myob|sap|oracle", "mapping": { "Canonical Header": "Exact Source Header" }, "notes": "short string" }.
+Target template: ${options.templateType}
+Required canonical headers: ${canonicalHeaders.join(', ')}
+Use exact source header strings from the sample.`;
+
     const res = await fetch('https://api.openai.com/v1/chat/completions', {
       method: 'POST',
       headers: {
@@ -397,15 +446,11 @@ Preserve amounts and signs exactly as shown in the PDF.`,
         temperature: 0.1,
         response_format: { type: 'json_object' },
         messages: [
-          {
-            role: 'system',
-            content: `You map heterogeneous bank transaction exports to canonical fields.
-Return JSON: { "detectedFormat": "xero|onec|paycom|sap|oracle|cba|amex|generic", "signConvention": "signed_negative_in|signed_positive_in|debit_credit_columns|direction_column|split_in_out_columns", "mapping": { optional header names from the file for: bankAccountName, accountNumberMasked, transactionDate, description, payee, amount, debit, credit, direction, spent, received, currency }, "notes": "short string" }.
-Rules: use exact header strings from the sample. Bank convention: minus/credit often means money IN; plus/debit often means money OUT (signed_negative_in). Xero uses spent/received columns (split_in_out_columns). SAP/Oracle often use debit/credit columns.`,
-          },
+          { role: 'system', content: systemPrompt },
           {
             role: 'user',
             content: JSON.stringify({
+              templateType: options.templateType,
               sourceHint: options.sourceHint ?? 'auto',
               fileName: options.fileName,
               headers: parsed.headers,
@@ -416,9 +461,7 @@ Rules: use exact header strings from the sample. Bank convention: minus/credit o
       }),
     });
 
-    if (!res.ok) {
-      throw new Error(`OpenAI HTTP ${res.status}`);
-    }
+    if (!res.ok) throw new Error(`OpenAI HTTP ${res.status}`);
 
     const data = (await res.json()) as {
       choices?: Array<{ message?: { content?: string } }>;

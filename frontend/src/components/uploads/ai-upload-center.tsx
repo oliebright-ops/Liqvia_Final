@@ -1,12 +1,14 @@
 'use client';
 
-import { useCallback, useState } from 'react';
+import { useCallback, useMemo, useState } from 'react';
 import Link from 'next/link';
 import {
+  AI_UPLOAD_TEMPLATE_TYPES,
   BANK_SOURCE_FORMATS,
   AI_UPLOAD_FILE_ACCEPT,
   MAX_AI_UPLOAD_FILES,
   UPLOAD_TEMPLATES,
+  type AiUploadTemplateType,
   type BankSourceFormat,
   type UploadValidationResult,
 } from '@liqvia2/shared';
@@ -25,13 +27,14 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 type AiUploadFileResult = {
   fileName: string;
   rowCount: number;
-  detectedFormat: BankSourceFormat;
+  detectedFormat: string;
   confidence: 'high' | 'medium' | 'low';
 };
 
 type AiNormalizeResponse = {
-  detectedFormat: BankSourceFormat;
-  signConvention: string;
+  templateType: AiUploadTemplateType;
+  detectedFormat: string;
+  signConvention?: string;
   mapping: Record<string, string | undefined>;
   confidence: 'high' | 'medium' | 'low';
   source: 'rules' | 'ai';
@@ -67,12 +70,20 @@ function fileFormatLabel(fileName: string): string {
   return 'File';
 }
 
+function formatLabel(detectedFormat: string, templateType: AiUploadTemplateType): string {
+  if (templateType === 'bank_transactions' && detectedFormat in SOURCE_LABELS) {
+    return SOURCE_LABELS[detectedFormat as BankSourceFormat];
+  }
+  return detectedFormat;
+}
+
 export function AiUploadCenter() {
   const t = useTranslations();
   const { can } = useAuth();
   const { data: dashboard } = useDashboard();
   const canUpload = can('uploads:write');
 
+  const [templateType, setTemplateType] = useState<AiUploadTemplateType>('bank_transactions');
   const [sourceHint, setSourceHint] = useState<BankSourceFormat>('auto');
   const [defaultAccountName, setDefaultAccountName] = useState('');
   const [defaultAccountMasked, setDefaultAccountMasked] = useState('');
@@ -84,13 +95,23 @@ export function AiUploadCenter() {
   const [importMessage, setImportMessage] = useState<string | null>(null);
 
   const currency = dashboard?.currency ?? 'USD';
-  const headers = UPLOAD_TEMPLATES.bank_transactions.headers;
-  const importFileLabel =
-    selectedFiles.length === 1
-      ? selectedFiles[0]!.name
-      : selectedFiles.length > 1
-        ? `ai-batch-${selectedFiles.length}-files.csv`
-        : 'ai-bank-transactions.csv';
+  const headers = UPLOAD_TEMPLATES[templateType].headers;
+  const isBankTemplate = templateType === 'bank_transactions';
+  const templateLabel = UPLOAD_TEMPLATES[templateType].label;
+
+  const importFileLabel = useMemo(() => {
+    if (selectedFiles.length === 1) return selectedFiles[0]!.name;
+    if (selectedFiles.length > 1) return `ai-batch-${selectedFiles.length}-files.csv`;
+    return `ai-${templateType}.csv`;
+  }, [selectedFiles, templateType]);
+
+  const resetOnTemplateChange = useCallback((next: AiUploadTemplateType) => {
+    setTemplateType(next);
+    setSelectedFiles([]);
+    setResult(null);
+    setImportMessage(null);
+    setError(null);
+  }, []);
 
   const addFiles = useCallback((incoming: FileList | File[]) => {
     const next = [...incoming];
@@ -126,9 +147,12 @@ export function AiUploadCenter() {
       for (const file of selectedFiles) {
         form.append('files', file);
       }
-      form.append('sourceHint', sourceHint);
-      if (defaultAccountName.trim()) form.append('defaultBankAccountName', defaultAccountName.trim());
-      if (defaultAccountMasked.trim()) form.append('defaultAccountMasked', defaultAccountMasked.trim());
+      form.append('templateType', templateType);
+      if (isBankTemplate) {
+        form.append('sourceHint', sourceHint);
+        if (defaultAccountName.trim()) form.append('defaultBankAccountName', defaultAccountName.trim());
+        if (defaultAccountMasked.trim()) form.append('defaultAccountMasked', defaultAccountMasked.trim());
+      }
       form.append('companyCurrency', currency);
 
       const res = await fetch(apiUrl('/uploads/ai/normalize/files'), {
@@ -155,7 +179,17 @@ export function AiUploadCenter() {
     } finally {
       setNormalizing(false);
     }
-  }, [canUpload, selectedFiles, sourceHint, defaultAccountName, defaultAccountMasked, currency, t]);
+  }, [
+    canUpload,
+    selectedFiles,
+    templateType,
+    isBankTemplate,
+    sourceHint,
+    defaultAccountName,
+    defaultAccountMasked,
+    currency,
+    t,
+  ]);
 
   async function confirmImport() {
     if (!result?.validation.valid || !result.canonicalCsv) return;
@@ -163,6 +197,7 @@ export function AiUploadCenter() {
     setError(null);
     try {
       const summary = await apiPost<{ rowCount: number; batchId: string }>('/uploads/ai/import', {
+        templateType: result.templateType ?? templateType,
         canonicalCsv: result.canonicalCsv,
         fileName: `ai-${importFileLabel.replace(/[^\w.\-]+/g, '-')}`,
         companyCurrency: currency,
@@ -181,7 +216,7 @@ export function AiUploadCenter() {
       <PageHeader title={t('upload.ai.title')} subtitle={t('upload.ai.subtitle')} />
 
       <p className="text-sm text-muted-foreground">
-        {t('upload.ai.signConventionNote')}{' '}
+        {isBankTemplate ? t('upload.ai.signConventionNote') : t('upload.ai.genericNote')}{' '}
         <Link href="/uploads" className="text-primary underline-offset-2 hover:underline">
           {t('upload.ai.standardUploadLink')}
         </Link>
@@ -193,42 +228,62 @@ export function AiUploadCenter() {
           <CardDescription>{t('upload.ai.uploadHint')}</CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
-          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-            <label className="block">
-              <span className="text-xs font-medium text-muted-foreground">{t('upload.ai.sourceHint')}</span>
-              <select
-                value={sourceHint}
-                onChange={(e) => setSourceHint(e.target.value as BankSourceFormat)}
-                className="mt-1 w-full rounded-md border border-border bg-background px-3 py-2 text-sm"
-              >
-                {BANK_SOURCE_FORMATS.map((id) => (
-                  <option key={id} value={id}>
-                    {SOURCE_LABELS[id]}
-                  </option>
-                ))}
-              </select>
-            </label>
-            <label className="block">
-              <span className="text-xs font-medium text-muted-foreground">{t('upload.ai.defaultAccount')}</span>
-              <input
-                type="text"
-                value={defaultAccountName}
-                onChange={(e) => setDefaultAccountName(e.target.value)}
-                placeholder={t('upload.ai.defaultAccountPlaceholder')}
-                className="mt-1 w-full rounded-md border border-border bg-background px-3 py-2 text-sm"
-              />
-            </label>
-            <label className="block">
-              <span className="text-xs font-medium text-muted-foreground">{t('upload.ai.defaultMasked')}</span>
-              <input
-                type="text"
-                value={defaultAccountMasked}
-                onChange={(e) => setDefaultAccountMasked(e.target.value)}
-                placeholder="****1234"
-                className="mt-1 w-full rounded-md border border-border bg-background px-3 py-2 text-sm"
-              />
-            </label>
-          </div>
+          <label className="block max-w-md">
+            <span className="text-xs font-medium text-muted-foreground">{t('upload.ai.templateType')}</span>
+            <select
+              value={templateType}
+              onChange={(e) => resetOnTemplateChange(e.target.value as AiUploadTemplateType)}
+              className="mt-1 w-full rounded-md border border-border bg-background px-3 py-2 text-sm"
+            >
+              {AI_UPLOAD_TEMPLATE_TYPES.map((type) => (
+                <option key={type} value={type}>
+                  {UPLOAD_TEMPLATES[type].label}
+                </option>
+              ))}
+            </select>
+            <span className="mt-1 block text-xs text-muted-foreground">
+              {t(`upload.ai.templateHints.${templateType}` as 'upload.ai.templateHints.bank_transactions')}
+            </span>
+          </label>
+
+          {isBankTemplate && (
+            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+              <label className="block">
+                <span className="text-xs font-medium text-muted-foreground">{t('upload.ai.sourceHint')}</span>
+                <select
+                  value={sourceHint}
+                  onChange={(e) => setSourceHint(e.target.value as BankSourceFormat)}
+                  className="mt-1 w-full rounded-md border border-border bg-background px-3 py-2 text-sm"
+                >
+                  {BANK_SOURCE_FORMATS.map((id) => (
+                    <option key={id} value={id}>
+                      {SOURCE_LABELS[id]}
+                    </option>
+                  ))}
+                </select>
+              </label>
+              <label className="block">
+                <span className="text-xs font-medium text-muted-foreground">{t('upload.ai.defaultAccount')}</span>
+                <input
+                  type="text"
+                  value={defaultAccountName}
+                  onChange={(e) => setDefaultAccountName(e.target.value)}
+                  placeholder={t('upload.ai.defaultAccountPlaceholder')}
+                  className="mt-1 w-full rounded-md border border-border bg-background px-3 py-2 text-sm"
+                />
+              </label>
+              <label className="block">
+                <span className="text-xs font-medium text-muted-foreground">{t('upload.ai.defaultMasked')}</span>
+                <input
+                  type="text"
+                  value={defaultAccountMasked}
+                  onChange={(e) => setDefaultAccountMasked(e.target.value)}
+                  placeholder="****1234"
+                  className="mt-1 w-full rounded-md border border-border bg-background px-3 py-2 text-sm"
+                />
+              </label>
+            </div>
+          )}
 
           {canUpload ? (
             <>
@@ -253,12 +308,10 @@ export function AiUploadCenter() {
                   <div className="flex flex-wrap items-center justify-between gap-2">
                     <p className="text-xs font-medium text-muted-foreground">
                       {t('upload.ai.filesSelected', { count: String(selectedFiles.length) })}
+                      {' · '}
+                      {templateLabel}
                     </p>
-                    <Button
-                      type="button"
-                      onClick={() => void analyzeFiles()}
-                      disabled={normalizing}
-                    >
+                    <Button type="button" onClick={() => void analyzeFiles()} disabled={normalizing}>
                       {normalizing ? t('upload.ai.normalizing') : t('upload.ai.analyzeFiles')}
                     </Button>
                   </div>
@@ -301,11 +354,16 @@ export function AiUploadCenter() {
             <CardHeader>
               <div className="flex flex-wrap items-center gap-2">
                 <CardTitle>{t('upload.ai.resultTitle')}</CardTitle>
+                <Badge variant="muted">{UPLOAD_TEMPLATES[result.templateType ?? templateType].label}</Badge>
                 <Badge variant={result.confidence === 'high' ? 'success' : 'default'}>
                   {result.confidence}
                 </Badge>
-                <Badge variant="muted">{SOURCE_LABELS[result.detectedFormat] ?? result.detectedFormat}</Badge>
-                <Badge variant="muted">{result.source === 'ai' ? t('upload.ai.sourceAi') : t('upload.ai.sourceRules')}</Badge>
+                <Badge variant="muted">
+                  {formatLabel(result.detectedFormat, result.templateType ?? templateType)}
+                </Badge>
+                <Badge variant="muted">
+                  {result.source === 'ai' ? t('upload.ai.sourceAi') : t('upload.ai.sourceRules')}
+                </Badge>
                 {(result.filesProcessed ?? 0) > 1 && (
                   <Badge variant="muted">
                     {t('upload.ai.filesMerged', { count: String(result.filesProcessed) })}
@@ -325,10 +383,14 @@ export function AiUploadCenter() {
                   <p className="text-xs font-medium text-muted-foreground">{t('upload.ai.perFileTitle')}</p>
                   <ul className="mt-2 space-y-1 text-xs text-muted-foreground">
                     {result.fileResults.map((file) => (
-                      <li key={file.fileName} className="flex flex-wrap items-center justify-between gap-2 rounded border border-border/60 px-2 py-1">
+                      <li
+                        key={file.fileName}
+                        className="flex flex-wrap items-center justify-between gap-2 rounded border border-border/60 px-2 py-1"
+                      >
                         <span className="truncate">{file.fileName}</span>
                         <span>
-                          {file.rowCount} rows · {SOURCE_LABELS[file.detectedFormat] ?? file.detectedFormat}
+                          {file.rowCount} rows ·{' '}
+                          {formatLabel(file.detectedFormat, result.templateType ?? templateType)}
                         </span>
                       </li>
                     ))}
@@ -358,10 +420,15 @@ export function AiUploadCenter() {
                 </dl>
               </div>
 
-              <p className="text-xs text-muted-foreground">
-                {t('upload.ai.signConvention')}: <span className="font-mono">{result.signConvention}</span>
-                {result.model ? ` · ${result.model}` : ''}
-              </p>
+              {result.signConvention && (
+                <p className="text-xs text-muted-foreground">
+                  {t('upload.ai.signConvention')}: <span className="font-mono">{result.signConvention}</span>
+                  {result.model ? ` · ${result.model}` : ''}
+                </p>
+              )}
+              {!result.signConvention && result.model && (
+                <p className="text-xs text-muted-foreground">{result.model}</p>
+              )}
             </CardContent>
           </Card>
 

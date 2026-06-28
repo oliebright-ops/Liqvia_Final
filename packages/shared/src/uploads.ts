@@ -2,6 +2,15 @@ export type { UploadTemplateType, SupplierPriority, UploadValidationError } from
 export type { UploadValidationResult, ValidateUploadOptions } from './uploads/validate-upload';
 export { validateUpload } from './uploads/validate-upload';
 export {
+  AI_UPLOAD_TEMPLATE_TYPES,
+  mergeAiUploadResults,
+  normalizeAiUploadCsv,
+  normalizeGenericUploadCsv,
+} from './uploads/ai-data-normalize';
+export type { AiDataNormalizeResult, AiUploadTemplateType } from './uploads/ai-data-normalize';
+export { deriveWeeklyActualsFromBankMovements } from './uploads/derive-weekly-actuals';
+export type { BankMovementForActuals } from './uploads/derive-weekly-actuals';
+export {
   BANK_SOURCE_FORMATS,
   buildBankTransactionsCsv,
   mergeAiBankNormalizeResults,

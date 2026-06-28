@@ -3,6 +3,7 @@ import { ForecastType, LiquidityStatus } from '@prisma/client';
 import {
   computeAccountLedger,
   DEFAULT_DEMO_COMPANY_ID,
+  deriveWeeklyActualsFromBankMovements,
   KPI_DEFAULTS,
   TreasuryAlert,
   WeeklyForecastLine,
@@ -119,10 +120,9 @@ export class TreasuryEngineService {
   }
 
   private async loadForecastInput(companyId: string, asOfDate: string) {
-    const movements = await this.prisma.cashMovement.findMany({
+    const allMovements = await this.prisma.cashMovement.findMany({
       where: { companyId },
       orderBy: { movementDate: 'desc' },
-      take: 100,
     });
 
     const bankAccounts = await this.prisma.bankAccount.findMany({
@@ -130,7 +130,7 @@ export class TreasuryEngineService {
     });
 
     const openingCash = bankAccounts.reduce((sum, b) => {
-      const accountMovements = movements
+      const accountMovements = allMovements
         .filter((m) => m.bankAccountId === b.id)
         .map((m) => ({
           id: m.id,
@@ -153,19 +153,38 @@ export class TreasuryEngineService {
     const company = await this.prisma.company.findUnique({ where: { id: companyId } });
     const weeklyActuals = await this.prisma.weeklyActual.findMany({ where: { companyId } });
 
+    let weeklyActualsRows =
+      weeklyActuals.length > 0
+        ? weeklyActuals.map((a) => ({
+            period: a.period,
+            category: a.category,
+            amount: Number(a.actualAmount),
+            accountCode: a.accountCode ?? undefined,
+          }))
+        : undefined;
+
+    if (!weeklyActualsRows?.length && allMovements.length > 0) {
+      weeklyActualsRows = deriveWeeklyActualsFromBankMovements(
+        allMovements.map((m) => ({
+          movementDate: m.movementDate.toISOString(),
+          amount: Number(m.amount),
+          isInflow: m.isInflow,
+          description: m.description,
+        })),
+        asOfDate,
+      ).map((row) => ({
+        period: row.period,
+        category: row.category,
+        amount: row.amount,
+        accountCode: row.accountCode ?? undefined,
+      }));
+    }
+
     return {
       asOfDate,
       openingCash,
       forecastLookbackWeeks: company?.forecastLookbackWeeks ?? 4,
-      weeklyActuals:
-        weeklyActuals.length > 0
-          ? weeklyActuals.map((a) => ({
-              period: a.period,
-              category: a.category,
-              amount: Number(a.actualAmount),
-              accountCode: a.accountCode ?? undefined,
-            }))
-          : undefined,
+      weeklyActuals: weeklyActualsRows,
       receivables: receivables.map((r) => ({
         outstandingAmount: Number(r.outstandingAmount),
         invoiceDate: r.invoiceDate.toISOString().slice(0, 10),

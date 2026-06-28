@@ -1,5 +1,6 @@
 import { readFileSync } from 'fs';
 import { join } from 'path';
+import { buildTemplateSampleCsv } from '@liqvia2/shared';
 import { UploadValidationService } from './upload-validation.service';
 
 describe('Upload validation (integration)', () => {
@@ -19,6 +20,13 @@ describe('Upload validation (integration)', () => {
     const result = service.validate(type, csv);
     expect(result.valid).toBe(true);
     expect(result.rowCount).toBe(rowCount);
+  });
+
+  it('accepts valid expense_report sample', () => {
+    const csv = buildTemplateSampleCsv('expense_report');
+    const result = service.validate('expense_report', csv);
+    expect(result.valid).toBe(true);
+    expect(result.rowCount).toBe(3);
   });
 
   it('rejects wrong headers with clear message', () => {
