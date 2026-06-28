@@ -21,9 +21,21 @@ export function isSupportedSpreadsheetFileName(fileName: string): boolean {
   return isCsvFileName(fileName) || isExcelFileName(fileName);
 }
 
+export function isPdfFileName(fileName: string): boolean {
+  return fileName.toLowerCase().endsWith('.pdf');
+}
+
+/** CSV, Excel, and PDF — AI Upload Centre only. */
+export function isAiUploadFileName(fileName: string): boolean {
+  return isSupportedSpreadsheetFileName(fileName) || isPdfFileName(fileName);
+}
+
 /** MIME types and extensions accepted in upload file inputs. */
 export const UPLOAD_FILE_ACCEPT =
   '.csv,.xls,.xlsx,text/csv,application/vnd.ms-excel,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet';
+
+/** AI Upload Centre accepts bank PDF statements in addition to spreadsheets. */
+export const AI_UPLOAD_FILE_ACCEPT = `${UPLOAD_FILE_ACCEPT},.pdf,application/pdf`;
 
 type SpreadsheetInput = string | ArrayBuffer | Uint8Array;
 

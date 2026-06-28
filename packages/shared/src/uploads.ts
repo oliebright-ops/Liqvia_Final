@@ -31,3 +31,5 @@ export {
   MAX_UPLOAD_ROWS,
   formatBytesLimit,
 } from './uploads/upload-limits';
+export { pdfTextToCsv } from './uploads/pdf-text-to-csv';
+export type { PdfTextToCsvResult } from './uploads/pdf-text-to-csv';

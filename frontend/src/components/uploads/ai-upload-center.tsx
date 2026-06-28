@@ -4,7 +4,7 @@ import { useCallback, useState } from 'react';
 import Link from 'next/link';
 import {
   BANK_SOURCE_FORMATS,
-  UPLOAD_FILE_ACCEPT,
+  AI_UPLOAD_FILE_ACCEPT,
   UPLOAD_TEMPLATES,
   type BankSourceFormat,
   type UploadValidationResult,
@@ -180,10 +180,10 @@ export function AiUploadCenter() {
           {canUpload ? (
             <label className="flex cursor-pointer flex-col items-center justify-center rounded-lg border border-dashed border-border bg-muted/20 px-6 py-10 text-center hover:border-primary/50">
               <span className="text-sm font-medium text-foreground">{t('upload.dropzone')}</span>
-              <span className="mt-1 text-xs text-muted-foreground">{t('upload.fileFormats')}</span>
+              <span className="mt-1 text-xs text-muted-foreground">{t('upload.ai.fileFormats')}</span>
               <input
                 type="file"
-                accept={UPLOAD_FILE_ACCEPT}
+                accept={AI_UPLOAD_FILE_ACCEPT}
                 className="sr-only"
                 onChange={(e) => {
                   const file = e.target.files?.[0];

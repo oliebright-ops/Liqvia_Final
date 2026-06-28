@@ -21,8 +21,11 @@ export * from './treasury-summary';
 export { parseCsv } from './csv/parse-csv';
 export type { ParsedCsv } from './csv/parse-csv';
 export {
+  AI_UPLOAD_FILE_ACCEPT,
+  isAiUploadFileName,
   isCsvFileName,
   isExcelFileName,
+  isPdfFileName,
   isSupportedSpreadsheetFileName,
   spreadsheetToCsvString,
   UPLOAD_FILE_ACCEPT,

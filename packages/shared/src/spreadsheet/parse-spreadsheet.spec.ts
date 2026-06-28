@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import * as XLSX from 'xlsx';
 import { parseCsv } from '../csv/parse-csv';
-import { isSupportedSpreadsheetFileName, spreadsheetToCsvString } from './parse-spreadsheet';
+import { isAiUploadFileName, isSupportedSpreadsheetFileName, spreadsheetToCsvString } from './parse-spreadsheet';
 
 describe('spreadsheetToCsvString', () => {
   it('passes through CSV text', () => {
@@ -30,5 +30,6 @@ describe('spreadsheetToCsvString', () => {
     expect(isSupportedSpreadsheetFileName('data.XLSX')).toBe(true);
     expect(isSupportedSpreadsheetFileName('data.xls')).toBe(true);
     expect(isSupportedSpreadsheetFileName('data.pdf')).toBe(false);
+    expect(isAiUploadFileName('data.pdf')).toBe(true);
   });
 });

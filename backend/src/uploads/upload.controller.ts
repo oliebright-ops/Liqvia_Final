@@ -129,7 +129,7 @@ export class UploadController {
   @UseGuards(WorkspaceGuard)
   @Permissions('uploads:write')
   @ApiConsumes('multipart/form-data')
-  @ApiOperation({ summary: 'AI Upload Centre — normalize uploaded CSV/Excel bank export file' })
+  @ApiOperation({ summary: 'AI Upload Centre — normalize uploaded CSV, Excel, or PDF bank export file' })
   @UseInterceptors(
     FileInterceptor('file', {
       limits: { fileSize: MAX_UPLOAD_FILE_BYTES },
