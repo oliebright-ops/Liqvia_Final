@@ -12,6 +12,7 @@ import {
   UseInterceptors,
 } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
+import { SkipThrottle } from '@nestjs/throttler';
 import {
   ApiBody,
   ApiConsumes,
@@ -36,6 +37,8 @@ import { CurrentUser } from '../auth/current-user.decorator';
 import { Permissions } from '../auth/decorators';
 import { WorkspaceGuard } from '../auth/workspace.guard';
 import { ImportUploadDto, ValidateUploadDto } from '../dto/upload.dto';
+import { AiImportNormalizedDto, AiNormalizeUploadDto } from '../dto/ai-upload.dto';
+import { AiUploadService } from './ai-upload.service';
 import { UploadActiveDataService } from './upload-active-data.service';
 import { UploadImportService } from './upload-import.service';
 import {
@@ -52,6 +55,7 @@ export class UploadController {
     private readonly validation: UploadValidationService,
     private readonly imports: UploadImportService,
     private readonly activeData: UploadActiveDataService,
+    private readonly aiUpload: AiUploadService,
   ) {}
 
   @Get('templates')
@@ -100,6 +104,68 @@ export class UploadController {
     res.setHeader('Content-Type', 'text/csv');
     res.setHeader('Content-Disposition', `attachment; filename="${fileName}"`);
     res.send(csv);
+  }
+
+  @Post('ai/normalize')
+  @SkipThrottle()
+  @UseGuards(WorkspaceGuard)
+  @Permissions('uploads:write')
+  @ApiOperation({
+    summary: 'AI Upload Centre — normalize heterogeneous bank exports to canonical bank_transactions CSV',
+  })
+  normalizeAi(@CurrentUser() user: AuthUser, @Body() body: AiNormalizeUploadDto) {
+    const csvContent = assertUploadCsvContent(body.csvContent);
+    return this.aiUpload.normalizeCsvContent(csvContent, {
+      sourceHint: body.sourceHint,
+      defaultBankAccountName: body.defaultBankAccountName,
+      defaultAccountMasked: body.defaultAccountMasked,
+      companyCurrency: body.companyCurrency,
+      fileName: body.fileName,
+    });
+  }
+
+  @Post('ai/normalize/file')
+  @SkipThrottle()
+  @UseGuards(WorkspaceGuard)
+  @Permissions('uploads:write')
+  @ApiConsumes('multipart/form-data')
+  @ApiOperation({ summary: 'AI Upload Centre — normalize uploaded CSV/Excel bank export file' })
+  @UseInterceptors(
+    FileInterceptor('file', {
+      limits: { fileSize: MAX_UPLOAD_FILE_BYTES },
+    }),
+  )
+  normalizeAiFile(
+    @CurrentUser() user: AuthUser,
+    @UploadedFile() file: Express.Multer.File | undefined,
+    @Body('sourceHint') sourceHintRaw?: string,
+    @Body('defaultBankAccountName') defaultBankAccountName?: string,
+    @Body('defaultAccountMasked') defaultAccountMasked?: string,
+    @Body('companyCurrency') companyCurrency?: string,
+  ) {
+    assertUploadFileSize(file?.buffer?.byteLength ?? file?.size);
+    const sourceHint = parseSourceHint(sourceHintRaw);
+    return this.aiUpload.normalizeFileBuffer(file!.buffer, sanitizeUploadFileName(file!.originalname, 'upload.csv'), {
+      sourceHint,
+      defaultBankAccountName,
+      defaultAccountMasked,
+      companyCurrency,
+    });
+  }
+
+  @Post('ai/import')
+  @UseGuards(WorkspaceGuard)
+  @Permissions('uploads:write')
+  @ApiOperation({ summary: 'Import AI-normalized canonical bank_transactions CSV' })
+  importNormalized(@CurrentUser() user: AuthUser, @Body() body: AiImportNormalizedDto) {
+    const csvContent = assertUploadCsvContent(body.canonicalCsv);
+    return this.imports.importCsv({
+      templateType: 'bank_transactions',
+      csvContent,
+      fileName: sanitizeUploadFileName(body.fileName, 'ai-bank-transactions.csv'),
+      companyId: user.companyId!,
+      companyCurrency: body.companyCurrency,
+    });
   }
 
   @Post('validate')
@@ -231,6 +297,14 @@ export class UploadController {
       summary: `${result.rowCount} row(s) validated successfully.`,
     };
   }
+}
+
+function parseSourceHint(value: string | undefined) {
+  const hints = ['auto', 'xero', 'onec', 'paycom', 'sap', 'oracle', 'cba', 'amex', 'generic'] as const;
+  if (value && hints.includes(value as (typeof hints)[number])) {
+    return value as (typeof hints)[number];
+  }
+  return 'auto' as const;
 }
 
 function parseTemplateType(value: string): UploadTemplateType {

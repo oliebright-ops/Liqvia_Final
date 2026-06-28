@@ -1,6 +1,7 @@
 'use client';
 
 import { useCallback, useEffect, useState } from 'react';
+import Link from 'next/link';
 import { useSearchParams } from 'next/navigation';
 import {
   UPLOAD_TEMPLATES,
@@ -258,6 +259,9 @@ export function UploadCenter() {
     <div className="space-y-8">
       <div className="flex flex-wrap items-start justify-between gap-4">
         <PageHeader title={t('upload.title')} subtitle={t('upload.subtitle')} />
+        <Link href="/uploads/ai" className="text-sm text-primary underline-offset-2 hover:underline">
+          {t('nav.aiUploads')} →
+        </Link>
         {canWipe && (
           <div className="flex flex-col items-end gap-2">
             {!wipeConfirm ? (

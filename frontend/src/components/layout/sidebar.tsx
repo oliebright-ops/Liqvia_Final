@@ -10,6 +10,7 @@ import {
   GitBranch,
   LayoutDashboard,
   Receipt,
+  ScanLine,
   Settings,
   Sparkles,
   TrendingUp,
@@ -32,6 +33,7 @@ const NAV = [
   { href: '/scenarios', labelKey: 'scenarios', icon: GitBranch },
   { href: '/ai-cfo', labelKey: 'aiCfo', icon: Sparkles },
   { href: '/uploads', labelKey: 'uploads', icon: FileUp },
+  { href: '/uploads/ai', labelKey: 'aiUploads', icon: ScanLine },
   { href: '/settings', labelKey: 'settings', icon: Settings },
 ] as const;
 
