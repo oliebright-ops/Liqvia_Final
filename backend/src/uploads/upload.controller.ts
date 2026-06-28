@@ -8,10 +8,11 @@ import {
   Query,
   Res,
   UploadedFile,
+  UploadedFiles,
   UseGuards,
   UseInterceptors,
 } from '@nestjs/common';
-import { FileInterceptor } from '@nestjs/platform-express';
+import { FileInterceptor, FilesInterceptor } from '@nestjs/platform-express';
 import { SkipThrottle } from '@nestjs/throttler';
 import {
   ApiBody,
@@ -27,6 +28,7 @@ import {
   buildTemplateSampleXlsx,
   getTemplateSampleFileName,
   MAX_UPLOAD_FILE_BYTES,
+  MAX_AI_UPLOAD_FILES,
   spreadsheetToCsvString,
   UPLOAD_TEMPLATES,
   UPLOAD_TEMPLATE_TYPES,
@@ -151,6 +153,49 @@ export class UploadController {
       defaultAccountMasked,
       companyCurrency,
     });
+  }
+
+  @Post('ai/normalize/files')
+  @SkipThrottle()
+  @UseGuards(WorkspaceGuard)
+  @Permissions('uploads:write')
+  @ApiConsumes('multipart/form-data')
+  @ApiOperation({
+    summary: 'AI Upload Centre — normalize multiple CSV, Excel, or PDF bank export files',
+  })
+  @UseInterceptors(
+    FilesInterceptor('files', MAX_AI_UPLOAD_FILES, {
+      limits: { fileSize: MAX_UPLOAD_FILE_BYTES },
+    }),
+  )
+  normalizeAiFiles(
+    @CurrentUser() user: AuthUser,
+    @UploadedFiles() files: Express.Multer.File[] | undefined,
+    @Body('sourceHint') sourceHintRaw?: string,
+    @Body('defaultBankAccountName') defaultBankAccountName?: string,
+    @Body('defaultAccountMasked') defaultAccountMasked?: string,
+    @Body('companyCurrency') companyCurrency?: string,
+  ) {
+    const batch = files ?? [];
+    if (batch.length === 0) {
+      throw new BadRequestException('At least one file is required (field name: files)');
+    }
+    for (const file of batch) {
+      assertUploadFileSize(file.buffer?.byteLength ?? file.size);
+    }
+    const sourceHint = parseSourceHint(sourceHintRaw);
+    return this.aiUpload.normalizeMultipleFileBuffers(
+      batch.map((file) => ({
+        buffer: file.buffer,
+        fileName: sanitizeUploadFileName(file.originalname, 'upload.csv'),
+      })),
+      {
+        sourceHint,
+        defaultBankAccountName,
+        defaultAccountMasked,
+        companyCurrency,
+      },
+    );
   }
 
   @Post('ai/import')

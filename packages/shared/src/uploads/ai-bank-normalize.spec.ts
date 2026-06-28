@@ -1,5 +1,6 @@
 import {
   buildBankTransactionsCsv,
+  mergeAiBankNormalizeResults,
   normalizeBankUploadCsv,
   normalizeBankUploadTable,
 } from './ai-bank-normalize';
@@ -71,5 +72,23 @@ describe('ai-bank-normalize', () => {
     expect(csv.split('\n')[0]).toBe(
       'Bank Account Name,Account Number Masked,Transaction Date,Description,Amount,Direction',
     );
+  });
+
+  it('merges multiple normalized file results', () => {
+    const first = normalizeBankUploadCsv(
+      'Date,Description,Amount\n2026-01-01,Payment A,-100\n',
+      { defaultBankAccountName: 'Main' },
+    );
+    const second = normalizeBankUploadCsv(
+      'Date,Description,Amount\n2026-01-02,Payment B,50\n',
+      { defaultBankAccountName: 'Main' },
+    );
+
+    const merged = mergeAiBankNormalizeResults([first, second], {
+      fileNames: ['a.csv', 'b.csv'],
+    });
+
+    expect(merged.rowCount).toBe(2);
+    expect(merged.warnings[0]).toContain('Merged 2 file(s)');
   });
 });

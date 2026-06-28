@@ -631,3 +631,72 @@ export const BANK_SOURCE_FORMATS: BankSourceFormat[] = [
   'amex',
   'generic',
 ];
+
+const CONFIDENCE_RANK: Record<AiBankNormalizeResult['confidence'], number> = {
+  high: 3,
+  medium: 2,
+  low: 1,
+};
+
+/** Merge normalized results from multiple bank export files into one import batch. */
+export function mergeAiBankNormalizeResults(
+  results: AiBankNormalizeResult[],
+  options?: { fileNames?: string[] },
+): AiBankNormalizeResult {
+  if (results.length === 0) {
+    return {
+      detectedFormat: 'generic',
+      signConvention: 'signed_negative_in',
+      mapping: {},
+      confidence: 'low',
+      source: 'rules',
+      warnings: ['No files produced transaction rows.'],
+      skippedRows: 0,
+      rowCount: 0,
+      previewRows: [],
+      canonicalCsv: buildBankTransactionsCsv([]),
+      unifiedRows: [],
+    };
+  }
+
+  if (results.length === 1) {
+    return results[0]!;
+  }
+
+  const fileNames = options?.fileNames ?? [];
+  const unifiedRows = results.flatMap((result) => result.unifiedRows);
+  const previewRows = unifiedRows.slice(0, 50).map(unifiedToBankTransactionsRow);
+  const canonicalCsv = buildBankTransactionsCsv(unifiedRows.map(unifiedToBankTransactionsRow));
+  const skippedRows = results.reduce((total, result) => total + result.skippedRows, 0);
+  const warnings = results.flatMap((result, index) => {
+    const label = fileNames[index] ? `[${fileNames[index]}] ` : '';
+    return result.warnings.map((warning) => `${label}${warning}`);
+  });
+  warnings.unshift(
+    `Merged ${results.length} file(s) into ${unifiedRows.length} transaction row(s).`,
+  );
+
+  const confidence = results.reduce<AiBankNormalizeResult['confidence']>(
+    (lowest, result) =>
+      CONFIDENCE_RANK[result.confidence] < CONFIDENCE_RANK[lowest] ? result.confidence : lowest,
+    'high',
+  );
+  const source = results.some((result) => result.source === 'ai') ? 'ai' : 'rules';
+  const formats = new Set(results.map((result) => result.detectedFormat));
+  const detectedFormat = formats.size === 1 ? results[0]!.detectedFormat : 'generic';
+  const mapping = results[0]!.mapping;
+
+  return {
+    detectedFormat,
+    signConvention: results[0]!.signConvention,
+    mapping,
+    confidence,
+    source,
+    warnings,
+    skippedRows,
+    rowCount: unifiedRows.length,
+    previewRows,
+    canonicalCsv,
+    unifiedRows,
+  };
+}

@@ -4,7 +4,9 @@ import {
   BankColumnMapping,
   BankSignConvention,
   BankSourceFormat,
+  isAiUploadFileName,
   isPdfFileName,
+  mergeAiBankNormalizeResults,
   normalizeBankUploadCsv,
   parseCsv,
   pdfTextToCsv,
@@ -13,11 +15,20 @@ import {
 } from '@liqvia2/shared';
 import { extractPdfContent } from './pdf-extract';
 
+export type AiUploadFileResult = {
+  fileName: string;
+  rowCount: number;
+  detectedFormat: BankSourceFormat;
+  confidence: AiBankNormalizeResult['confidence'];
+};
+
 export type AiUploadNormalizeResponse = Omit<AiBankNormalizeResult, 'canonicalCsv' | 'unifiedRows'> & {
   validation: ReturnType<typeof validateUpload>;
   canonicalCsv: string;
   model?: string;
   source: 'rules' | 'ai';
+  filesProcessed?: number;
+  fileResults?: AiUploadFileResult[];
 };
 
 type AiMappingResponse = {
@@ -27,55 +38,149 @@ type AiMappingResponse = {
   notes?: string;
 };
 
+type NormalizeOptions = {
+  sourceHint?: BankSourceFormat;
+  defaultBankAccountName?: string;
+  defaultAccountMasked?: string;
+  companyCurrency?: string;
+  fileName?: string;
+  fromPdf?: boolean;
+};
+
 @Injectable()
 export class AiUploadService {
   private readonly logger = new Logger(AiUploadService.name);
 
   normalizeCsvContent(
     csvContent: string,
-    options: {
-      sourceHint?: BankSourceFormat;
-      defaultBankAccountName?: string;
-      defaultAccountMasked?: string;
-      companyCurrency?: string;
-      fileName?: string;
-    },
+    options: NormalizeOptions,
   ): Promise<AiUploadNormalizeResponse> {
-    return this.normalizeInternal(csvContent, options);
+    return this.normalizeContent(csvContent, options);
   }
 
   async normalizeFileBuffer(
     buffer: Buffer,
     fileName: string,
-    options: {
-      sourceHint?: BankSourceFormat;
-      defaultBankAccountName?: string;
-      defaultAccountMasked?: string;
-      companyCurrency?: string;
-    },
+    options: Omit<NormalizeOptions, 'fileName' | 'fromPdf'>,
   ): Promise<AiUploadNormalizeResponse> {
-    let csvContent: string;
-    let preWarnings: string[] = [];
-
-    if (isPdfFileName(fileName)) {
-      const converted = await this.convertPdfBufferToCsv(buffer, fileName);
-      csvContent = converted.csv;
-      preWarnings = converted.warnings;
-    } else {
-      try {
-        csvContent = spreadsheetToCsvString(buffer, fileName);
-      } catch (err) {
-        throw new BadRequestException(
-          err instanceof Error ? err.message : 'Could not read spreadsheet file',
-        );
-      }
-    }
-
-    const response = await this.normalizeInternal(csvContent, { ...options, fileName, fromPdf: isPdfFileName(fileName) });
+    const { csvContent, preWarnings } = await this.fileBufferToCsv(buffer, fileName);
+    const response = await this.normalizeContent(csvContent, {
+      ...options,
+      fileName,
+      fromPdf: isPdfFileName(fileName),
+    });
     if (preWarnings.length > 0) {
       response.warnings = [...preWarnings, ...response.warnings];
     }
     return response;
+  }
+
+  async normalizeMultipleFileBuffers(
+    files: Array<{ buffer: Buffer; fileName: string }>,
+    options: Omit<NormalizeOptions, 'fileName' | 'fromPdf'>,
+  ): Promise<AiUploadNormalizeResponse> {
+    if (files.length === 0) {
+      throw new BadRequestException('At least one file is required (field name: files)');
+    }
+
+    for (const file of files) {
+      if (!isAiUploadFileName(file.fileName)) {
+        throw new BadRequestException(
+          `Unsupported file type: ${file.fileName}. Use CSV, Excel (.xlsx, .xls), or PDF.`,
+        );
+      }
+    }
+
+    if (files.length === 1) {
+      const single = await this.normalizeFileBuffer(files[0]!.buffer, files[0]!.fileName, options);
+      return {
+        ...single,
+        filesProcessed: 1,
+        fileResults: [
+          {
+            fileName: files[0]!.fileName,
+            rowCount: single.rowCount,
+            detectedFormat: single.detectedFormat,
+            confidence: single.confidence,
+          },
+        ],
+      };
+    }
+
+    const normalized: AiBankNormalizeResult[] = [];
+    const fileResults: AiUploadFileResult[] = [];
+    const failures: string[] = [];
+    let model: string | undefined;
+
+    for (const file of files) {
+      try {
+        const { csvContent, preWarnings } = await this.fileBufferToCsv(file.buffer, file.fileName);
+        const { result, model: fileModel } = await this.normalizeContentToResult(csvContent, {
+          ...options,
+          fileName: file.fileName,
+          fromPdf: isPdfFileName(file.fileName),
+        });
+        if (preWarnings.length > 0) {
+          result.warnings = [...preWarnings, ...result.warnings];
+        }
+        if (fileModel) model = fileModel;
+        normalized.push(result);
+        fileResults.push({
+          fileName: file.fileName,
+          rowCount: result.rowCount,
+          detectedFormat: result.detectedFormat,
+          confidence: result.confidence,
+        });
+      } catch (err) {
+        const message = err instanceof Error ? err.message : 'Could not normalize file';
+        failures.push(`${file.fileName}: ${message}`);
+      }
+    }
+
+    if (normalized.length === 0) {
+      throw new BadRequestException(
+        failures.length > 0 ? failures.join('; ') : 'No files could be normalized',
+      );
+    }
+
+    const merged = mergeAiBankNormalizeResults(normalized, {
+      fileNames: fileResults.map((file) => file.fileName),
+    });
+    if (failures.length > 0) {
+      merged.warnings.push(`Skipped ${failures.length} file(s): ${failures.join('; ')}`);
+    }
+
+    const validation = validateUpload('bank_transactions', merged.canonicalCsv, {
+      companyCurrency: options.companyCurrency,
+    });
+
+    const { unifiedRows: _u, ...rest } = merged;
+    return {
+      ...rest,
+      validation,
+      canonicalCsv: merged.canonicalCsv,
+      model,
+      filesProcessed: fileResults.length,
+      fileResults,
+    };
+  }
+
+  private async fileBufferToCsv(
+    buffer: Buffer,
+    fileName: string,
+  ): Promise<{ csvContent: string; preWarnings: string[] }> {
+    if (isPdfFileName(fileName)) {
+      const converted = await this.convertPdfBufferToCsv(buffer, fileName);
+      return { csvContent: converted.csv, preWarnings: converted.warnings };
+    }
+
+    try {
+      return { csvContent: spreadsheetToCsvString(buffer, fileName), preWarnings: [] };
+    } catch (err) {
+      throw new BadRequestException(
+        err instanceof Error ? err.message : 'Could not read spreadsheet file',
+      );
+    }
   }
 
   private async convertPdfBufferToCsv(
@@ -159,17 +264,27 @@ export class AiUploadService {
     return { csv: parsed.csv, warnings };
   }
 
-  private async normalizeInternal(
+  private async normalizeContent(
     csvContent: string,
-    options: {
-      sourceHint?: BankSourceFormat;
-      defaultBankAccountName?: string;
-      defaultAccountMasked?: string;
-      companyCurrency?: string;
-      fileName?: string;
-      fromPdf?: boolean;
-    },
+    options: NormalizeOptions,
   ): Promise<AiUploadNormalizeResponse> {
+    const { result, model } = await this.normalizeContentToResult(csvContent, options);
+    const validation = validateUpload('bank_transactions', result.canonicalCsv, {
+      companyCurrency: options.companyCurrency,
+    });
+    const { unifiedRows: _u, ...rest } = result;
+    return {
+      ...rest,
+      validation,
+      canonicalCsv: result.canonicalCsv,
+      model,
+    };
+  }
+
+  private async normalizeContentToResult(
+    csvContent: string,
+    options: NormalizeOptions,
+  ): Promise<{ result: AiBankNormalizeResult; model?: string }> {
     let result = normalizeBankUploadCsv(csvContent, {
       sourceHint: options.sourceHint,
       defaultBankAccountName: options.defaultBankAccountName,
@@ -209,17 +324,7 @@ export class AiUploadService {
       }
     }
 
-    const validation = validateUpload('bank_transactions', result.canonicalCsv, {
-      companyCurrency: options.companyCurrency,
-    });
-
-    const { unifiedRows: _u, ...rest } = result;
-    return {
-      ...rest,
-      validation,
-      canonicalCsv: result.canonicalCsv,
-      model,
-    };
+    return { result, model };
   }
 
   private async inferCsvFromPdfTextWithOpenAi(

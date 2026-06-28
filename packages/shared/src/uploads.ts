@@ -4,6 +4,7 @@ export { validateUpload } from './uploads/validate-upload';
 export {
   BANK_SOURCE_FORMATS,
   buildBankTransactionsCsv,
+  mergeAiBankNormalizeResults,
   normalizeBankUploadCsv,
   normalizeBankUploadTable,
   unifiedToBankTransactionsRow,
@@ -24,6 +25,7 @@ export {
   UPLOAD_LIBRARY_TEMPLATE_TYPES,
 } from './uploads/template-samples';
 export {
+  MAX_AI_UPLOAD_FILES,
   MAX_UPLOAD_CELL_CHARS,
   MAX_UPLOAD_COLUMNS,
   MAX_UPLOAD_CSV_CHARS,

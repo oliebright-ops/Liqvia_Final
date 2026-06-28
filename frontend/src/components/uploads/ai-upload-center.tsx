@@ -5,6 +5,7 @@ import Link from 'next/link';
 import {
   BANK_SOURCE_FORMATS,
   AI_UPLOAD_FILE_ACCEPT,
+  MAX_AI_UPLOAD_FILES,
   UPLOAD_TEMPLATES,
   type BankSourceFormat,
   type UploadValidationResult,
@@ -21,6 +22,13 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 
+type AiUploadFileResult = {
+  fileName: string;
+  rowCount: number;
+  detectedFormat: BankSourceFormat;
+  confidence: 'high' | 'medium' | 'low';
+};
+
 type AiNormalizeResponse = {
   detectedFormat: BankSourceFormat;
   signConvention: string;
@@ -34,6 +42,8 @@ type AiNormalizeResponse = {
   validation: UploadValidationResult & { summary?: string };
   canonicalCsv: string;
   model?: string;
+  filesProcessed?: number;
+  fileResults?: AiUploadFileResult[];
 };
 
 const SOURCE_LABELS: Record<BankSourceFormat, string> = {
@@ -48,6 +58,15 @@ const SOURCE_LABELS: Record<BankSourceFormat, string> = {
   generic: 'Generic / other',
 };
 
+function fileFormatLabel(fileName: string): string {
+  const lower = fileName.toLowerCase();
+  if (lower.endsWith('.pdf')) return 'PDF';
+  if (lower.endsWith('.xlsx')) return 'Excel';
+  if (lower.endsWith('.xls')) return 'Excel';
+  if (lower.endsWith('.csv')) return 'CSV';
+  return 'File';
+}
+
 export function AiUploadCenter() {
   const t = useTranslations();
   const { can } = useAuth();
@@ -57,7 +76,7 @@ export function AiUploadCenter() {
   const [sourceHint, setSourceHint] = useState<BankSourceFormat>('auto');
   const [defaultAccountName, setDefaultAccountName] = useState('');
   const [defaultAccountMasked, setDefaultAccountMasked] = useState('');
-  const [fileName, setFileName] = useState<string | null>(null);
+  const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
   const [normalizing, setNormalizing] = useState(false);
   const [importing, setImporting] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -66,43 +85,77 @@ export function AiUploadCenter() {
 
   const currency = dashboard?.currency ?? 'USD';
   const headers = UPLOAD_TEMPLATES.bank_transactions.headers;
+  const importFileLabel =
+    selectedFiles.length === 1
+      ? selectedFiles[0]!.name
+      : selectedFiles.length > 1
+        ? `ai-batch-${selectedFiles.length}-files.csv`
+        : 'ai-bank-transactions.csv';
 
-  const onFile = useCallback(
-    async (file: File) => {
-      if (!canUpload) return;
-      setError(null);
-      setImportMessage(null);
-      setNormalizing(true);
-      setFileName(file.name);
-      try {
-        const form = new FormData();
-        form.append('file', file);
-        form.append('sourceHint', sourceHint);
-        if (defaultAccountName.trim()) form.append('defaultBankAccountName', defaultAccountName.trim());
-        if (defaultAccountMasked.trim()) form.append('defaultAccountMasked', defaultAccountMasked.trim());
-        form.append('companyCurrency', currency);
-
-        const res = await fetch(apiUrl('/uploads/ai/normalize/file'), {
-          method: 'POST',
-          headers: {
-            Authorization: `Bearer ${getAccessToken() ?? ''}`,
-          },
-          body: form,
-        });
-        const data = await res.json().catch(() => ({}));
-        if (!res.ok) {
-          throw new Error(typeof data.message === 'string' ? data.message : t('upload.ai.failed'));
+  const addFiles = useCallback((incoming: FileList | File[]) => {
+    const next = [...incoming];
+    setSelectedFiles((current) => {
+      const merged = [...current];
+      for (const file of next) {
+        if (merged.some((existing) => existing.name === file.name && existing.size === file.size)) {
+          continue;
         }
-        setResult(data as AiNormalizeResponse);
-      } catch (e) {
-        setResult(null);
-        setError(e instanceof Error ? e.message : t('upload.ai.failed'));
-      } finally {
-        setNormalizing(false);
+        if (merged.length >= MAX_AI_UPLOAD_FILES) break;
+        merged.push(file);
       }
-    },
-    [canUpload, sourceHint, defaultAccountName, defaultAccountMasked, currency, t],
-  );
+      return merged.slice(0, MAX_AI_UPLOAD_FILES);
+    });
+    setResult(null);
+    setImportMessage(null);
+    setError(null);
+  }, []);
+
+  const removeFile = useCallback((index: number) => {
+    setSelectedFiles((current) => current.filter((_, i) => i !== index));
+    setResult(null);
+    setImportMessage(null);
+  }, []);
+
+  const analyzeFiles = useCallback(async () => {
+    if (!canUpload || selectedFiles.length === 0) return;
+    setError(null);
+    setImportMessage(null);
+    setNormalizing(true);
+    try {
+      const form = new FormData();
+      for (const file of selectedFiles) {
+        form.append('files', file);
+      }
+      form.append('sourceHint', sourceHint);
+      if (defaultAccountName.trim()) form.append('defaultBankAccountName', defaultAccountName.trim());
+      if (defaultAccountMasked.trim()) form.append('defaultAccountMasked', defaultAccountMasked.trim());
+      form.append('companyCurrency', currency);
+
+      const res = await fetch(apiUrl('/uploads/ai/normalize/files'), {
+        method: 'POST',
+        headers: {
+          Authorization: `Bearer ${getAccessToken() ?? ''}`,
+        },
+        body: form,
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        const message =
+          typeof data.message === 'string'
+            ? data.message
+            : Array.isArray(data.message)
+              ? data.message.join('; ')
+              : t('upload.ai.failed');
+        throw new Error(message);
+      }
+      setResult(data as AiNormalizeResponse);
+    } catch (e) {
+      setResult(null);
+      setError(e instanceof Error ? e.message : t('upload.ai.failed'));
+    } finally {
+      setNormalizing(false);
+    }
+  }, [canUpload, selectedFiles, sourceHint, defaultAccountName, defaultAccountMasked, currency, t]);
 
   async function confirmImport() {
     if (!result?.validation.valid || !result.canonicalCsv) return;
@@ -111,7 +164,7 @@ export function AiUploadCenter() {
     try {
       const summary = await apiPost<{ rowCount: number; batchId: string }>('/uploads/ai/import', {
         canonicalCsv: result.canonicalCsv,
-        fileName: fileName ? `ai-${fileName}` : 'ai-bank-transactions.csv',
+        fileName: `ai-${importFileLabel.replace(/[^\w.\-]+/g, '-')}`,
         companyCurrency: currency,
       });
       setImportMessage(t('upload.ai.importSuccess', { count: String(summary.rowCount) }));
@@ -178,24 +231,66 @@ export function AiUploadCenter() {
           </div>
 
           {canUpload ? (
-            <label className="flex cursor-pointer flex-col items-center justify-center rounded-lg border border-dashed border-border bg-muted/20 px-6 py-10 text-center hover:border-primary/50">
-              <span className="text-sm font-medium text-foreground">{t('upload.dropzone')}</span>
-              <span className="mt-1 text-xs text-muted-foreground">{t('upload.ai.fileFormats')}</span>
-              <input
-                type="file"
-                accept={AI_UPLOAD_FILE_ACCEPT}
-                className="sr-only"
-                onChange={(e) => {
-                  const file = e.target.files?.[0];
-                  if (file) void onFile(file);
-                }}
-              />
-            </label>
+            <>
+              <label className="flex cursor-pointer flex-col items-center justify-center rounded-lg border border-dashed border-border bg-muted/20 px-6 py-10 text-center hover:border-primary/50">
+                <span className="text-sm font-medium text-foreground">{t('upload.ai.dropzone')}</span>
+                <span className="mt-1 text-xs text-muted-foreground">{t('upload.ai.fileFormats')}</span>
+                <span className="mt-1 text-xs text-muted-foreground">{t('upload.ai.multiFileHint')}</span>
+                <input
+                  type="file"
+                  multiple
+                  accept={AI_UPLOAD_FILE_ACCEPT}
+                  className="sr-only"
+                  onChange={(e) => {
+                    if (e.target.files?.length) addFiles(e.target.files);
+                    e.target.value = '';
+                  }}
+                />
+              </label>
+
+              {selectedFiles.length > 0 && (
+                <div className="space-y-2 rounded-lg border border-border bg-muted/10 p-3">
+                  <div className="flex flex-wrap items-center justify-between gap-2">
+                    <p className="text-xs font-medium text-muted-foreground">
+                      {t('upload.ai.filesSelected', { count: String(selectedFiles.length) })}
+                    </p>
+                    <Button
+                      type="button"
+                      onClick={() => void analyzeFiles()}
+                      disabled={normalizing}
+                    >
+                      {normalizing ? t('upload.ai.normalizing') : t('upload.ai.analyzeFiles')}
+                    </Button>
+                  </div>
+                  <ul className="space-y-2">
+                    {selectedFiles.map((file, index) => (
+                      <li
+                        key={`${file.name}-${file.size}-${index}`}
+                        className="flex items-center justify-between gap-3 rounded-md border border-border/70 px-3 py-2 text-sm"
+                      >
+                        <div className="min-w-0">
+                          <p className="truncate font-medium">{file.name}</p>
+                          <p className="text-xs text-muted-foreground">
+                            {fileFormatLabel(file.name)} · {(file.size / 1024).toFixed(0)} KB
+                          </p>
+                        </div>
+                        <button
+                          type="button"
+                          onClick={() => removeFile(index)}
+                          className="shrink-0 text-xs text-red-400 hover:text-red-300"
+                        >
+                          {t('upload.ai.removeFile')}
+                        </button>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+            </>
           ) : (
             <p className="text-sm text-muted-foreground">{t('upload.readOnly')}</p>
           )}
 
-          {normalizing && <p className="text-sm text-muted-foreground">{t('upload.ai.normalizing')}</p>}
           {error && <Alert variant="error">{error}</Alert>}
         </CardContent>
       </Card>
@@ -211,6 +306,11 @@ export function AiUploadCenter() {
                 </Badge>
                 <Badge variant="muted">{SOURCE_LABELS[result.detectedFormat] ?? result.detectedFormat}</Badge>
                 <Badge variant="muted">{result.source === 'ai' ? t('upload.ai.sourceAi') : t('upload.ai.sourceRules')}</Badge>
+                {(result.filesProcessed ?? 0) > 1 && (
+                  <Badge variant="muted">
+                    {t('upload.ai.filesMerged', { count: String(result.filesProcessed) })}
+                  </Badge>
+                )}
               </div>
               <CardDescription>
                 {t('upload.ai.resultHint', {
@@ -220,6 +320,22 @@ export function AiUploadCenter() {
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
+              {result.fileResults && result.fileResults.length > 1 && (
+                <div>
+                  <p className="text-xs font-medium text-muted-foreground">{t('upload.ai.perFileTitle')}</p>
+                  <ul className="mt-2 space-y-1 text-xs text-muted-foreground">
+                    {result.fileResults.map((file) => (
+                      <li key={file.fileName} className="flex flex-wrap items-center justify-between gap-2 rounded border border-border/60 px-2 py-1">
+                        <span className="truncate">{file.fileName}</span>
+                        <span>
+                          {file.rowCount} rows · {SOURCE_LABELS[file.detectedFormat] ?? file.detectedFormat}
+                        </span>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+
               {result.warnings.length > 0 && (
                 <ul className="space-y-1 rounded-md border border-border/80 bg-muted/20 px-3 py-2 text-xs text-muted-foreground">
                   {result.warnings.map((w) => (

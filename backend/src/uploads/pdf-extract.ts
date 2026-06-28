@@ -32,16 +32,37 @@ export type PdfExtractResult = {
   tableCsv: string | null;
 };
 
+function pdfExtractErrorMessage(err: unknown): string {
+  const message = err instanceof Error ? err.message : String(err);
+  if (/deserialize cloned data/i.test(message)) {
+    return 'PDF parsing failed on the server. Try exporting CSV or Excel from your bank, or upload a smaller PDF.';
+  }
+  return message || 'Could not read PDF file';
+}
+
 /** Extract plain text and table data from a PDF buffer (text-based statements). */
 export async function extractPdfContent(buffer: Buffer): Promise<PdfExtractResult> {
   const parser = new PDFParse({ data: new Uint8Array(buffer) });
   try {
-    const [textResult, tableResult] = await Promise.all([parser.getText(), parser.getTable()]);
+    // pdf.js rejects concurrent getText/getTable on the same parser (structured clone error).
+    const textResult = await parser.getText();
+    let tableCsv: string | null = null;
+    try {
+      const tableResult = await parser.getTable();
+      tableCsv = tablesToCsv(tableResult);
+    } catch (tableErr) {
+      if (!textResult.text?.trim()) {
+        throw new Error(pdfExtractErrorMessage(tableErr));
+      }
+    }
+
     return {
       text: (textResult.text ?? '').trim(),
       pageCount: textResult.total ?? 0,
-      tableCsv: tablesToCsv(tableResult),
+      tableCsv,
     };
+  } catch (err) {
+    throw new Error(pdfExtractErrorMessage(err));
   } finally {
     await parser.destroy();
   }

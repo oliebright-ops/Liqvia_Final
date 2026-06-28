@@ -1,6 +1,9 @@
 /** Maximum uploaded spreadsheet file size (multipart / Excel buffer). */
 export const MAX_UPLOAD_FILE_BYTES = 5 * 1024 * 1024;
 
+/** Maximum files per AI Upload Centre batch. */
+export const MAX_AI_UPLOAD_FILES = 20;
+
 /** Maximum CSV text length accepted for validation/import. */
 export const MAX_UPLOAD_CSV_CHARS = 5 * 1024 * 1024;
 
