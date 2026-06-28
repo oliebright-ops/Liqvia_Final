@@ -176,6 +176,122 @@ export class UploadImportService {
     return latest.filter((b): b is NonNullable<typeof b> => b !== null);
   }
 
+  /** Remove live data for one template type; upload batch snapshots are kept. */
+  async clearActiveDataForTemplate(companyId: string, templateType: UploadTemplateType) {
+    await this.clearLiveDataForTemplate(companyId, templateType);
+    if (
+      templateType === 'weekly_actuals' ||
+      templateType === 'prior_period_budget' ||
+      templateType === 'budget' ||
+      templateType === 'expense_report'
+    ) {
+      await this.syncRollingBudgetIfNeeded(companyId);
+    }
+    await this.prisma.auditLog.create({
+      data: {
+        companyId,
+        action: 'upload.clear_active',
+        entityType: 'UploadTemplateType',
+        entityId: templateType,
+      },
+    });
+    await this.engine.recalculateAfterUpload(companyId);
+    const label = templateType.replace(/_/g, ' ');
+    return {
+      cleared: true,
+      templateType,
+      summary: `Live ${label} data cleared. Upload history retained — re-import or restore from a prior upload.`,
+    };
+  }
+
+  /**
+   * Delete one upload batch. If it is the latest completed import for its type,
+   * live data is cleared and the previous completed snapshot is restored when available.
+   */
+  async deleteBatch(companyId: string, batchId: string) {
+    const batch = await this.prisma.uploadBatch.findFirst({
+      where: { id: batchId, companyId },
+    });
+    if (!batch) {
+      throw new NotFoundException('Upload batch not found');
+    }
+
+    const latest = await this.prisma.uploadBatch.findFirst({
+      where: {
+        companyId,
+        templateType: batch.templateType,
+        status: UploadBatchStatus.completed,
+      },
+      orderBy: { createdAt: 'desc' },
+      select: { id: true },
+    });
+    const isLatest = latest?.id === batchId;
+    let restoredFromBatchId: string | undefined;
+
+    if (isLatest && batch.status === UploadBatchStatus.completed) {
+      await this.clearLiveDataForTemplate(companyId, batch.templateType);
+
+      const previous = await this.prisma.uploadBatch.findFirst({
+        where: {
+          companyId,
+          templateType: batch.templateType,
+          status: UploadBatchStatus.completed,
+          id: { not: batchId },
+          rowSnapshot: { not: Prisma.DbNull },
+        },
+        orderBy: { createdAt: 'desc' },
+      });
+
+      const previousRows = Array.isArray(previous?.rowSnapshot) ? previous.rowSnapshot : [];
+      if (previous && previousRows.length > 0) {
+        await this.persistRows(companyId, batch.templateType, previousRows, previous.id);
+        restoredFromBatchId = previous.id;
+        if (
+          batch.templateType === 'weekly_actuals' ||
+          batch.templateType === 'prior_period_budget' ||
+          batch.templateType === 'budget' ||
+          batch.templateType === 'expense_report'
+        ) {
+          await this.syncRollingBudgetIfNeeded(companyId);
+        }
+      }
+    } else if (batch.status === UploadBatchStatus.completed) {
+      await this.deleteBatchLinkedRecords(batch.templateType, batchId);
+    }
+
+    await this.prisma.uploadBatch.delete({ where: { id: batchId } });
+
+    await this.prisma.auditLog.create({
+      data: {
+        companyId,
+        action: 'upload.delete_batch',
+        entityType: 'UploadBatch',
+        entityId: batchId,
+        metadata: {
+          templateType: batch.templateType,
+          fileName: batch.fileName,
+          restoredFromBatchId,
+        },
+      },
+    });
+
+    await this.engine.recalculateAfterUpload(companyId);
+
+    const summary = restoredFromBatchId
+      ? `Deleted "${batch.fileName}" and restored the previous ${batch.templateType.replace(/_/g, ' ')} upload.`
+      : isLatest
+        ? `Deleted "${batch.fileName}" and cleared live ${batch.templateType.replace(/_/g, ' ')} data.`
+        : `Deleted upload "${batch.fileName}" from history.`;
+
+    return {
+      deleted: true,
+      batchId,
+      templateType: batch.templateType,
+      restoredFromBatchId,
+      summary,
+    };
+  }
+
   /** Clear live financial data while retaining upload batch snapshots for reference. */
   async wipeCompanyData(companyId: string) {
     await this.prisma.scenarioLine.deleteMany({ where: { scenario: { companyId } } });
@@ -219,6 +335,29 @@ export class UploadImportService {
     templateType: UploadTemplateType,
     rows: unknown[],
   ) {
+    if (templateType === 'trial_balance') {
+      const periods = [
+        ...new Set((rows as Array<Record<string, unknown>>).map((r) => String(r.Period))),
+      ];
+      if (periods.length === 0) return;
+      const entries = await this.prisma.journalEntry.findMany({
+        where: { companyId, period: { in: periods } },
+        select: { id: true },
+      });
+      const entryIds = entries.map((e) => e.id);
+      if (entryIds.length > 0) {
+        await this.prisma.journalLine.deleteMany({
+          where: { journalEntryId: { in: entryIds } },
+        });
+        await this.prisma.journalEntry.deleteMany({ where: { id: { in: entryIds } } });
+      }
+      return;
+    }
+
+    await this.clearLiveDataForTemplate(companyId, templateType);
+  }
+
+  private async clearLiveDataForTemplate(companyId: string, templateType: UploadTemplateType) {
     switch (templateType) {
       case 'ar_ageing':
         await this.prisma.receivable.deleteMany({ where: { companyId } });
@@ -284,29 +423,32 @@ export class UploadImportService {
         });
         if (priorBatches.length > 0) {
           await this.prisma.weeklyActual.deleteMany({
-            where: { companyId, uploadBatchId: { in: priorBatches.map((batch) => batch.id) } },
+            where: { companyId, uploadBatchId: { in: priorBatches.map((b) => b.id) } },
           });
         }
         break;
       }
-      case 'trial_balance': {
-        const periods = [
-          ...new Set((rows as Array<Record<string, unknown>>).map((r) => String(r.Period))),
-        ];
-        if (periods.length === 0) break;
-        const entries = await this.prisma.journalEntry.findMany({
-          where: { companyId, period: { in: periods } },
-          select: { id: true },
-        });
-        const entryIds = entries.map((e) => e.id);
-        if (entryIds.length > 0) {
-          await this.prisma.journalLine.deleteMany({
-            where: { journalEntryId: { in: entryIds } },
-          });
-          await this.prisma.journalEntry.deleteMany({ where: { id: { in: entryIds } } });
-        }
+      case 'trial_balance':
+        await this.prisma.journalLine.deleteMany({ where: { journalEntry: { companyId } } });
+        await this.prisma.journalEntry.deleteMany({ where: { companyId } });
         break;
-      }
+    }
+  }
+
+  private async deleteBatchLinkedRecords(templateType: UploadTemplateType, batchId: string) {
+    switch (templateType) {
+      case 'ar_ageing':
+        await this.prisma.receivable.deleteMany({ where: { uploadBatchId: batchId } });
+        break;
+      case 'ap_ageing':
+        await this.prisma.payable.deleteMany({ where: { uploadBatchId: batchId } });
+        break;
+      case 'weekly_actuals':
+      case 'expense_report':
+        await this.prisma.weeklyActual.deleteMany({ where: { uploadBatchId: batchId } });
+        break;
+      default:
+        break;
     }
   }
 

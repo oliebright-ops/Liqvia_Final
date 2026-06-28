@@ -10,7 +10,7 @@ import {
   UPLOAD_FILE_ACCEPT,
   validateUpload,
 } from '@liqvia2/shared';
-import { apiGet, apiPost } from '@/lib/api';
+import { apiGet, apiPost, apiDelete } from '@/lib/api';
 import { readUploadFile } from '@/lib/read-upload-file';
 import { useAuth } from '@/lib/auth-context';
 import { notifyWorkspaceRefresh } from '@/lib/workspace-refresh';
@@ -83,6 +83,11 @@ export function UploadCenter() {
   const [wipeConfirm, setWipeConfirm] = useState(false);
   const [wiping, setWiping] = useState(false);
   const [wipeMessage, setWipeMessage] = useState<string | null>(null);
+  const [deleteConfirmBatchId, setDeleteConfirmBatchId] = useState<string | null>(null);
+  const [deleting, setDeleting] = useState(false);
+  const [deleteMessage, setDeleteMessage] = useState<string | null>(null);
+  const [clearActiveConfirm, setClearActiveConfirm] = useState(false);
+  const [clearingActive, setClearingActive] = useState(false);
 
   const template = UPLOAD_TEMPLATES[templateType];
   const currency = dashboard?.currency ?? 'USD';
@@ -238,6 +243,50 @@ export function UploadCenter() {
     }
   };
 
+  const isLatestBatch = useCallback(
+    (batchId: string, type: string) =>
+      latestByType.some((b) => b.id === batchId && b.templateType === type),
+    [latestByType],
+  );
+
+  const confirmDeleteBatch = async (batchId: string) => {
+    setDeleting(true);
+    setDeleteMessage(null);
+    try {
+      const result = await apiDelete<{ summary: string }>(`/uploads/batches/${batchId}`);
+      setDeleteMessage(result.summary);
+      setDeleteConfirmBatchId(null);
+      if (selectedBatchId === batchId) {
+        setBatchDetail(null);
+        setSelectedBatchId(null);
+        setViewMode('active');
+      }
+      await loadBatches();
+      await fetchActiveData(viewType);
+      notifyWorkspaceRefresh();
+    } catch (err) {
+      setDeleteMessage((err as Error).message);
+    } finally {
+      setDeleting(false);
+    }
+  };
+
+  const confirmClearActive = async () => {
+    setClearingActive(true);
+    setDeleteMessage(null);
+    try {
+      const result = await apiDelete<{ summary: string }>(`/uploads/active/${viewType}`);
+      setDeleteMessage(result.summary);
+      setClearActiveConfirm(false);
+      await fetchActiveData(viewType);
+      notifyWorkspaceRefresh();
+    } catch (err) {
+      setDeleteMessage((err as Error).message);
+    } finally {
+      setClearingActive(false);
+    }
+  };
+
   const previewRows = validation?.valid && validation.rows ? validation.rows.slice(0, 10) : [];
   const previewKeys =
     previewRows.length > 0
@@ -287,6 +336,12 @@ export function UploadCenter() {
           </div>
         )}
       </div>
+
+      {deleteMessage && (
+        <Alert variant={deleteMessage.toLowerCase().includes('deleted') || deleteMessage.toLowerCase().includes('cleared') ? 'success' : 'error'}>
+          {deleteMessage}
+        </Alert>
+      )}
 
       {wipeMessage && (
         <Alert variant={wipeMessage.toLowerCase().includes('cleared') ? 'success' : 'error'}>
@@ -480,10 +535,33 @@ export function UploadCenter() {
 
       <Card>
         <CardHeader>
-          <CardTitle>{t('upload.activeDataTitle')}</CardTitle>
-          <CardDescription>
-            {UPLOAD_TEMPLATES[viewType]?.label} — {t('upload.activeDataHint')}
-          </CardDescription>
+          <div className="flex flex-wrap items-start justify-between gap-3">
+            <div>
+              <CardTitle>{t('upload.activeDataTitle')}</CardTitle>
+              <CardDescription>
+                {UPLOAD_TEMPLATES[viewType]?.label} — {t('upload.activeDataHint')}
+              </CardDescription>
+            </div>
+            {canUpload && activeData && activeData.rows.length > 0 && (
+              <div className="flex flex-wrap gap-2">
+                {!clearActiveConfirm ? (
+                  <Button type="button" variant="outline" onClick={() => setClearActiveConfirm(true)}>
+                    {t('upload.clearActiveData')}
+                  </Button>
+                ) : (
+                  <>
+                    <span className="text-xs text-red-900">{t('upload.clearActiveConfirm')}</span>
+                    <Button type="button" variant="outline" onClick={() => setClearActiveConfirm(false)}>
+                      {t('upload.deleteCancel')}
+                    </Button>
+                    <Button type="button" disabled={clearingActive} onClick={() => void confirmClearActive()}>
+                      {clearingActive ? t('upload.deleting') : t('upload.clearActiveAction')}
+                    </Button>
+                  </>
+                )}
+              </div>
+            )}
+          </div>
         </CardHeader>
         <CardContent>
           {activeData && activeData.rows.length > 0 ? (
@@ -568,8 +646,43 @@ export function UploadCenter() {
                           <Badge variant="warning">{t('upload.noSnapshot')}</Badge>
                         )}
                         <StatusBadge status={batch.status} />
+                        {canUpload && batch.status === 'completed' && deleteConfirmBatchId !== batch.id && (
+                          <Button
+                            type="button"
+                            variant="outline"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setDeleteConfirmBatchId(batch.id);
+                              setDeleteMessage(null);
+                            }}
+                          >
+                            {t('upload.deleteUpload')}
+                          </Button>
+                        )}
                       </div>
                     </div>
+                    {deleteConfirmBatchId === batch.id && (
+                      <div
+                        className="mt-2 flex flex-wrap items-center gap-2 rounded-md border border-red-200 bg-red-50 px-2 py-2"
+                        onClick={(e) => e.stopPropagation()}
+                      >
+                        <span className="text-xs text-red-900">
+                          {isLatestBatch(batch.id, batch.templateType)
+                            ? t('upload.deleteUploadConfirmLatest')
+                            : t('upload.deleteUploadConfirm')}
+                        </span>
+                        <Button type="button" variant="outline" onClick={() => setDeleteConfirmBatchId(null)}>
+                          {t('upload.deleteCancel')}
+                        </Button>
+                        <Button
+                          type="button"
+                          disabled={deleting}
+                          onClick={() => void confirmDeleteBatch(batch.id)}
+                        >
+                          {deleting ? t('upload.deleting') : t('upload.deleteUploadAction')}
+                        </Button>
+                      </div>
+                    )}
                     <p className="mt-1 text-xs text-muted-foreground">
                       {UPLOAD_TEMPLATES[batch.templateType as UploadTemplateType]?.label ??
                         batch.templateType}{' '}
@@ -612,13 +725,48 @@ export function UploadCenter() {
               <DataTable rows={snapshotRows} keys={snapshotKeys} />
             ) : null}
             {batchDetail && (
-              <Button
-                type="button"
-                variant="outline"
-                onClick={() => showActiveView(batchDetail.templateType as UploadTemplateType)}
-              >
-                {t('upload.viewActiveData')}
-              </Button>
+              <div className="flex flex-wrap gap-2">
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => showActiveView(batchDetail.templateType as UploadTemplateType)}
+                >
+                  {t('upload.viewActiveData')}
+                </Button>
+                {canUpload &&
+                  batchDetail.status === 'completed' &&
+                  deleteConfirmBatchId !== batchDetail.id && (
+                    <Button
+                      type="button"
+                      variant="outline"
+                      onClick={() => {
+                        setDeleteConfirmBatchId(batchDetail.id);
+                        setDeleteMessage(null);
+                      }}
+                    >
+                      {t('upload.deleteUpload')}
+                    </Button>
+                  )}
+              </div>
+            )}
+            {batchDetail && deleteConfirmBatchId === batchDetail.id && (
+              <div className="flex flex-wrap items-center gap-2 rounded-md border border-red-200 bg-red-50 px-3 py-2">
+                <span className="text-xs text-red-900">
+                  {isLatestBatch(batchDetail.id, batchDetail.templateType)
+                    ? t('upload.deleteUploadConfirmLatest')
+                    : t('upload.deleteUploadConfirm')}
+                </span>
+                <Button type="button" variant="outline" onClick={() => setDeleteConfirmBatchId(null)}>
+                  {t('upload.deleteCancel')}
+                </Button>
+                <Button
+                  type="button"
+                  disabled={deleting}
+                  onClick={() => void confirmDeleteBatch(batchDetail.id)}
+                >
+                  {deleting ? t('upload.deleting') : t('upload.deleteUploadAction')}
+                </Button>
+              </div>
             )}
           </CardContent>
         </Card>

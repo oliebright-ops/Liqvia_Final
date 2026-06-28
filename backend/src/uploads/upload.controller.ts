@@ -2,6 +2,7 @@ import {
   BadRequestException,
   Body,
   Controller,
+  Delete,
   Get,
   Param,
   Post,
@@ -247,6 +248,26 @@ export class UploadController {
   @ApiOperation({ summary: 'Get upload batch detail with stored row snapshot' })
   getBatch(@CurrentUser() user: AuthUser, @Param('id') id: string) {
     return this.imports.getBatch(user.companyId!, id);
+  }
+
+  @Delete('batches/:id')
+  @UseGuards(WorkspaceGuard)
+  @Permissions('uploads:write')
+  @ApiOperation({
+    summary: 'Delete an upload batch; if it is the active import, restore the previous version when available',
+  })
+  deleteBatch(@CurrentUser() user: AuthUser, @Param('id') id: string) {
+    return this.imports.deleteBatch(user.companyId!, id);
+  }
+
+  @Delete('active/:type')
+  @UseGuards(WorkspaceGuard)
+  @Permissions('uploads:write')
+  @ApiOperation({ summary: 'Clear live data for one template type; upload history is retained' })
+  @ApiParam({ name: 'type', enum: UPLOAD_TEMPLATE_TYPES })
+  clearActiveData(@CurrentUser() user: AuthUser, @Param('type') type: string) {
+    const templateType = parseTemplateType(type);
+    return this.imports.clearActiveDataForTemplate(user.companyId!, templateType);
   }
 
   @Get('latest')
