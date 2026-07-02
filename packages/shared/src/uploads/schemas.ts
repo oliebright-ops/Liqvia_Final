@@ -160,25 +160,6 @@ export const weeklyActualsRowSchema = z.object({
     .refine((n) => !Number.isNaN(n), 'Actual Amount is required'),
 });
 
-export const expenseReportRowSchema = z
-  .object({
-    'Transaction Date': isoDate,
-    Payee: z.string().min(1, 'Payee is required'),
-    Description: z.string().min(1, 'Description is required'),
-    Category: budgetCategory.optional().default('expenses'),
-    Amount: positiveAmount,
-    Currency: currencyCode,
-  })
-  .superRefine((row, ctx) => {
-    if (row.Category === 'revenue') {
-      ctx.addIssue({
-        code: z.ZodIssueCode.custom,
-        message: 'Expense report rows should use payroll, expenses, capex, or loan_repayment',
-        path: ['Category'],
-      });
-    }
-  });
-
 export type TrialBalanceRow = z.infer<typeof trialBalanceRowSchema>;
 export type ArAgeingRow = z.infer<typeof arAgeingRowSchema>;
 export type ApAgeingRow = z.infer<typeof apAgeingRowSchema>;
@@ -188,4 +169,3 @@ export type PriorPeriodBudgetRow = z.infer<typeof priorPeriodBudgetRowSchema>;
 export type RollingBudgetRow = z.infer<typeof rollingBudgetRowSchema>;
 export type BudgetRow = z.infer<typeof budgetRowSchema>;
 export type WeeklyActualsRow = z.infer<typeof weeklyActualsRowSchema>;
-export type ExpenseReportRow = z.infer<typeof expenseReportRowSchema>;

@@ -15,7 +15,6 @@ export const AI_UPLOAD_TEMPLATE_TYPES = [
   'bank_transactions',
   'ar_ageing',
   'ap_ageing',
-  'expense_report',
   'weekly_actuals',
   'bank_balances',
 ] as const satisfies readonly UploadTemplateType[];
@@ -151,20 +150,6 @@ const AP_PROFILE: GenericProfile = {
     scoreAny(headers, ['supplier', 'vendor', 'bill', 'due date', 'payable']),
 };
 
-const EXPENSE_PROFILE: GenericProfile = {
-  id: 'expense',
-  aliases: {
-    'Transaction Date': ['transaction date', 'date', 'posting date', 'expense date'],
-    Payee: ['payee', 'vendor', 'supplier', 'merchant', 'employee'],
-    Description: ['description', 'details', 'memo', 'narrative', 'purpose'],
-    Category: ['category', 'type', 'expense type', 'class'],
-    Amount: ['amount', 'value', 'expense amount', 'net amount', 'total'],
-    Currency: ['currency', 'curr'],
-  },
-  scoreHeaders: (headers) =>
-    scoreAny(headers, ['expense', 'payee', 'vendor', 'amount', 'description']),
-};
-
 const WEEKLY_PROFILE: GenericProfile = {
   id: 'weekly',
   aliases: {
@@ -191,7 +176,6 @@ const BANK_BALANCE_PROFILE: GenericProfile = {
 const PROFILES: Partial<Record<UploadTemplateType, GenericProfile>> = {
   ar_ageing: AR_PROFILE,
   ap_ageing: AP_PROFILE,
-  expense_report: EXPENSE_PROFILE,
   weekly_actuals: WEEKLY_PROFILE,
   bank_balances: BANK_BALANCE_PROFILE,
 };
@@ -255,18 +239,6 @@ function transformGenericRow(
       out['Due Date'] = dueDate;
       out['Outstanding Amount'] = String(amount);
       out['Supplier Priority'] = normalizePriority(record[mapping['Supplier Priority'] ?? '']);
-      out.Currency = (record[mapping.Currency ?? ''] || defaults.companyCurrency || 'USD').toUpperCase();
-      break;
-    }
-    case 'expense_report': {
-      const txnDate = parseDate(record[mapping['Transaction Date'] ?? '']);
-      const amount = parseAmount(record[mapping.Amount ?? '']);
-      if (!txnDate || amount === null || amount <= 0) return null;
-      out['Transaction Date'] = txnDate;
-      out.Payee = record[mapping.Payee ?? '']?.trim() || 'Vendor';
-      out.Description = record[mapping.Description ?? '']?.trim() || out.Payee;
-      out.Category = normalizeCategory(record[mapping.Category ?? '']);
-      out.Amount = String(amount);
       out.Currency = (record[mapping.Currency ?? ''] || defaults.companyCurrency || 'USD').toUpperCase();
       break;
     }

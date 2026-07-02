@@ -1,11 +1,15 @@
 'use client';
 
 import { useCallback, useEffect, useState } from 'react';
-import { UPLOAD_TEMPLATES, UploadTemplateType, UPLOAD_FILE_ACCEPT, validateUpload } from '@liqvia2/shared';
+import { UploadTemplateType, UPLOAD_FILE_ACCEPT, validateUpload } from '@liqvia2/shared';
 import { apiGet, apiPost } from '@/lib/api';
 import { readUploadFile } from '@/lib/read-upload-file';
 import { notifyWorkspaceRefresh } from '@/lib/workspace-refresh';
 import { useTranslations } from '@/lib/i18n';
+import {
+  formatRequiredColumnsUi,
+  translateUploadTemplateLabel,
+} from '@/lib/upload-template-i18n';
 import { BankAccountsSummary } from '@/lib/module-types';
 import { OnboardingNav } from '../onboarding-nav';
 import { downloadTemplateSample } from '@/components/uploads/upload-template-library';
@@ -108,7 +112,6 @@ export function UploadStep({
 
       <ul className="mt-6 space-y-3">
         {RECOMMENDED.map((type) => {
-          const meta = UPLOAD_TEMPLATES[type];
           const uploaded = completedTypes.has(type);
           const manualDone = type === 'bank_balances' && manualBankBalancesReady && !uploaded;
           const done = uploaded || manualDone;
@@ -119,7 +122,7 @@ export function UploadStep({
               className="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-slate-700 bg-slate-800/50 px-4 py-3"
             >
               <div>
-                <p className="font-medium text-slate-100">{meta.label}</p>
+                <p className="font-medium text-slate-100">{translateUploadTemplateLabel(type, t)}</p>
                 <p className="text-xs text-slate-500">
                   {done
                     ? manualDone
@@ -134,7 +137,7 @@ export function UploadStep({
                 )}
                 {!manualDone && (
                   <p className="mt-1 text-xs text-slate-600">
-                    {t('upload.requiredColumns')}: {meta.headers.join(', ')}
+                    {t('upload.requiredColumns')}: {formatRequiredColumnsUi(type, t)}
                   </p>
                 )}
               </div>

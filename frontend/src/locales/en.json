@@ -172,8 +172,8 @@
       "assumptions": {
         "title": "Key assumptions",
         "body": "Standard SME treasury rules — visible and testable.",
-          "b1": "Overdue receivables are assumed to collect in week 1 — see Risk insights for exposure; use Scenarios to stress-test delays.",
-          "b2": "Payables respect supplier priority tiers from your AP upload — payroll and tax first.",
+        "b1": "Overdue receivables are assumed to collect in week 1 — see Risk insights for exposure; use Scenarios to stress-test delays.",
+        "b2": "Payables respect supplier priority tiers from your AP upload — payroll and tax first.",
         "b3": "Weekly actuals extend the forecast using a recent-week average (default 4 weeks)."
       },
       "accuracy": {
@@ -1037,7 +1037,6 @@
         "bank_transactions": "Bank statement or transaction export — powers cash forecast when AR/AP ageing is unavailable.",
         "ar_ageing": "Open receivables / customer invoice ageing.",
         "ap_ageing": "Open payables / supplier bill ageing.",
-        "expense_report": "Expense statement or P&L detail — aggregated into weekly actuals for forecast when ageing is missing.",
         "weekly_actuals": "14 weeks of revenue, payroll, and expense actuals by ISO week.",
         "bank_balances": "Current bank account balances as of a snapshot date."
       }
@@ -1074,6 +1073,68 @@
           "body": "Required on AP uploads: payroll, tax, critical, flexible, or non-essential. Used in scenario stress and risk breakdown — baseline forecast still schedules by due date."
         }
       }
-    }
+    },
+    "templates": {
+      "trial_balance": {
+        "label": "Trial Balance"
+      },
+      "ar_ageing": {
+        "label": "AR Ageing"
+      },
+      "ap_ageing": {
+        "label": "AP Ageing"
+      },
+      "bank_balances": {
+        "label": "Bank Balances"
+      },
+      "bank_transactions": {
+        "label": "Bank Transactions"
+      },
+      "prior_period_budget": {
+        "label": "Prior Period Budget (14 weeks)"
+      },
+      "rolling_budget": {
+        "label": "Rolling Budget (13 weeks, optional)"
+      },
+      "budget": {
+        "label": "Prior Period Budget (legacy)"
+      },
+      "weekly_actuals": {
+        "label": "Weekly Actuals (14 weeks)"
+      }
+    },
+    "headers": {
+      "period": "Period",
+      "accountCode": "Account Code",
+      "accountName": "Account Name",
+      "accountType": "Account Type",
+      "debit": "Debit",
+      "credit": "Credit",
+      "customerName": "Customer Name",
+      "invoiceNumber": "Invoice Number",
+      "invoiceDate": "Invoice Date",
+      "dueDate": "Due Date",
+      "outstandingAmount": "Outstanding Amount",
+      "currency": "Currency",
+      "supplierName": "Supplier Name",
+      "billNumber": "Bill Number",
+      "billDate": "Bill Date",
+      "supplierPriority": "Supplier Priority",
+      "bankAccountName": "Bank Account Name",
+      "accountNumberMasked": "Account Number Masked",
+      "balanceDate": "Balance Date",
+      "currentBalance": "Current Balance",
+      "transactionDate": "Transaction Date",
+      "description": "Description",
+      "amount": "Amount",
+      "direction": "Direction",
+      "category": "Category",
+      "budgetAmount": "Budget Amount",
+      "budgetType": "Budget Type",
+      "actualAmount": "Actual Amount",
+      "payee": "Payee"
+    },
+    "requiredColumnsFileHint": "Exact column names in your CSV/Excel file: {headers}",
+    "fileFormatsShort": "CSV or Excel (.xlsx, .xls)"
   }
 }

@@ -7,7 +7,6 @@ import {
   BANK_SOURCE_FORMATS,
   AI_UPLOAD_FILE_ACCEPT,
   MAX_AI_UPLOAD_FILES,
-  UPLOAD_TEMPLATES,
   type AiUploadTemplateType,
   type BankSourceFormat,
   type UploadValidationResult,
@@ -18,6 +17,11 @@ import { useAuth } from '@/lib/auth-context';
 import { notifyWorkspaceRefresh } from '@/lib/workspace-refresh';
 import { useTranslations, useLanguage } from '@/lib/i18n';
 import { translateUploadValidationErrors } from '@/lib/translate-upload-validation';
+import {
+  getUploadTemplateHeaders,
+  translateUploadHeader,
+  translateUploadTemplateLabel,
+} from '@/lib/upload-template-i18n';
 import { useDashboard } from '@/hooks/use-dashboard';
 import { PageHeader } from '@/components/treasury/page-header';
 import { Alert } from '@/components/ui/alert';
@@ -97,9 +101,10 @@ export function AiUploadCenter() {
   const [importMessage, setImportMessage] = useState<string | null>(null);
 
   const currency = dashboard?.currency ?? 'USD';
-  const headers = UPLOAD_TEMPLATES[templateType].headers;
+  const headers = getUploadTemplateHeaders(templateType);
+  const headerLabels = headers.map((h) => translateUploadHeader(h, t));
   const isBankTemplate = templateType === 'bank_transactions';
-  const templateLabel = UPLOAD_TEMPLATES[templateType].label;
+  const templateLabel = translateUploadTemplateLabel(templateType, t);
 
   const importFileLabel = useMemo(() => {
     if (selectedFiles.length === 1) return selectedFiles[0]!.name;
@@ -248,7 +253,7 @@ export function AiUploadCenter() {
             >
               {AI_UPLOAD_TEMPLATE_TYPES.map((type) => (
                 <option key={type} value={type}>
-                  {UPLOAD_TEMPLATES[type].label}
+                  {translateUploadTemplateLabel(type, t)}
                 </option>
               ))}
             </select>
@@ -365,7 +370,9 @@ export function AiUploadCenter() {
             <CardHeader>
               <div className="flex flex-wrap items-center gap-2">
                 <CardTitle>{t('upload.ai.resultTitle')}</CardTitle>
-                <Badge variant="muted">{UPLOAD_TEMPLATES[result.templateType ?? templateType].label}</Badge>
+                <Badge variant="muted">
+                  {translateUploadTemplateLabel(result.templateType ?? templateType, t)}
+                </Badge>
                 <Badge variant={result.confidence === 'high' ? 'success' : 'default'}>
                   {result.confidence}
                 </Badge>
@@ -400,7 +407,7 @@ export function AiUploadCenter() {
                       >
                         <span className="truncate">{file.fileName}</span>
                         <span>
-                          {file.rowCount} rows ·{' '}
+                          {file.rowCount} {t('upload.rows')} ·{' '}
                           {formatLabel(file.detectedFormat, result.templateType ?? templateType)}
                         </span>
                       </li>
@@ -424,7 +431,7 @@ export function AiUploadCenter() {
                     .filter(([, v]) => v)
                     .map(([field, column]) => (
                       <div key={field} className="rounded border border-border/60 px-2 py-1.5 text-xs">
-                        <dt className="text-muted-foreground">{field}</dt>
+                        <dt className="text-muted-foreground">{translateUploadHeader(field, t)}</dt>
                         <dd className="font-mono text-foreground">{column}</dd>
                       </div>
                     ))}
@@ -484,9 +491,9 @@ export function AiUploadCenter() {
                   <table className="w-full min-w-[640px] text-left text-xs">
                     <thead>
                       <tr className="border-b border-border text-muted-foreground">
-                        {headers.map((h) => (
-                          <th key={h} className="pb-2 pr-3 font-medium">
-                            {h}
+                        {headerLabels.map((label, i) => (
+                          <th key={headers[i]} className="pb-2 pr-3 font-medium">
+                            {label}
                           </th>
                         ))}
                       </tr>

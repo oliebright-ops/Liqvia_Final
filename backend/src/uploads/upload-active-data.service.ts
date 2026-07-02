@@ -1,6 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { UploadBatchStatus, UploadTemplateType } from '@prisma/client';
 import { getFutureWeekPeriods, getPastWeekPeriods, UPLOAD_TEMPLATES } from '@liqvia2/shared';
+import type { UploadTemplateType as SharedUploadTemplateType } from '@liqvia2/shared';
 import { PrismaService } from '../prisma/prisma.service';
 
 export interface ActiveUploadData {
@@ -19,7 +20,10 @@ export class UploadActiveDataService {
     companyId: string,
     templateType: UploadTemplateType,
   ): Promise<ActiveUploadData> {
-    const headers = UPLOAD_TEMPLATES[templateType]?.headers ?? [];
+    const headers =
+      templateType in UPLOAD_TEMPLATES
+        ? UPLOAD_TEMPLATES[templateType as SharedUploadTemplateType].headers
+        : [];
     const asOfDate = new Date().toISOString().slice(0, 10);
 
     let rows: Record<string, unknown>[] = [];
@@ -51,9 +55,6 @@ export class UploadActiveDataService {
         break;
       case 'bank_transactions':
         rows = await this.exportBankTransactions(companyId);
-        break;
-      case 'expense_report':
-        rows = await this.exportExpenseReportActuals(companyId);
         break;
       default:
         rows = [];
@@ -211,30 +212,6 @@ export class UploadActiveDataService {
       Description: m.description,
       Amount: Number(m.amount),
       Direction: m.isInflow ? 'IN' : 'OUT',
-    }));
-  }
-
-  private async exportExpenseReportActuals(companyId: string) {
-    const company = await this.prisma.company.findUnique({ where: { id: companyId } });
-    const currency = company?.currency ?? 'USD';
-    const expenseBatches = await this.prisma.uploadBatch.findMany({
-      where: { companyId, templateType: 'expense_report', status: UploadBatchStatus.completed },
-      select: { id: true },
-    });
-    if (expenseBatches.length === 0) return [];
-
-    const rows = await this.prisma.weeklyActual.findMany({
-      where: { companyId, uploadBatchId: { in: expenseBatches.map((b) => b.id) } },
-      orderBy: [{ period: 'asc' }, { category: 'asc' }],
-    });
-
-    return rows.map((r) => ({
-      'Transaction Date': r.weekStart.toISOString().slice(0, 10),
-      Payee: r.accountCode ?? '',
-      Description: r.category,
-      Category: r.category,
-      Amount: Number(r.actualAmount),
-      Currency: currency,
     }));
   }
 }

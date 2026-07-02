@@ -90,12 +90,6 @@ export const UPLOAD_TEMPLATES: Record<UploadTemplateType, UploadTemplateDefiniti
     headers: ['Period', 'Category', 'Account Code', 'Actual Amount'],
     sampleFileName: 'weekly-actuals-sample.csv',
   },
-  expense_report: {
-    type: 'expense_report',
-    label: 'Expense Report / Statement',
-    headers: ['Transaction Date', 'Payee', 'Description', 'Category', 'Amount', 'Currency'],
-    sampleFileName: 'expense-report-sample.csv',
-  },
 };
 
 export const UPLOAD_TEMPLATE_TYPES = Object.keys(UPLOAD_TEMPLATES) as UploadTemplateType[];

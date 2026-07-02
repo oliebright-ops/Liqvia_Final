@@ -1037,7 +1037,6 @@
         "bank_transactions": "Выписка или экспорт транзакций — для прогноза без отчётов по срокам ДЗ/КЗ.",
         "ar_ageing": "Дебиторская задолженность / ageing по счетам клиентов.",
         "ap_ageing": "Кредиторская задолженность / ageing по счетам поставщиков.",
-        "expense_report": "Отчёт о расходах — агрегируется в недельные факты для прогноза.",
         "weekly_actuals": "14 недель фактов по выручке, ФОТ и расходам.",
         "bank_balances": "Текущие остатки на банковских счетах."
       }
@@ -1074,6 +1073,68 @@
           "body": "Допустимые значения: ФОТ (payroll), налоги (tax), критичные (critical), гибкие (flexible), необязательные (non_essential) — для сценариев и анализа рисков."
         }
       }
-    }
+    },
+    "templates": {
+      "trial_balance": {
+        "label": "Оборотно-сальдовая ведомость"
+      },
+      "ar_ageing": {
+        "label": "Дебиторская задолженность (сроки)"
+      },
+      "ap_ageing": {
+        "label": "Кредиторская задолженность (сроки)"
+      },
+      "bank_balances": {
+        "label": "Банковские остатки"
+      },
+      "bank_transactions": {
+        "label": "Банковские транзакции"
+      },
+      "prior_period_budget": {
+        "label": "Бюджет прошлого периода (14 нед.)"
+      },
+      "rolling_budget": {
+        "label": "Скользящий бюджет (13 нед., опционально)"
+      },
+      "budget": {
+        "label": "Бюджет прошлого периода (устар.)"
+      },
+      "weekly_actuals": {
+        "label": "Недельные факты (14 нед.)"
+      }
+    },
+    "headers": {
+      "period": "Период",
+      "accountCode": "Код счёта",
+      "accountName": "Название счёта",
+      "accountType": "Тип счёта",
+      "debit": "Дебет",
+      "credit": "Кредит",
+      "customerName": "Клиент",
+      "invoiceNumber": "Номер счёта",
+      "invoiceDate": "Дата счёта",
+      "dueDate": "Срок оплаты",
+      "outstandingAmount": "Сумма задолженности",
+      "currency": "Валюта",
+      "supplierName": "Поставщик",
+      "billNumber": "Номер накладной",
+      "billDate": "Дата накладной",
+      "supplierPriority": "Приоритет поставщика",
+      "bankAccountName": "Банковский счёт",
+      "accountNumberMasked": "Маскированный номер счёта",
+      "balanceDate": "Дата остатка",
+      "currentBalance": "Текущий остаток",
+      "transactionDate": "Дата операции",
+      "description": "Описание",
+      "amount": "Сумма",
+      "direction": "Направление",
+      "category": "Категория",
+      "budgetAmount": "Сумма бюджета",
+      "budgetType": "Тип бюджета",
+      "actualAmount": "Фактическая сумма",
+      "payee": "Получатель платежа"
+    },
+    "requiredColumnsFileHint": "Точные названия столбцов в CSV/Excel: {headers}",
+    "fileFormatsShort": "CSV или Excel (.xlsx, .xls)"
   }
 }

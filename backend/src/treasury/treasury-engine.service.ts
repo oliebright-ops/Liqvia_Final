@@ -151,7 +151,16 @@ export class TreasuryEngineService {
     });
 
     const company = await this.prisma.company.findUnique({ where: { id: companyId } });
-    const weeklyActuals = await this.prisma.weeklyActual.findMany({ where: { companyId } });
+    const weeklyActuals = await this.prisma.weeklyActual.findMany({
+      where: {
+        companyId,
+        NOT: {
+          uploadBatch: {
+            templateType: 'expense_report',
+          },
+        },
+      },
+    });
 
     let weeklyActualsRows =
       weeklyActuals.length > 0

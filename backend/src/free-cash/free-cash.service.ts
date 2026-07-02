@@ -26,7 +26,16 @@ export class FreeCashService {
       }),
       this.prisma.receivable.findMany({ where: { companyId, deletedAt: null } }),
       this.prisma.payable.findMany({ where: { companyId, deletedAt: null } }),
-      this.prisma.weeklyActual.findMany({ where: { companyId } }),
+      this.prisma.weeklyActual.findMany({
+        where: {
+          companyId,
+          NOT: {
+            uploadBatch: {
+              templateType: 'expense_report',
+            },
+          },
+        },
+      }),
     ]);
 
     const closingBalance = bankAccounts.reduce((sum, account) => {

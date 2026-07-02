@@ -4,11 +4,15 @@ import { useState } from 'react';
 import {
   getTemplateSampleFileName,
   UPLOAD_LIBRARY_TEMPLATE_TYPES,
-  UPLOAD_TEMPLATES,
   UploadTemplateType,
 } from '@liqvia2/shared';
 import { downloadAuthenticatedFile } from '@/lib/api';
 import { useTranslations } from '@/lib/i18n';
+import {
+  formatRequiredColumnsFile,
+  formatRequiredColumnsUi,
+  translateUploadTemplateLabel,
+} from '@/lib/upload-template-i18n';
 
 export function templateSampleUrl(type: UploadTemplateType, format: 'csv' | 'xlsx' = 'csv'): string {
   const query = format === 'xlsx' ? '?format=xlsx' : '';
@@ -68,7 +72,6 @@ export function UploadTemplateLibrary({ highlightType, compact }: UploadTemplate
   return (
     <div className={compact ? 'space-y-3' : 'grid gap-4 sm:grid-cols-2'}>
       {UPLOAD_LIBRARY_TEMPLATE_TYPES.map((type) => {
-        const meta = UPLOAD_TEMPLATES[type];
         const highlighted = highlightType === type;
         return (
           <div
@@ -77,9 +80,12 @@ export function UploadTemplateLibrary({ highlightType, compact }: UploadTemplate
               highlighted ? 'border-primary bg-primary/10' : 'border-border bg-card'
             }`}
           >
-            <p className="font-medium text-foreground">{meta.label}</p>
+            <p className="font-medium text-foreground">{translateUploadTemplateLabel(type, t)}</p>
             <p className="mt-1 text-xs text-muted-foreground">
-              {t('upload.requiredColumns')}: {meta.headers.join(', ')}
+              {t('upload.requiredColumns')}: {formatRequiredColumnsUi(type, t)}
+            </p>
+            <p className="mt-0.5 text-xs text-muted-foreground">
+              {t('upload.requiredColumnsFileHint', { headers: formatRequiredColumnsFile(type) })}
             </p>
             <div className="mt-3 flex flex-wrap gap-2">
               <TemplateDownloadButton

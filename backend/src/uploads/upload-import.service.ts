@@ -7,9 +7,9 @@ import {
   getFutureWeekPeriods,
   getPastWeekPeriods,
   periodToWeekStart,
-  toIsoWeek,
   type WeeklyAmountRow,
 } from '@liqvia2/shared';
+import type { UploadTemplateType as SharedUploadTemplateType } from '@liqvia2/shared';
 import {
   AccountType,
   BudgetCategory,
@@ -46,9 +46,18 @@ export class UploadImportService {
     }
 
     const currency = company.currency;
-    const validation = this.validation.validate(params.templateType, params.csvContent, {
-      companyCurrency: currency,
-    });
+    if (params.templateType === 'expense_report') {
+      throw new BadRequestException(
+        'Expense report uploads are no longer supported. Use Weekly Actuals or bank transactions instead.',
+      );
+    }
+    const validation = this.validation.validate(
+      params.templateType as SharedUploadTemplateType,
+      params.csvContent,
+      {
+        companyCurrency: currency,
+      },
+    );
 
     if (!validation.valid || !validation.rows) {
       throw new BadRequestException({
@@ -182,8 +191,7 @@ export class UploadImportService {
     if (
       templateType === 'weekly_actuals' ||
       templateType === 'prior_period_budget' ||
-      templateType === 'budget' ||
-      templateType === 'expense_report'
+      templateType === 'budget'
     ) {
       await this.syncRollingBudgetIfNeeded(companyId);
     }
@@ -249,8 +257,7 @@ export class UploadImportService {
         if (
           batch.templateType === 'weekly_actuals' ||
           batch.templateType === 'prior_period_budget' ||
-          batch.templateType === 'budget' ||
-          batch.templateType === 'expense_report'
+          batch.templateType === 'budget'
         ) {
           await this.syncRollingBudgetIfNeeded(companyId);
         }
@@ -413,9 +420,18 @@ export class UploadImportService {
         }
         break;
       }
-      case 'weekly_actuals':
-        await this.prisma.weeklyActual.deleteMany({ where: { companyId } });
+      case 'weekly_actuals': {
+        const priorBatches = await this.prisma.uploadBatch.findMany({
+          where: { companyId, templateType: 'weekly_actuals', status: UploadBatchStatus.completed },
+          select: { id: true },
+        });
+        if (priorBatches.length > 0) {
+          await this.prisma.weeklyActual.deleteMany({
+            where: { companyId, uploadBatchId: { in: priorBatches.map((b) => b.id) } },
+          });
+        }
         break;
+      }
       case 'expense_report': {
         const priorBatches = await this.prisma.uploadBatch.findMany({
           where: { companyId, templateType: 'expense_report', status: UploadBatchStatus.completed },
@@ -444,6 +460,8 @@ export class UploadImportService {
         await this.prisma.payable.deleteMany({ where: { uploadBatchId: batchId } });
         break;
       case 'weekly_actuals':
+        await this.prisma.weeklyActual.deleteMany({ where: { uploadBatchId: batchId } });
+        break;
       case 'expense_report':
         await this.prisma.weeklyActual.deleteMany({ where: { uploadBatchId: batchId } });
         break;
@@ -485,9 +503,6 @@ export class UploadImportService {
         break;
       case 'weekly_actuals':
         await this.persistWeeklyActuals(companyId, rows, uploadBatchId);
-        break;
-      case 'expense_report':
-        await this.persistExpenseReport(companyId, rows, uploadBatchId);
         break;
       default:
         throw new BadRequestException(`Unsupported template: ${templateType}`);
@@ -608,41 +623,6 @@ export class UploadImportService {
           category: row.Category as BudgetCategory,
           accountCode: accountCode || null,
           actualAmount: Number(row['Actual Amount']),
-          uploadBatchId,
-        },
-      });
-    }
-  }
-
-  private async persistExpenseReport(companyId: string, rows: unknown[], uploadBatchId: string) {
-    const totals = new Map<
-      string,
-      { period: string; category: BudgetCategory; amount: number; accountCode: string | null }
-    >();
-
-    for (const row of rows as Array<Record<string, unknown>>) {
-      const period = toIsoWeek(String(row['Transaction Date']));
-      const category = row.Category as BudgetCategory;
-      const accountCode = String(row.Payee ?? '').trim() || null;
-      const key = `${period}|${category}|${accountCode ?? ''}`;
-      const existing = totals.get(key);
-      totals.set(key, {
-        period,
-        category,
-        amount: (existing?.amount ?? 0) + Number(row.Amount),
-        accountCode,
-      });
-    }
-
-    for (const item of totals.values()) {
-      await this.prisma.weeklyActual.create({
-        data: {
-          companyId,
-          period: item.period,
-          weekStart: new Date(`${periodToWeekStart(item.period)}T00:00:00.000Z`),
-          category: item.category,
-          accountCode: item.accountCode,
-          actualAmount: item.amount,
           uploadBatchId,
         },
       });

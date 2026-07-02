@@ -1,5 +1,4 @@
 import { parseCsv } from '../csv/parse-csv';
-import { toIsoWeek } from '../reporting-period';
 import { getFutureWeekPeriods, getPastWeekPeriods } from '../rolling-budget';
 import { MAX_UPLOAD_CSV_CHARS, MAX_UPLOAD_ROWS } from './upload-limits';
 import type { UploadTemplateType, UploadValidationError } from './types';
@@ -10,7 +9,6 @@ import {
   bankBalancesRowSchema,
   bankTransactionsRowSchema,
   budgetRowSchema,
-  expenseReportRowSchema,
   priorPeriodBudgetRowSchema,
   rollingBudgetRowSchema,
   trialBalanceRowSchema,
@@ -43,7 +41,6 @@ const rowSchemas: Record<UploadTemplateType, z.ZodTypeAny> = {
   prior_period_budget: priorPeriodBudgetRowSchema,
   rolling_budget: rollingBudgetRowSchema,
   weekly_actuals: weeklyActualsRowSchema,
-  expense_report: expenseReportRowSchema,
 };
 
 function buildValidationFailure<T>(
@@ -86,7 +83,7 @@ function validateRowCurrency(
   rowNumber: number,
 ): UploadValidationError | null {
   if (!companyCurrency) return null;
-  const currencyTemplates: UploadTemplateType[] = ['ar_ageing', 'ap_ageing', 'bank_balances', 'expense_report'];
+  const currencyTemplates: UploadTemplateType[] = ['ar_ageing', 'ap_ageing', 'bank_balances'];
   if (!currencyTemplates.includes(templateType)) return null;
   const rowCurrency = String(data.Currency ?? '').toUpperCase();
   if (rowCurrency !== companyCurrency.toUpperCase()) {
@@ -135,10 +132,6 @@ function checkDuplicate(
     case 'weekly_actuals':
       key = `${data.Period}|${data.Category}|${data['Account Code'] ?? ''}`;
       label = 'Period + Category + Account Code';
-      break;
-    case 'expense_report':
-      key = `${data['Transaction Date']}|${data.Payee}|${data.Description}|${data.Amount}`;
-      label = 'Transaction Date + Payee + Description + Amount';
       break;
     default:
       return null;
@@ -243,19 +236,15 @@ export function validateUpload<T = unknown>(
     if (
       templateType === 'weekly_actuals' ||
       templateType === 'prior_period_budget' ||
-      templateType === 'budget' ||
-      templateType === 'expense_report'
+      templateType === 'budget'
     ) {
       const allowed = new Set(getPastWeekPeriods(asOfDate));
       validRows.forEach((row, index) => {
-        const period =
-          templateType === 'expense_report'
-            ? toIsoWeek(String((row as Record<string, unknown>)['Transaction Date']))
-            : String((row as Record<string, unknown>).Period);
+        const period = String((row as Record<string, unknown>).Period);
         if (!allowed.has(period)) {
           errors.push({
             row: index + 2,
-            column: templateType === 'expense_report' ? 'Transaction Date' : 'Period',
+            column: 'Period',
             message: `Date must fall within the past 14 weeks (${[...allowed].slice(0, 2).join(', ')} … ${[...allowed].at(-1)})`,
           });
         }

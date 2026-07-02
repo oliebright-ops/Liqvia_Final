@@ -43,6 +43,7 @@ enum UploadTemplateType {
   prior_period_budget
   rolling_budget
   weekly_actuals
+  /// Deprecated — kept for historical upload batches only; no longer accepted for import.
   expense_report
 }
 

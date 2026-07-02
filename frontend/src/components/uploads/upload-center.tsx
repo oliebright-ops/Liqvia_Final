@@ -16,6 +16,13 @@ import { useAuth } from '@/lib/auth-context';
 import { notifyWorkspaceRefresh } from '@/lib/workspace-refresh';
 import { useLanguage, useTranslations } from '@/lib/i18n';
 import { translateUploadValidationErrors } from '@/lib/translate-upload-validation';
+import {
+  formatRequiredColumnsFile,
+  formatRequiredColumnsUi,
+  getUploadTemplateHeaders,
+  translateUploadHeader,
+  translateUploadTemplateLabel,
+} from '@/lib/upload-template-i18n';
 import { useDashboard } from '@/hooks/use-dashboard';
 import { PageHeader } from '@/components/treasury/page-header';
 import { Alert } from '@/components/ui/alert';
@@ -91,7 +98,7 @@ export function UploadCenter() {
   const [clearActiveConfirm, setClearActiveConfirm] = useState(false);
   const [clearingActive, setClearingActive] = useState(false);
 
-  const template = UPLOAD_TEMPLATES[templateType];
+  const templateHeaders = getUploadTemplateHeaders(templateType);
   const currency = dashboard?.currency ?? 'USD';
 
   const loadBatches = useCallback(async () => {
@@ -304,18 +311,22 @@ export function UploadCenter() {
   const previewKeys =
     previewRows.length > 0
       ? Object.keys(previewRows[0] as Record<string, unknown>)
-      : template.headers;
+      : [...templateHeaders];
 
   const activeKeys =
     activeData?.rows && activeData.rows.length > 0
       ? Object.keys(activeData.rows[0] as Record<string, unknown>)
-      : (activeData?.headers ?? UPLOAD_TEMPLATES[viewType]?.headers ?? []);
+      : activeData?.headers?.length
+        ? activeData.headers
+        : [...getUploadTemplateHeaders(viewType)];
 
   const snapshotRows = batchDetail?.rows ?? [];
   const snapshotKeys =
     snapshotRows.length > 0
       ? Object.keys(snapshotRows[0] as Record<string, unknown>)
-      : (UPLOAD_TEMPLATES[viewType]?.headers ?? []);
+      : [...getUploadTemplateHeaders(viewType)];
+
+  const headerLabels = (keys: readonly string[]) => keys.map((k) => translateUploadHeader(k, t));
 
   return (
     <div className="space-y-8">
@@ -389,9 +400,9 @@ export function UploadCenter() {
           <CardContent className="space-y-4">
             <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
               {TEMPLATE_TYPES.map((type) => {
-                const meta = UPLOAD_TEMPLATES[type];
                 const selected = type === templateType;
                 const hasLatest = latestByType.some((b) => b.templateType === type);
+                const typeHeaders = getUploadTemplateHeaders(type);
                 return (
                   <button
                     key={type}
@@ -404,7 +415,7 @@ export function UploadCenter() {
                     }`}
                   >
                     <div className="flex items-center justify-between gap-2">
-                      <span className="font-medium">{meta.label}</span>
+                      <span className="font-medium">{translateUploadTemplateLabel(type, t)}</span>
                       {hasLatest && viewMode === 'active' && viewType === type && (
                         <Badge variant="success" className="text-[10px]">
                           {t('upload.inUse')}
@@ -414,7 +425,7 @@ export function UploadCenter() {
                     <span
                       className={`mt-1 block text-xs ${selected ? 'text-primary/80' : 'text-muted-foreground'}`}
                     >
-                      {meta.headers.length} {t('upload.columns')}
+                      {typeHeaders.length} {t('upload.columns')}
                     </span>
                   </button>
                 );
@@ -434,8 +445,15 @@ export function UploadCenter() {
         <Card>
           <CardHeader>
             <CardTitle>{t('upload.uploadFile')}</CardTitle>
-            <CardDescription>
-              {t('upload.requiredColumns')}: {template.headers.join(', ')}
+            <CardDescription className="space-y-1">
+              <span className="block">
+                {t('upload.requiredColumns')}: {formatRequiredColumnsUi(templateType, t)}
+              </span>
+              <span className="block text-xs">
+                {t('upload.requiredColumnsFileHint', {
+                  headers: formatRequiredColumnsFile(templateType),
+                })}
+              </span>
             </CardDescription>
           </CardHeader>
           <CardContent>
@@ -444,7 +462,7 @@ export function UploadCenter() {
                 <span className="text-sm font-medium text-foreground">
                   {fileName ?? t('upload.dropzone')}
                 </span>
-                <span className="mt-1 text-xs text-muted-foreground">{t('upload.fileFormats')}</span>
+                <span className="mt-1 text-xs text-muted-foreground">{t('upload.fileFormatsShort')}</span>
                 <input
                   type="file"
                   accept={UPLOAD_FILE_ACCEPT}
@@ -505,9 +523,9 @@ export function UploadCenter() {
                 <table className="min-w-full text-left text-sm">
                   <thead className="bg-slate-50 text-slate-700">
                     <tr>
-                      {previewKeys.map((key) => (
-                        <th key={key} className="whitespace-nowrap px-3 py-2 font-medium">
-                          {key}
+                      {headerLabels(previewKeys).map((label, i) => (
+                        <th key={previewKeys[i]} className="whitespace-nowrap px-3 py-2 font-medium">
+                          {label}
                         </th>
                       ))}
                     </tr>
@@ -552,7 +570,7 @@ export function UploadCenter() {
             <div>
               <CardTitle>{t('upload.activeDataTitle')}</CardTitle>
               <CardDescription>
-                {UPLOAD_TEMPLATES[viewType]?.label} — {t('upload.activeDataHint')}
+                {translateUploadTemplateLabel(viewType, t)} — {t('upload.activeDataHint')}
               </CardDescription>
             </div>
             {canUpload && activeData && activeData.rows.length > 0 && (
@@ -582,7 +600,7 @@ export function UploadCenter() {
               <p className="mb-3 text-xs text-muted-foreground">
                 {t('upload.activeDataRows', { count: String(activeData.rowCount) })}
               </p>
-              <DataTable rows={activeData.rows} keys={activeKeys} />
+              <DataTable rows={activeData.rows} keys={activeKeys} labels={headerLabels(activeKeys)} />
             </>
           ) : (
             <p className="text-sm text-muted-foreground">{t('upload.activeDataEmpty')}</p>
@@ -613,8 +631,7 @@ export function UploadCenter() {
                 >
                   <div className="flex items-center justify-between gap-2">
                     <span className="font-medium">
-                      {UPLOAD_TEMPLATES[batch.templateType as UploadTemplateType]?.label ??
-                        batch.templateType}
+                      {translateUploadTemplateLabel(batch.templateType as UploadTemplateType, t)}
                     </span>
                     <Badge variant="success">{t('upload.latestBadge')}</Badge>
                   </div>
@@ -697,8 +714,7 @@ export function UploadCenter() {
                       </div>
                     )}
                     <p className="mt-1 text-xs text-muted-foreground">
-                      {UPLOAD_TEMPLATES[batch.templateType as UploadTemplateType]?.label ??
-                        batch.templateType}{' '}
+                      {translateUploadTemplateLabel(batch.templateType as UploadTemplateType, t)}{' '}
                       · {batch.rowCount ?? 0} {t('upload.rows')} ·{' '}
                       {new Date(batch.createdAt).toLocaleString()}
                     </p>
@@ -716,7 +732,7 @@ export function UploadCenter() {
             <CardTitle>{t('upload.snapshotTitle')}</CardTitle>
             <CardDescription>
               {batchDetail
-                ? `${UPLOAD_TEMPLATES[batchDetail.templateType as UploadTemplateType]?.label ?? batchDetail.templateType} — ${batchDetail.fileName}`
+                ? `${translateUploadTemplateLabel(batchDetail.templateType as UploadTemplateType, t)} — ${batchDetail.fileName}`
                 : t('upload.detailLoading')}
             </CardDescription>
           </CardHeader>
@@ -735,7 +751,11 @@ export function UploadCenter() {
                 </Button>
               </div>
             ) : batchDetail && snapshotRows.length > 0 ? (
-              <DataTable rows={snapshotRows} keys={snapshotKeys} />
+              <DataTable
+                rows={snapshotRows}
+                keys={snapshotKeys}
+                labels={headerLabels(snapshotKeys)}
+              />
             ) : null}
             {batchDetail && (
               <div className="flex flex-wrap gap-2">
@@ -788,15 +808,23 @@ export function UploadCenter() {
   );
 }
 
-function DataTable({ rows, keys }: { rows: Record<string, unknown>[]; keys: readonly string[] }) {
+function DataTable({
+  rows,
+  keys,
+  labels,
+}: {
+  rows: Record<string, unknown>[];
+  keys: readonly string[];
+  labels?: readonly string[];
+}) {
   return (
     <div className="max-h-[28rem] overflow-auto rounded-md border border-slate-200">
       <table className="min-w-full text-left text-sm">
         <thead className="sticky top-0 bg-slate-50 text-slate-700">
           <tr>
-            {keys.map((key) => (
+            {keys.map((key, i) => (
               <th key={key} className="whitespace-nowrap px-3 py-2 font-medium">
-                {key}
+                {labels?.[i] ?? key}
               </th>
             ))}
           </tr>

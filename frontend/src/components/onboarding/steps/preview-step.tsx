@@ -1,10 +1,11 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { UPLOAD_TEMPLATES, UploadTemplateType } from '@liqvia2/shared';
+import { UploadTemplateType } from '@liqvia2/shared';
 import { apiGet } from '@/lib/api';
 import { fiscalMonthLabel } from '@/lib/onboarding-state';
 import { useTranslations } from '@/lib/i18n';
+import { translateUploadTemplateLabel } from '@/lib/upload-template-i18n';
 import { OnboardingNav } from '../onboarding-nav';
 
 type PreviewData = {
@@ -154,7 +155,7 @@ export function PreviewStep({
                   key={`${u.templateType}-${i}`}
                   className="rounded-lg border border-slate-700 px-3 py-2 text-sm text-slate-300"
                 >
-                  {UPLOAD_TEMPLATES[u.templateType as UploadTemplateType]?.label ?? u.templateType}{' '}
+                  {translateUploadTemplateLabel(u.templateType as UploadTemplateType, t)}{' '}
                   — {u.fileName}
                 </li>
               ))}
