@@ -39,38 +39,20 @@ export class TreasuryDataService {
     const engineResult = await this.engine.generateForCompany(companyId, false, horizonWeeks);
     const asOfDate = engineResult.asOfDate;
 
-    const [
-      bankAccounts,
-      movements,
-      receivables,
-      payables,
-      budgetVsActual,
-      scenarioCount,
-      weeklyActuals,
-    ] = await Promise.all([
-      this.prisma.bankAccount.findMany({ where: { companyId, deletedAt: null } }),
-      this.prisma.cashMovement.findMany({
-        where: { companyId },
-        orderBy: { movementDate: 'desc' },
-      }),
-      this.prisma.receivable.findMany({ where: { companyId, deletedAt: null } }),
-      this.prisma.payable.findMany({ where: { companyId, deletedAt: null } }),
+    // Reuse the SINGLE fetch already performed by the engine (rawData) instead of
+    // re-querying bankAccounts/movements/receivables/payables/weeklyActuals here.
+    // A second independent read of the same tables could observe a different DB
+    // snapshot under concurrent writes, which previously let the dashboard/AI-CFO
+    // figures silently disagree with the forecast/alerts computed above.
+    const rawData = engineResult.rawData;
+
+    const [budgetVsActual, scenarioCount] = await Promise.all([
       this.budget.getBudgetVsActual(companyId),
       this.prisma.scenario.count({ where: { companyId } }),
-      this.prisma.weeklyActual.findMany({ where: { companyId } }),
     ]);
 
-    const balances = bankAccounts.map((b) => {
-      const accountMovements = movements
-        .filter((m) => m.bankAccountId === b.id)
-        .map((m) => ({
-          id: m.id,
-          bankAccountId: m.bankAccountId,
-          movementDate: m.movementDate.toISOString(),
-          amount: Number(m.amount),
-          isInflow: m.isInflow,
-          description: m.description,
-        }));
+    const balances = rawData.bankAccountIds.map((id) => {
+      const accountMovements = rawData.movements.filter((m) => m.bankAccountId === id);
       const ledger = computeAccountLedger(accountMovements, asOfDate);
       return {
         balance: ledger.closingBalance,
@@ -78,31 +60,9 @@ export class TreasuryDataService {
       };
     });
 
-    const movementInputs = movements.map((m) => ({
-      id: m.id,
-      bankAccountId: m.bankAccountId,
-      movementDate: m.movementDate.toISOString(),
-      amount: Number(m.amount),
-      isInflow: m.isInflow,
-      description: m.description,
-    }));
-
-    const receivableInputs = receivables.map((r) => ({
-      id: r.id,
-      counterparty: r.customerName,
-      outstandingAmount: Number(r.outstandingAmount),
-      invoiceDate: r.invoiceDate.toISOString().slice(0, 10),
-      dueDate: r.dueDate.toISOString().slice(0, 10),
-    }));
-
-    const payableInputs = payables.map((p) => ({
-      id: p.id,
-      counterparty: p.supplierName,
-      outstandingAmount: Number(p.outstandingAmount),
-      billDate: p.billDate.toISOString().slice(0, 10),
-      dueDate: p.dueDate.toISOString().slice(0, 10),
-      supplierPriority: p.supplierPriority,
-    }));
+    const movementInputs = rawData.movements;
+    const receivableInputs = rawData.receivables;
+    const payableInputs = rawData.payables;
 
     const currentCash = this.kpis.calculateCurrentCash(balances);
 
@@ -137,7 +97,7 @@ export class TreasuryDataService {
       asOfDate,
       reportingPeriod: company.reportingPeriod,
       periodGranularity: company.periodGranularity,
-      bankAccountIds: bankAccounts.map((b) => b.id),
+      bankAccountIds: rawData.bankAccountIds,
       movements: movementInputs,
       receivables: receivableInputs,
       payables: payableInputs,
@@ -146,15 +106,7 @@ export class TreasuryDataService {
       scenarioCount,
       kpis,
       engineForecastLines: engineResult.forecastLines,
-      weeklyActuals:
-        weeklyActuals.length > 0
-          ? weeklyActuals.map((a) => ({
-              period: a.period,
-              category: a.category,
-              amount: Number(a.actualAmount),
-              accountCode: a.accountCode ?? undefined,
-            }))
-          : undefined,
+      weeklyActuals: rawData.weeklyActuals,
       forecastLookbackWeeks: company.forecastLookbackWeeks,
       forecastHorizonWeeks: horizonWeeks,
     };

@@ -17,6 +17,7 @@ export * from './free-cash';
 export * from './bank-ledger';
 export * from './reporting-period';
 export * from './rolling-budget';
+export * from './reconciliation';
 export * from './treasury-summary';
 export { parseCsv } from './csv/parse-csv';
 export type { ParsedCsv } from './csv/parse-csv';

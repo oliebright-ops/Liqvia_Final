@@ -47,7 +47,9 @@ export class AuthController {
   }
 
   @Public()
-  @Throttle({ demo: { limit: 3, ttl: 60_000 } })
+  // Was limit: 3 — too tight for a user legitimately trying/backing out of the demo
+  // more than a couple of times per minute while deciding. See F19/F20.
+  @Throttle({ demo: { limit: 8, ttl: 60_000 } })
   @Post('demo-guest')
   @ApiOperation({
     summary: 'Start a read-only demo session without registering',

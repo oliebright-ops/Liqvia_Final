@@ -626,7 +626,8 @@
     "clearChat": "Borrar conversación",
     "emptyChat": "Haga una pregunta o elija una acción rápida arriba. Las respuestas usan su caja, autonomía, CxC/CxP y presupuesto actuales.",
     "sourceRule": "Informe basado en reglas (sin clave de IA configurada)",
-    "sourceOpenai": "Generado con CFO con IA · {model}"
+    "sourceOpenai": "Generado con CFO con IA · {model}",
+    "disclosureBanner": "No es una IA de propósito general: las respuestas se generan con plantillas basadas en reglas (o GPT si está configurado) aplicadas estrictamente a sus datos cargados — verifique siempre las decisiones importantes con los registros de origen."
   },
   "aiQuick": {
     "runway": "¿Cuál es mi autonomía de caja actual?",
@@ -657,6 +658,12 @@
       "colAmount": "Importe",
       "colRunningBalance": "Saldo acumulado",
       "colStatus": "Estado",
+      "colReconciliation": "Conciliación",
+      "reconciliationMatched": "Conciliado",
+      "reconciliationPartial": "Parcial",
+      "reconciliationUnmatched": "Sin conciliar",
+      "reconciliationHint": "Coincidencia heurística con CxC/CxP abiertas por importe y fecha — verifique antes de confiar en ella, no es una conciliación certificada.",
+      "reconciliationSummary": "{matched} conciliados · {partial} parciales · {unmatched} sin conciliar",
       "accountNames": {
         "primaryOperating": "Cuenta operativa principal",
         "operating": "Cuenta operativa",

@@ -2,7 +2,9 @@
 
 import { Area, AreaChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts';
 import { WeeklyForecastLine } from '@/lib/dashboard-types';
-import { CHART_COLORS, ChartTooltip, chartAxisStyle } from './chart-theme';
+import { CHART_COLORS, ChartTooltip, chartAxisStyle, useChartMountReady } from './chart-theme';
+
+const CHART_HEIGHT = 280;
 
 export function ForecastAreaChart({
   lines,
@@ -21,8 +23,11 @@ export function ForecastAreaChart({
     outflows: l.forecastOutflows,
   }));
 
+  const ready = useChartMountReady();
+  if (!ready) return <div style={{ width: '100%', height: CHART_HEIGHT }} />;
+
   return (
-    <ResponsiveContainer width="100%" height={280}>
+    <ResponsiveContainer width="100%" height={CHART_HEIGHT}>
       <AreaChart data={data} margin={{ top: 8, right: 8, left: 0, bottom: 0 }}>
         <XAxis dataKey="week" {...chartAxisStyle} />
         <YAxis {...chartAxisStyle} tickFormatter={(v) => `${(v / 1000).toFixed(0)}k`} />

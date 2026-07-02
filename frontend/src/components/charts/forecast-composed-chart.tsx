@@ -14,7 +14,7 @@ import {
   YAxis,
 } from 'recharts';
 import { WeeklyForecastLine } from '@/lib/dashboard-types';
-import { CHART_COLORS, ChartTooltip, chartAxisStyle } from './chart-theme';
+import { CHART_COLORS, ChartTooltip, chartAxisStyle, useChartMountReady } from './chart-theme';
 
 function isAnomalousInflowWeek(
   weekIndex: number,
@@ -71,6 +71,9 @@ export function ForecastComposedChart({
       };
     });
   }, [visibleLines, lines, labels.weekPrefix]);
+
+  const ready = useChartMountReady();
+  if (!ready) return <div style={{ width: '100%', height }} />;
 
   return (
     <ResponsiveContainer width="100%" height={height}>

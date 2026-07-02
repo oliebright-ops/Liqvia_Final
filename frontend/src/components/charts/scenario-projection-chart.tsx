@@ -11,7 +11,9 @@ import {
   YAxis,
 } from 'recharts';
 import { WeeklyForecastLine } from '@/lib/dashboard-types';
-import { CHART_COLORS, ChartTooltip, chartAxisStyle } from './chart-theme';
+import { CHART_COLORS, ChartTooltip, chartAxisStyle, useChartMountReady } from './chart-theme';
+
+const CHART_HEIGHT = 300;
 
 export function ScenarioProjectionChart({
   baseline,
@@ -30,8 +32,11 @@ export function ScenarioProjectionChart({
     scenario: scenario[i]?.closingCash ?? b.closingCash,
   }));
 
+  const ready = useChartMountReady();
+  if (!ready) return <div style={{ width: '100%', height: CHART_HEIGHT }} />;
+
   return (
-    <ResponsiveContainer width="100%" height={300}>
+    <ResponsiveContainer width="100%" height={CHART_HEIGHT}>
       <LineChart data={data} margin={{ top: 8, right: 8, left: 0, bottom: 0 }}>
         <CartesianGrid stroke={CHART_COLORS.grid} strokeDasharray="3 3" vertical={false} />
         <XAxis dataKey="week" {...chartAxisStyle} />

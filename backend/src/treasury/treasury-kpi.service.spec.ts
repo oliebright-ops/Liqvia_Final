@@ -32,6 +32,24 @@ describe('TreasuryKpiService', () => {
     expect(burn).toBe(10000);
   });
 
+  it('uses the nearest upcoming weeks, not the farthest, when weeks exceed the lookback', () => {
+    // Regression for F9: forecasts always run forward (week 1 nearest -> week 13 farthest).
+    // Weeks 1-4 carry real near-term burn; weeks 5-13 are flat/no-burn placeholders that
+    // stand in for a distant, unaffected tail. A 4-week lookback must pick weeks 1-4.
+    const weeks = [
+      { weekStart: '2026-W01', inflows: 10000, outflows: 25000 }, // burn 15000
+      { weekStart: '2026-W02', inflows: 10000, outflows: 23000 }, // burn 13000
+      { weekStart: '2026-W03', inflows: 10000, outflows: 21000 }, // burn 11000
+      { weekStart: '2026-W04', inflows: 10000, outflows: 19000 }, // burn 9000
+      { weekStart: '2026-W05', inflows: 20000, outflows: 20000 }, // burn 0 (flat tail)
+      { weekStart: '2026-W06', inflows: 20000, outflows: 20000 },
+      { weekStart: '2026-W07', inflows: 20000, outflows: 20000 },
+      { weekStart: '2026-W08', inflows: 20000, outflows: 20000 },
+    ];
+    const burn = service.calculateWeeklyNetBurn(weeks);
+    expect(burn).toBe(12000); // avg of 15000, 13000, 11000, 9000 — near-term weeks only
+  });
+
   it('sums overdue receivables', () => {
     const overdue = service.calculateOverdueReceivables(
       [

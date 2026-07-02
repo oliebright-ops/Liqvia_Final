@@ -48,9 +48,19 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       const me = await apiGet<AuthUser>('/auth/me');
       setUser(me);
       setAuthSession(token, me);
-    } catch {
-      clearAuthSession();
-      setUser(null);
+    } catch (err) {
+      // Only a genuine 401/403 means the token itself is invalid — clear the session
+      // then. Any other failure (network hiccup, cold-start 5xx, rate limit) is
+      // transient and unrelated to whether the session is valid; wiping the session
+      // on those previously forced a fresh login on direct navigation to a protected
+      // route whenever this call raced a slow/cold backend. See F21.
+      const status = (err as Error & { status?: number })?.status;
+      if (status === 401 || status === 403) {
+        clearAuthSession();
+        setUser(null);
+      } else {
+        setUser(getStoredUser());
+      }
     }
   }, []);
 

@@ -1,10 +1,11 @@
 'use client';
 
 import { useEffect, useRef, useState } from 'react';
-import { Sparkles } from 'lucide-react';
+import { Info, Sparkles } from 'lucide-react';
 import { useAiChat } from '@/hooks/use-ai-chat';
 import { useAuth } from '@/lib/auth-context';
 import { useLanguage } from '@/lib/i18n';
+import { Alert } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { PageHeader } from '@/components/treasury/page-header';
@@ -44,6 +45,13 @@ export function AiCfoPage() {
   return (
     <div className="space-y-6">
       <PageHeader title={ai.pageTitle ?? ai.title} subtitle={ai.pageSubtitle ?? ai.subtitle} />
+
+      {ai.disclosureBanner && (
+        <Alert variant="info" className="flex items-start gap-2">
+          <Info className="mt-0.5 h-4 w-4 shrink-0" />
+          <span>{ai.disclosureBanner}</span>
+        </Alert>
+      )}
 
       <div className="flex flex-wrap gap-2">
         {QUICK_PROMPT_KEYS.map((key) => (

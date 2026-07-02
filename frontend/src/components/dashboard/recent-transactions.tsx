@@ -23,7 +23,7 @@ export function RecentTransactions({
   const empty = t.empty as Record<string, string>;
 
   return (
-    <Card className="flex h-full flex-col">
+    <Card id="recent-transactions" className="flex h-full flex-col scroll-mt-24">
       <CardHeader className="flex-row items-center justify-between space-y-0 p-4 pb-2">
         <Link
           href="/bank-accounts"

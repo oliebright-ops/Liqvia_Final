@@ -101,6 +101,7 @@ export interface QueryAnalysis {
     | 'cash_position'
     | 'risks'
     | 'expenses'
+    | 'payment_advisory'
     | 'general';
   horizonMonths?: number;
   relevantTransactions: TreasuryAiTransaction[];
@@ -237,6 +238,17 @@ export function analyzeUserQuery(
   const amounts = extractAmounts(q);
   const horizonMonths = extractHorizonMonths(q);
 
+  const relevantPayables = scoreCounterparties(context.payablesDetail, matchedTerms, amounts).slice(
+    0,
+    6,
+  );
+
+  const relevantReceivables = scoreCounterparties(
+    context.receivablesDetail,
+    matchedTerms,
+    amounts,
+  ).slice(0, 6);
+
   let intent: QueryAnalysis['intent'] = 'general';
   if (explicitIntent === 'cash_position') intent = 'cash_position';
   else if (explicitIntent === 'risks') intent = 'risks';
@@ -247,6 +259,13 @@ export function analyzeUserQuery(
   else if (explicitIntent === 'budget') intent = 'budget';
   else if (explicitIntent === 'payroll') intent = 'payroll';
   else if (isPayrollQuestion(q)) intent = 'payroll';
+  // Checked before the generic payables/cash-position matchers: a question like
+  // "Should I delay paying Apex Steel Framing this month, and what would happen to
+  // my cash position?" names a specific supplier but doesn't contain the word
+  // "payable"/"supplier"/"bill", while it DOES contain "cash position" — which
+  // previously made it match isCashPositionQuestion and get a generic cash summary
+  // that silently ignored the named supplier and the delay question. See F13.
+  else if (isPaymentDelayAdvisoryQuestion(q)) intent = 'payment_advisory';
   else if (isPayablesQuestion(q)) intent = 'payables';
   else if (isReceivablesQuestion(q)) intent = 'receivables';
   else if (isRunwayQuestion(q)) intent = 'runway';
@@ -254,7 +273,7 @@ export function analyzeUserQuery(
   else if (isRisksQuestion(q)) intent = 'risks';
   else if (isExpensesQuestion(q)) intent = 'expenses';
   else if (isBudgetQuestion(q)) intent = 'budget';
-  else if (isTransactionQuestion(q)) intent = 'transaction_lookup';
+  else if (isTransactionQuestion(q, amounts.length > 0)) intent = 'transaction_lookup';
   else if (isOutflowQuestion(q)) intent = 'outflow_summary';
   else if (isInflowQuestion(q)) intent = 'inflow_summary';
 
@@ -267,17 +286,6 @@ export function analyzeUserQuery(
 
   const relevantTransactions = scoreTransactions(pool, matchedTerms, amounts, q).slice(0, 8);
 
-  const relevantPayables = scoreCounterparties(context.payablesDetail, matchedTerms, amounts).slice(
-    0,
-    6,
-  );
-
-  const relevantReceivables = scoreCounterparties(
-    context.receivablesDetail,
-    matchedTerms,
-    amounts,
-  ).slice(0, 6);
-
   return {
     intent,
     horizonMonths,
@@ -288,19 +296,30 @@ export function analyzeUserQuery(
   };
 }
 
-function isTransactionQuestion(q: string): boolean {
+/**
+ * Strong signals always mean a transaction lookup. The weak signals ("what is",
+ * "what was", "why did", "explain", "for?") are far too generic on their own — any
+ * question phrased as "what is driving the shortfall?" would match "what is" and
+ * get hijacked into a transaction-lookup reply, even though it has nothing to do
+ * with a specific transaction (see F14). They only count when the question also
+ * carries a concrete dollar amount to search by, e.g. "what was that $5,000 charge
+ * for?" — a genuine transaction lookup needs something specific to look up.
+ */
+function isTransactionQuestion(q: string, hasAmount: boolean): boolean {
   if (isPayrollQuestion(q) || isPayablesQuestion(q) || isReceivablesQuestion(q)) return false;
-  return (
+  const strongSignal =
     q.includes('outflow') ||
     q.includes('inflow') ||
     q.includes('transaction') ||
-    q.includes('transfer') ||
+    q.includes('transfer');
+  if (strongSignal) return true;
+  const weakSignal =
     q.includes('what is') ||
     q.includes('what was') ||
     q.includes('why did') ||
     q.includes('explain') ||
-    q.includes('for?')
-  );
+    q.includes('for?');
+  return weakSignal && hasAmount;
 }
 
 function isPayablesQuestion(q: string): boolean {
@@ -315,8 +334,22 @@ function isReceivablesQuestion(q: string): boolean {
   );
 }
 
+/**
+ * A named supplier delay question ("Should I delay paying Apex Steel Framing this
+ * month?") rarely uses the words "payable"/"supplier"/"bill" — the counterparty
+ * name is the only identifying detail. Matched ahead of isPayablesQuestion's
+ * generic vocabulary check so it isn't required to guess the intent from wording. See F13.
+ */
+function isPaymentDelayAdvisoryQuestion(q: string): boolean {
+  return /should i.*(delay|postpone|hold off|push back|defer|wait to pay)|delay (paying|payment)|postpone (paying|payment)|hold off (on )?paying|push back (the |a )?payment/.test(
+    q,
+  );
+}
+
 function isRunwayQuestion(q: string): boolean {
-  return /runway|burn|запас.*ден|autonom|горизонт.*кас|autonomía|autonomie/.test(q);
+  return /runway|burn|run out of (cash|money)|running out of (cash|money)|out of cash|shortfall|deplete|запас.*ден|autonom|горизонт.*кас|autonomía|autonomie/.test(
+    q,
+  );
 }
 
 function isCashPositionQuestion(q: string): boolean {

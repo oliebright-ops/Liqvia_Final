@@ -1,4 +1,5 @@
 import {
+  formatPaymentDelayAdvisory,
   formatReceivablesReply,
   formatRisksReply,
   formatRunwayReply,
@@ -118,5 +119,43 @@ describe('AI CFO intent routing', () => {
     const text = formatReceivablesReply(baseContext);
     expect(text).toContain('Customer A');
     expect(text).toContain('18');
+  });
+
+  // Regression for F13: a named-supplier delay question used to be misclassified
+  // as cash_position (because it also contains the words "cash position"), which
+  // silently ignored the supplier and the delay question entirely.
+  it('detects a named-supplier delay question as payment_advisory, not cash_position', () => {
+    const q = 'Should I delay paying Supplier X this month, and what would happen to my cash position?';
+    const analysis = analyzeUserQuery(q, baseContext);
+    expect(analysis.intent).toBe('payment_advisory');
+    expect(analysis.relevantPayables[0]?.counterparty).toBe('Supplier X');
+
+    const reply = ruleBasedReplyByIntent(baseContext, analysis.intent, analysis);
+    expect(reply).toContain('Supplier X');
+    expect(reply).not.toBe(ruleBasedReplyByIntent(baseContext, 'cash_position'));
+  });
+
+  it('falls back gracefully when the named supplier is not in AP data', () => {
+    const reply = formatPaymentDelayAdvisory(baseContext, undefined);
+    expect(reply).toContain("couldn't match");
+    expect(reply).toContain('Supplier X'); // still lists real upcoming payables
+  });
+
+  // Regression for F14: this used to match the overly generic "what is" trigger in
+  // isTransactionQuestion and return an unrelated bank-transaction list instead of
+  // a runway answer.
+  it('detects a "run out of cash" / shortfall question as runway, not transaction_lookup', () => {
+    const q = 'When will I run out of cash if nothing changes, and what is driving the shortfall?';
+    const analysis = analyzeUserQuery(q, baseContext);
+    expect(analysis.intent).toBe('runway');
+  });
+
+  // Guard against over-correcting: a genuine transaction lookup with a concrete
+  // dollar amount should still resolve to transaction_lookup.
+  it('still detects a genuine transaction lookup when a dollar amount is present', () => {
+    const q = 'What was that $12,000 charge for?';
+    const analysis = analyzeUserQuery(q, baseContext);
+    expect(analysis.intent).toBe('transaction_lookup');
+    expect(analysis.relevantTransactions[0]?.description).toBe('Steel supplier payment');
   });
 });

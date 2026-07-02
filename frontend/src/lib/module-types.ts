@@ -26,6 +26,9 @@ export interface BankTransactionView {
   direction: 'IN' | 'OUT';
   runningBalance: number;
   status: 'cleared' | 'pending';
+  /** Heuristic amount/date match against open AR/AP — not a certified reconciliation. */
+  reconciliationStatus: 'matched' | 'partial' | 'unmatched';
+  matchedCounterparty?: string;
 }
 
 export interface BankAccountLedgerView {
@@ -33,6 +36,13 @@ export interface BankAccountLedgerView {
   openingDate: string | null;
   closingBalance: number;
   transactions: BankTransactionView[];
+  reconciliationSummary: {
+    matched: number;
+    partial: number;
+    unmatched: number;
+    unmatchedInflowTotal: number;
+    unmatchedOutflowTotal: number;
+  };
 }
 
 export interface CompanySettings {

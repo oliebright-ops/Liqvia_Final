@@ -1,5 +1,9 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
-import { computeAccountLedger } from '@liqvia2/shared';
+import {
+  computeAccountLedger,
+  matchBankMovements,
+  ReconciliationStatus,
+} from '@liqvia2/shared';
 import { PrismaService } from '../prisma/prisma.service';
 
 export interface BankAccountView {
@@ -22,6 +26,12 @@ export interface BankTransactionView {
   direction: 'IN' | 'OUT';
   runningBalance: number;
   status: 'cleared' | 'pending';
+  /**
+   * Heuristic amount/date match against open AR/AP as of asOfDate — not a
+   * certified reconciliation, see packages/shared/src/reconciliation.ts.
+   */
+  reconciliationStatus: ReconciliationStatus;
+  matchedCounterparty?: string;
 }
 
 export interface BankAccountLedgerView {
@@ -29,6 +39,13 @@ export interface BankAccountLedgerView {
   openingDate: string | null;
   closingBalance: number;
   transactions: BankTransactionView[];
+  reconciliationSummary: {
+    matched: number;
+    partial: number;
+    unmatched: number;
+    unmatchedInflowTotal: number;
+    unmatchedOutflowTotal: number;
+  };
 }
 
 export interface BankAccountsSummary {
@@ -92,22 +109,56 @@ export class BankAccountsService {
     });
     if (!account) throw new NotFoundException('Bank account not found');
 
-    const movements = await this.prisma.cashMovement.findMany({
-      where: { companyId, bankAccountId },
-      orderBy: { movementDate: 'desc' },
-    });
+    const [movements, receivables, payables] = await Promise.all([
+      this.prisma.cashMovement.findMany({
+        where: { companyId, bankAccountId },
+        orderBy: { movementDate: 'desc' },
+      }),
+      this.prisma.receivable.findMany({ where: { companyId, deletedAt: null } }),
+      this.prisma.payable.findMany({ where: { companyId, deletedAt: null } }),
+    ]);
 
     const ledger = computeAccountLedger(this.toLedgerInput(movements), asOfDate);
-    const transactions = ledger.transactions.slice(-limit).map((t) => ({
-      ...t,
-      status: txnStatus(t.transactionDate, asOfDate),
-    }));
+
+    const { results: matches, summary: reconciliationSummary } = matchBankMovements(
+      this.toLedgerInput(movements).map((m) => ({
+        id: m.id,
+        movementDate: m.movementDate,
+        amount: m.amount,
+        isInflow: m.isInflow,
+        description: m.description,
+      })),
+      receivables.map((r) => ({
+        id: r.id,
+        counterparty: r.customerName,
+        amount: Number(r.outstandingAmount),
+        dueDate: r.dueDate.toISOString().slice(0, 10),
+      })),
+      payables.map((p) => ({
+        id: p.id,
+        counterparty: p.supplierName,
+        amount: Number(p.outstandingAmount),
+        dueDate: p.dueDate.toISOString().slice(0, 10),
+      })),
+    );
+    const matchByMovementId = new Map(matches.map((m) => [m.movementId, m]));
+
+    const transactions = ledger.transactions.slice(-limit).map((t) => {
+      const match = matchByMovementId.get(t.id);
+      return {
+        ...t,
+        status: txnStatus(t.transactionDate, asOfDate),
+        reconciliationStatus: match?.status ?? 'unmatched',
+        matchedCounterparty: match?.matchedCounterparty,
+      };
+    });
 
     return {
       openingBalance: ledger.openingBalance,
       openingDate: ledger.openingDate,
       closingBalance: ledger.closingBalance,
       transactions,
+      reconciliationSummary,
     };
   }
 

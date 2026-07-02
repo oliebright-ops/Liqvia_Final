@@ -626,7 +626,8 @@
     "clearChat": "Effacer la conversation",
     "emptyChat": "Posez une question ou choisissez une action rapide ci-dessus. Les réponses utilisent votre trésorerie, autonomie, AR/AP et budget actuels.",
     "sourceRule": "Briefing basé sur des règles (aucune clé IA configurée)",
-    "sourceOpenai": "Généré avec AI CFO · {model}"
+    "sourceOpenai": "Généré avec AI CFO · {model}",
+    "disclosureBanner": "Ce n'est pas une IA généraliste : les réponses sont générées par des modèles basés sur des règles (ou GPT si configuré) appliqués strictement à vos données importées — vérifiez toujours les décisions importantes auprès des documents source."
   },
   "aiQuick": {
     "runway": "Quelle est mon autonomie de trésorerie actuelle ?",
@@ -657,6 +658,12 @@
       "colAmount": "Montant",
       "colRunningBalance": "Solde courant",
       "colStatus": "Statut",
+      "colReconciliation": "Rapprochement",
+      "reconciliationMatched": "Rapproché",
+      "reconciliationPartial": "Partiel",
+      "reconciliationUnmatched": "Non rapproché",
+      "reconciliationHint": "Correspondance heuristique avec les créances/dettes ouvertes par montant et date — à vérifier avant utilisation, ce n'est pas un rapprochement certifié.",
+      "reconciliationSummary": "{matched} rapprochés · {partial} partiels · {unmatched} non rapprochés",
       "accountNames": {
         "primaryOperating": "Compte d'exploitation principal",
         "operating": "Compte d'exploitation",

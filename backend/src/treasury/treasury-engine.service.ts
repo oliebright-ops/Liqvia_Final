@@ -1,10 +1,12 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
-import { ForecastType, LiquidityStatus } from '@prisma/client';
+import { Company, ForecastType, LiquidityStatus } from '@prisma/client';
 import {
+  ApPaymentPriority,
   computeAccountLedger,
   DEFAULT_DEMO_COMPANY_ID,
   deriveWeeklyActualsFromBankMovements,
   KPI_DEFAULTS,
+  RollingBudgetCategory,
   TreasuryAlert,
   WeeklyForecastLine,
 } from '@liqvia2/shared';
@@ -23,6 +25,49 @@ export interface TreasuryEngineResult {
   liquidityStatus: LiquidityStatus;
   week13ClosingCash: number | null;
   alerts: TreasuryAlert[];
+  /**
+   * Raw entities fetched to build this result. Callers that need to build additional
+   * derived views (e.g. the dashboard SummaryReport) MUST reuse this data instead of
+   * re-querying — two independent reads of the same tables within one logical request
+   * can observe different snapshots under concurrent writes, which previously caused
+   * the dashboard/AI-CFO forecast figures to silently disagree with this engine result.
+   */
+  rawData: LoadedFinancialData;
+}
+
+export interface LoadedFinancialData {
+  company: Company;
+  bankAccountIds: string[];
+  movements: Array<{
+    id: string;
+    bankAccountId: string;
+    movementDate: string;
+    amount: number;
+    isInflow: boolean;
+    description: string | null;
+  }>;
+  receivables: Array<{
+    id: string;
+    counterparty: string;
+    outstandingAmount: number;
+    invoiceDate: string;
+    dueDate: string;
+  }>;
+  payables: Array<{
+    id: string;
+    counterparty: string;
+    outstandingAmount: number;
+    billDate: string;
+    dueDate: string;
+    supplierPriority: ApPaymentPriority;
+  }>;
+  weeklyActuals?: Array<{
+    period: string;
+    category: RollingBudgetCategory;
+    amount: number;
+    accountCode?: string;
+  }>;
+  openingCash: number;
 }
 
 @Injectable()
@@ -40,11 +85,11 @@ export class TreasuryEngineService {
     persist = false,
     horizonWeeksOverride?: number,
   ): Promise<TreasuryEngineResult> {
-    const company = await this.prisma.company.findUnique({ where: { id: companyId } });
-    if (!company) throw new NotFoundException('Company not found');
-
     const asOfDate = new Date().toISOString().slice(0, 10);
-    const input = await this.loadForecastInput(companyId, asOfDate);
+    const rawData = await this.loadFinancialData(companyId, asOfDate);
+    const company = rawData.company;
+
+    const input = this.toForecastInput(rawData, asOfDate);
     const horizonWeeks = horizonWeeksOverride ?? company.forecastHorizonWeeks;
     const forecastLines = this.forecast.calculateBaselineForecast({
       ...input,
@@ -65,28 +110,24 @@ export class TreasuryEngineService {
       forecastLines,
     });
 
-    const receivables = await this.prisma.receivable.findMany({
-      where: { companyId, deletedAt: null },
-    });
-    const payables = await this.prisma.payable.findMany({
-      where: { companyId, deletedAt: null },
-    });
-
+    // Reuse the SAME receivables/payables snapshot used to build forecastLines above —
+    // a separate re-query here previously let alerts describe a different moment in
+    // time than the forecast they're supposed to explain (see rawData doc comment).
     const alertList = this.alerts.evaluate({
       forecastLines,
       overdueReceivables: this.kpis.calculateOverdueReceivables(
-        receivables.map((r) => ({
-          outstandingAmount: Number(r.outstandingAmount),
-          invoiceDate: r.invoiceDate.toISOString().slice(0, 10),
-          dueDate: r.dueDate.toISOString().slice(0, 10),
+        rawData.receivables.map((r) => ({
+          outstandingAmount: r.outstandingAmount,
+          invoiceDate: r.invoiceDate,
+          dueDate: r.dueDate,
         })),
         asOfDate,
       ),
       upcomingPayables: this.kpis.calculateUpcomingPayables(
-        payables.map((p) => ({
-          outstandingAmount: Number(p.outstandingAmount),
-          billDate: p.billDate.toISOString().slice(0, 10),
-          dueDate: p.dueDate.toISOString().slice(0, 10),
+        rawData.payables.map((p) => ({
+          outstandingAmount: p.outstandingAmount,
+          billDate: p.billDate,
+          dueDate: p.dueDate,
         })),
         asOfDate,
         KPI_DEFAULTS.upcomingPayablesDays,
@@ -110,57 +151,73 @@ export class TreasuryEngineService {
       liquidityStatus,
       week13ClosingCash: week13?.closingCash ?? null,
       alerts: alertList,
+      rawData,
     };
   }
 
   /** Public accessor for scenario modelling: baseline forecast inputs from DB. */
   async getForecastInput(companyId: string) {
     const asOfDate = new Date().toISOString().slice(0, 10);
-    return this.loadForecastInput(companyId, asOfDate);
+    const rawData = await this.loadFinancialData(companyId, asOfDate);
+    return this.toForecastInput(rawData, asOfDate);
   }
 
-  private async loadForecastInput(companyId: string, asOfDate: string) {
-    const allMovements = await this.prisma.cashMovement.findMany({
-      where: { companyId },
-      orderBy: { movementDate: 'desc' },
-    });
+  /**
+   * Single fetch for every entity needed to compute a company's forecast, alerts, and
+   * dashboard summary. Callers MUST reuse the returned object rather than re-querying
+   * Prisma for the same tables — see the doc comment on `TreasuryEngineResult.rawData`.
+   */
+  async loadFinancialData(companyId: string, asOfDate: string): Promise<LoadedFinancialData> {
+    const company = await this.prisma.company.findUnique({ where: { id: companyId } });
+    if (!company) throw new NotFoundException('Company not found');
 
-    const bankAccounts = await this.prisma.bankAccount.findMany({
-      where: { companyId, deletedAt: null },
-    });
+    const [bankAccounts, allMovements, receivablesRaw, payablesRaw, weeklyActuals] =
+      await Promise.all([
+        this.prisma.bankAccount.findMany({ where: { companyId, deletedAt: null } }),
+        this.prisma.cashMovement.findMany({
+          where: { companyId },
+          orderBy: { movementDate: 'desc' },
+        }),
+        this.prisma.receivable.findMany({ where: { companyId, deletedAt: null } }),
+        this.prisma.payable.findMany({ where: { companyId, deletedAt: null } }),
+        this.prisma.weeklyActual.findMany({
+          where: {
+            companyId,
+            NOT: { uploadBatch: { templateType: 'expense_report' } },
+          },
+        }),
+      ]);
 
-    const openingCash = bankAccounts.reduce((sum, b) => {
-      const accountMovements = allMovements
-        .filter((m) => m.bankAccountId === b.id)
-        .map((m) => ({
-          id: m.id,
-          bankAccountId: m.bankAccountId,
-          movementDate: m.movementDate.toISOString(),
-          amount: Number(m.amount),
-          isInflow: m.isInflow,
-          description: m.description,
-        }));
+    const bankAccountIds = bankAccounts.map((b) => b.id);
+    const movements = allMovements.map((m) => ({
+      id: m.id,
+      bankAccountId: m.bankAccountId,
+      movementDate: m.movementDate.toISOString(),
+      amount: Number(m.amount),
+      isInflow: m.isInflow,
+      description: m.description,
+    }));
+
+    const openingCash = bankAccountIds.reduce((sum, id) => {
+      const accountMovements = movements.filter((m) => m.bankAccountId === id);
       return sum + computeAccountLedger(accountMovements, asOfDate).closingBalance;
     }, 0);
 
-    const receivables = await this.prisma.receivable.findMany({
-      where: { companyId, deletedAt: null },
-    });
-    const payables = await this.prisma.payable.findMany({
-      where: { companyId, deletedAt: null },
-    });
-
-    const company = await this.prisma.company.findUnique({ where: { id: companyId } });
-    const weeklyActuals = await this.prisma.weeklyActual.findMany({
-      where: {
-        companyId,
-        NOT: {
-          uploadBatch: {
-            templateType: 'expense_report',
-          },
-        },
-      },
-    });
+    const receivables = receivablesRaw.map((r) => ({
+      id: r.id,
+      counterparty: r.customerName,
+      outstandingAmount: Number(r.outstandingAmount),
+      invoiceDate: r.invoiceDate.toISOString().slice(0, 10),
+      dueDate: r.dueDate.toISOString().slice(0, 10),
+    }));
+    const payables = payablesRaw.map((p) => ({
+      id: p.id,
+      counterparty: p.supplierName,
+      outstandingAmount: Number(p.outstandingAmount),
+      billDate: p.billDate.toISOString().slice(0, 10),
+      dueDate: p.dueDate.toISOString().slice(0, 10),
+      supplierPriority: p.supplierPriority,
+    }));
 
     let weeklyActualsRows =
       weeklyActuals.length > 0
@@ -172,11 +229,11 @@ export class TreasuryEngineService {
           }))
         : undefined;
 
-    if (!weeklyActualsRows?.length && allMovements.length > 0) {
+    if (!weeklyActualsRows?.length && movements.length > 0) {
       weeklyActualsRows = deriveWeeklyActualsFromBankMovements(
-        allMovements.map((m) => ({
-          movementDate: m.movementDate.toISOString(),
-          amount: Number(m.amount),
+        movements.map((m) => ({
+          movementDate: m.movementDate,
+          amount: m.amount,
           isInflow: m.isInflow,
           description: m.description,
         })),
@@ -190,18 +247,30 @@ export class TreasuryEngineService {
     }
 
     return {
-      asOfDate,
-      openingCash,
-      forecastLookbackWeeks: company?.forecastLookbackWeeks ?? 4,
+      company,
+      bankAccountIds,
+      movements,
+      receivables,
+      payables,
       weeklyActuals: weeklyActualsRows,
-      receivables: receivables.map((r) => ({
-        outstandingAmount: Number(r.outstandingAmount),
-        invoiceDate: r.invoiceDate.toISOString().slice(0, 10),
-        dueDate: r.dueDate.toISOString().slice(0, 10),
+      openingCash,
+    };
+  }
+
+  private toForecastInput(rawData: LoadedFinancialData, asOfDate: string) {
+    return {
+      asOfDate,
+      openingCash: rawData.openingCash,
+      forecastLookbackWeeks: rawData.company.forecastLookbackWeeks ?? 4,
+      weeklyActuals: rawData.weeklyActuals,
+      receivables: rawData.receivables.map((r) => ({
+        outstandingAmount: r.outstandingAmount,
+        invoiceDate: r.invoiceDate,
+        dueDate: r.dueDate,
       })),
-      payables: payables.map((p) => ({
-        outstandingAmount: Number(p.outstandingAmount),
-        dueDate: p.dueDate.toISOString().slice(0, 10),
+      payables: rawData.payables.map((p) => ({
+        outstandingAmount: p.outstandingAmount,
+        dueDate: p.dueDate,
         supplierPriority: p.supplierPriority,
       })),
     };

@@ -14,6 +14,7 @@ export function DashboardHeader({
   accountCountSubtitle,
   statusBadge,
   onDismissStatusBadge,
+  onStatusBadgeClick,
   horizonWeeks,
   onHorizonChange,
   t,
@@ -25,6 +26,7 @@ export function DashboardHeader({
   accountCountSubtitle: string;
   statusBadge: DashboardStatusBadge | null;
   onDismissStatusBadge: () => void;
+  onStatusBadgeClick?: () => void;
   horizonWeeks: number;
   onHorizonChange: (weeks: number) => void;
   t: NestedTranslations;
@@ -60,7 +62,17 @@ export function DashboardHeader({
               variant={statusBadge.variant === 'demo' ? 'muted' : 'warning'}
               className="gap-1.5 pr-1.5 text-[10px]"
             >
-              <span>{dash[statusBadge.labelKey]}</span>
+              {statusBadge.variant === 'warning' && onStatusBadgeClick ? (
+                <button
+                  type="button"
+                  onClick={onStatusBadgeClick}
+                  className="underline-offset-2 hover:underline"
+                >
+                  {dash[statusBadge.labelKey]}
+                </button>
+              ) : (
+                <span>{dash[statusBadge.labelKey]}</span>
+              )}
               <button
                 type="button"
                 onClick={onDismissStatusBadge}

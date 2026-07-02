@@ -18,6 +18,7 @@ const VALID_INTENTS = new Set<string>([
   'cash_position',
   'risks',
   'expenses',
+  'payment_advisory',
   'general',
 ]);
 
@@ -331,6 +332,71 @@ export function formatRisksReply(context: TreasuryAiContext): string {
     .join('\n');
 }
 
+/**
+ * Answers "Should I delay paying [supplier]?" style questions with a real
+ * yes/no judgment grounded in the named supplier's actual bill, instead of the
+ * generic cash-position dump this used to fall back to. See F13.
+ */
+export function formatPaymentDelayAdvisory(
+  context: TreasuryAiContext,
+  analysis?: QueryAnalysis,
+): string {
+  const match = analysis?.relevantPayables[0];
+
+  if (!match) {
+    const near = context.payablesDetail
+      .filter((p) => p.dueDate >= context.asOfDate)
+      .sort((a, b) => a.dueDate.localeCompare(b.dueDate))
+      .slice(0, 5);
+    const lines = [
+      `I couldn't match a specific supplier from your uploaded AP ageing for **${context.companyName}**.`,
+      near.length
+        ? `\nHere are your nearest upcoming payables — name one of these to get a delay recommendation:\n`
+        : `\nNo upcoming payables are loaded. Upload AP ageing in Upload Center.`,
+      ...near.map(
+        (p) => `- **${p.counterparty}** · ${fmt(context.currency, p.amount)} · due ${p.dueDate}`,
+      ),
+    ];
+    return lines.filter(Boolean).join('\n');
+  }
+
+  const cashAfterPayment = context.currentCash - match.amount;
+  const priority = match.supplierPriority;
+  const isCritical = priority === 'payroll' || priority === 'tax';
+  const tightCash =
+    (context.freeAvailableCash !== undefined && context.freeAvailableCash < 0) ||
+    (context.runwayWeeks !== null && context.runwayWeeks < 8);
+
+  let recommendation: string;
+  if (isCritical) {
+    recommendation = `**Recommendation: pay on schedule.** This bill is flagged \`${priority}\` priority — delaying payroll or tax obligations carries compliance/legal risk that outweighs the short-term cash benefit.`;
+  } else if (tightCash) {
+    recommendation = `**Recommendation: delaying is worth considering.** Cash is tight (${
+      context.runwayWeeks !== null ? `${context.runwayWeeks.toFixed(1)} weeks runway` : 'negative free cash after known outflows'
+    }), and this bill is \`${priority ?? 'unclassified'}\` priority rather than payroll/tax. Delaying it by a few days to a week would keep ${fmt(context.currency, match.amount)} in the account longer without missing a critical obligation — confirm the supplier allows it first.`;
+  } else {
+    recommendation = `**Recommendation: pay on schedule.** Cash position doesn't show near-term stress (${
+      context.runwayWeeks !== null ? `${context.runwayWeeks.toFixed(1)} weeks runway` : `${fmt(context.currency, context.freeAvailableCash ?? context.currentCash)} available`
+    }), so there's little upside to delaying and it protects the supplier relationship.`;
+  }
+
+  return [
+    `**Should you delay paying ${match.counterparty}? — ${context.companyName}** (${context.asOfDate})`,
+    '',
+    `- Bill: ${fmt(context.currency, match.amount)} due ${match.dueDate}${match.daysOverdue > 0 ? ` (**already ${match.daysOverdue}d overdue**)` : ''}${priority ? ` · priority: ${priority}` : ''}`,
+    `- Current cash: ${fmt(context.currency, context.currentCash)}`,
+    `- Cash immediately after paying: ${fmt(context.currency, cashAfterPayment)}`,
+    context.runwayWeeks !== null ? `- Runway at current burn: ${context.runwayWeeks.toFixed(1)} weeks` : '',
+    context.freeAvailableCash !== undefined
+      ? `- Free cash after known outflows (${context.horizonWeeks ?? 13}w): ${fmt(context.currency, context.freeAvailableCash)}`
+      : '',
+    '',
+    recommendation,
+  ]
+    .filter(Boolean)
+    .join('\n');
+}
+
 export function ruleBasedReplyByIntent(
   context: TreasuryAiContext,
   intent: AiReplyIntent,
@@ -364,6 +430,10 @@ export function ruleBasedReplyByIntent(
     }
     case 'risks':
       return formatRisksReply(context);
+    case 'payment_advisory': {
+      const missing = requireModule(context, 'ap');
+      return missing ?? formatPaymentDelayAdvisory(context, analysis);
+    }
     case 'payroll':
       return analysis ? formatPayablesReply(context, analysis) : formatRunwayReply(context);
     case 'inflow_summary': {

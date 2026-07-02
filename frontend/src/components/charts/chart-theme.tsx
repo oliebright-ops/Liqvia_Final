@@ -1,6 +1,29 @@
 'use client';
 
+import { useEffect, useState } from 'react';
 import { formatMoney } from '@/lib/dashboard-types';
+
+/**
+ * Recharts' ResponsiveContainer measures its parent element's width via
+ * ResizeObserver as soon as it mounts. On a hard/first page load that initial
+ * measurement can land before the browser has finished laying out the page
+ * (fonts/CSS still settling), which leaves the chart permanently sized to 0
+ * until something else forces an unrelated re-render/reflow — the exact
+ * "chart is blank until I click something else" symptom (see F22).
+ *
+ * Deferring the chart's own mount by one animation frame lets layout settle
+ * first, so ResponsiveContainer's first real measurement already sees the
+ * correct width. Callers should keep reserving the chart's normal height
+ * while `!ready`, so there's no layout shift once the chart appears.
+ */
+export function useChartMountReady(): boolean {
+  const [ready, setReady] = useState(false);
+  useEffect(() => {
+    const raf = requestAnimationFrame(() => setReady(true));
+    return () => cancelAnimationFrame(raf);
+  }, []);
+  return ready;
+}
 
 export const CHART_COLORS = {
   primary: 'hsl(221, 94%, 68%)',

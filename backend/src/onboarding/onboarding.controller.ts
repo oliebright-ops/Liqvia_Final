@@ -28,7 +28,9 @@ export class OnboardingController {
   }
 
   @Post('demo-mode')
-  @Throttle({ demo: { limit: 3, ttl: 60_000 } })
+  // Was limit: 3 — too tight for a user legitimately retrying/re-entering demo mode
+  // more than a couple of times per minute while exploring the product. See F19/F20.
+  @Throttle({ demo: { limit: 8, ttl: 60_000 } })
   @ApiOperation({ summary: 'Enter demo mode with pre-populated sample data' })
   demoMode(@CurrentUser() user: AuthUser) {
     return this.onboarding.enableDemoMode(user);

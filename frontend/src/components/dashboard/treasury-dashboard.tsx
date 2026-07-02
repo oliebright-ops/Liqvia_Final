@@ -35,10 +35,12 @@ export function TreasuryDashboard() {
   const { user } = useAuth();
   const { t, format, locale } = useLanguage();
   const [viewHorizonWeeks, setViewHorizonWeeks] = useState<number | undefined>(undefined);
+  // localStorage (not sessionStorage): dismissal is meant to stick permanently —
+  // sessionStorage is cleared whenever the tab/window closes, which is why the
+  // badge previously came back on the next visit even though nothing was wrong
+  // with the dismiss handler itself. See F18.
   const [statusBadgeDismissed, setStatusBadgeDismissed] = useState(
-    () =>
-      typeof window !== 'undefined' &&
-      sessionStorage.getItem(STATUS_BADGE_DISMISS_KEY) === '1',
+    () => typeof window !== 'undefined' && localStorage.getItem(STATUS_BADGE_DISMISS_KEY) === '1',
   );
   const { data, loading, error, isFetching } = useTreasurySummary(viewHorizonWeeks);
   const horizonWeeks = viewHorizonWeeks ?? data?.liquidity.horizonWeeks ?? DEFAULT_FORECAST_HORIZON;
@@ -89,7 +91,17 @@ export function TreasuryDashboard() {
 
   function dismissStatusBadge() {
     setStatusBadgeDismissed(true);
-    sessionStorage.setItem(STATUS_BADGE_DISMISS_KEY, '1');
+    localStorage.setItem(STATUS_BADGE_DISMISS_KEY, '1');
+  }
+
+  /** Reconciliation-pending badge has no dedicated view yet — jump to the
+   * transactions list on this same page, which is where the underlying pending
+   * items are actually visible, instead of leaving the click as a dead end. */
+  function scrollToRecentTransactions() {
+    document.getElementById('recent-transactions')?.scrollIntoView({
+      behavior: 'smooth',
+      block: 'start',
+    });
   }
 
   if (error) {
@@ -109,6 +121,7 @@ export function TreasuryDashboard() {
         accountCountSubtitle={view.accountCountSubtitle}
         statusBadge={statusBadge}
         onDismissStatusBadge={dismissStatusBadge}
+        onStatusBadgeClick={scrollToRecentTransactions}
         horizonWeeks={horizonWeeks}
         onHorizonChange={setViewHorizonWeeks}
         t={t}

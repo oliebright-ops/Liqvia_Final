@@ -36,19 +36,53 @@ function authHeaders(): HeadersInit {
   return headers;
 }
 
+/** True once a component/hook should offer the user a retry action for this error. */
+export function isRateLimitError(err: unknown): boolean {
+  return err instanceof Error && (err as Error & { status?: number }).status === 429;
+}
+
+/**
+ * Replaces the raw "ThrottlerException: Too Many Requests" body with a message a
+ * user can act on, using the Retry-After header (seconds) when the server sends one.
+ */
+function rateLimitMessage(res: Response): string {
+  const retryAfter = Number(res.headers.get('Retry-After'));
+  if (Number.isFinite(retryAfter) && retryAfter > 0) {
+    return `Too many requests — please wait ${retryAfter}s and try again.`;
+  }
+  return 'Too many requests — please wait a moment and try again.';
+}
+
 export async function apiGet<T>(path: string): Promise<T> {
   const res = await apiFetch(path, {
     cache: 'no-store',
     headers: authHeaders(),
   });
   if (!res.ok) {
+    if (res.status === 429) {
+      const error = new Error(rateLimitMessage(res)) as Error & { status?: number };
+      error.status = 429;
+      throw error;
+    }
     const err = await res.json().catch(() => ({}));
-    throw new Error(err.message ?? `Request failed (${res.status})`);
+    const error = new Error(err.message ?? `Request failed (${res.status})`) as Error & {
+      status?: number;
+    };
+    error.status = res.status;
+    throw error;
   }
   return res.json() as Promise<T>;
 }
 
 async function parseResponse<T>(res: Response): Promise<T> {
+  if (!res.ok && res.status === 429) {
+    const error = new Error(rateLimitMessage(res)) as Error & {
+      status?: number;
+      details?: unknown;
+    };
+    error.status = 429;
+    throw error;
+  }
   const data = await res.json().catch(() => ({}));
   if (!res.ok) {
     const raw = data.message;
@@ -60,8 +94,9 @@ async function parseResponse<T>(res: Response): Promise<T> {
           : Array.isArray(data.errors)
             ? `${data.errors.length} validation errors`
             : `Request failed (${res.status})`;
-    const error = new Error(msg) as Error & { details?: unknown };
+    const error = new Error(msg) as Error & { details?: unknown; status?: number };
     error.details = data;
+    error.status = res.status;
     throw error;
   }
   return data as T;

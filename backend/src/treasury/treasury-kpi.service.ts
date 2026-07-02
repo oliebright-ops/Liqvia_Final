@@ -31,14 +31,22 @@ export class TreasuryKpiService {
   }
 
   /**
-   * Average weekly net cash outflow over the last N weeks (default 4).
+   * Average weekly net cash outflow over the nearest N weeks (default 4).
    * Per week: netBurn = outflows - inflows. Only weeks with positive burn count.
+   *
+   * Callers always pass forward-looking forecast weeks (weekIndex 1..horizon), so
+   * "nearest" means the soonest upcoming weeks — sorting ascending by weekStart and
+   * taking the first N. (Previously sorted descending, which for a forward horizon
+   * picked the FARTHEST-future weeks instead of the near-term ones. Since scenario
+   * changes to AR/AP due dates mostly land in the near term while those far-future
+   * weeks are dominated by the unchanged rolling/recurring projection, that bug made
+   * runway look nearly identical between baseline and scenario — see F9.)
    */
   calculateWeeklyNetBurn(
     weeks: WeeklyCashFlowInput[],
     lookbackWeeks: number = KPI_DEFAULTS.burnLookbackWeeks,
   ): number {
-    const sorted = [...weeks].sort((a, b) => b.weekStart.localeCompare(a.weekStart));
+    const sorted = [...weeks].sort((a, b) => a.weekStart.localeCompare(b.weekStart));
     const recent = sorted.slice(0, lookbackWeeks);
     const burns = recent.map((w) => w.outflows - w.inflows).filter((b) => b > 0);
     if (burns.length === 0) return 0;

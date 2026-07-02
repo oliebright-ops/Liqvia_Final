@@ -19,8 +19,13 @@ import { FreeCashModule } from './free-cash/free-cash.module';
 
 @Module({
   imports: [
+    // Rate limits are tracked per (controller + handler + IP), i.e. per individual
+    // endpoint — not shared globally across the whole API. `default` had little
+    // headroom for a single active user hitting the same endpoint repeatedly
+    // (dashboard refresh, scenario preview debounce, etc.); raised for breathing
+    // room without materially weakening abuse protection. See F19/F20.
     ThrottlerModule.forRoot([
-      { name: 'default', ttl: 60_000, limit: 120 },
+      { name: 'default', ttl: 60_000, limit: 200 },
       { name: 'auth', ttl: 60_000, limit: 10 },
       { name: 'demo', ttl: 60_000, limit: 3 },
     ]),

@@ -162,6 +162,21 @@ export function BankAccountsPage() {
                       </div>
                     </div>
 
+                    {ledger?.reconciliationSummary && (
+                      <div className="flex flex-wrap items-center justify-between gap-2 rounded-lg border border-border/60 bg-muted/10 px-4 py-2.5">
+                        <p className="text-xs text-muted-foreground">
+                          {format('modules.bankAccounts.reconciliationSummary', {
+                            matched: String(ledger.reconciliationSummary.matched),
+                            partial: String(ledger.reconciliationSummary.partial),
+                            unmatched: String(ledger.reconciliationSummary.unmatched),
+                          })}
+                        </p>
+                        <p className="text-[10px] text-muted-foreground">
+                          {bank.reconciliationHint}
+                        </p>
+                      </div>
+                    )}
+
                     {!ledger || ledger.transactions.length === 0 ? (
                       <p className="text-sm text-muted-foreground">{bank.noTransactions}</p>
                     ) : (
@@ -221,6 +236,35 @@ export function BankAccountsPage() {
                                   ? format('dashboard.txnCleared')
                                   : format('dashboard.txnPending')}
                               </Badge>
+                            ),
+                          },
+                          {
+                            key: 'reconciliation',
+                            header: bank.colReconciliation,
+                            render: (r) => (
+                              <div className="space-y-0.5">
+                                <Badge
+                                  variant={
+                                    r.reconciliationStatus === 'matched'
+                                      ? 'cash-positive'
+                                      : r.reconciliationStatus === 'partial'
+                                        ? 'warning'
+                                        : 'muted'
+                                  }
+                                  className="text-[10px]"
+                                >
+                                  {r.reconciliationStatus === 'matched'
+                                    ? bank.reconciliationMatched
+                                    : r.reconciliationStatus === 'partial'
+                                      ? bank.reconciliationPartial
+                                      : bank.reconciliationUnmatched}
+                                </Badge>
+                                {r.matchedCounterparty && (
+                                  <p className="truncate text-[10px] text-muted-foreground">
+                                    {r.matchedCounterparty}
+                                  </p>
+                                )}
+                              </div>
                             ),
                           },
                         ]}
