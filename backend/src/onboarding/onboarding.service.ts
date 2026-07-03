@@ -543,6 +543,24 @@ export class OnboardingService {
     return accounts.reduce((total, account) => total + account.openingBalance, 0);
   }
 
+  /**
+   * Date to use for a manually-entered "Opening cash balance" anchor.
+   *
+   * computeAccountLedger (packages/shared/src/bank-ledger.ts) treats a balance-anchor
+   * movement as a hard reset of the running balance wherever it falls in chronological
+   * order — it assumes the anchor is the account's earliest movement. Dating this anchor
+   * at `asOfDate` (i.e. "today", the moment of onboarding) breaks that assumption as soon
+   * as the user later uploads bank_transactions.csv rows that predate onboarding (a normal
+   * backfill workflow), silently discarding all transaction activity before the anchor.
+   * Backdating the anchor well before `asOfDate` keeps it chronologically first for any
+   * realistic historical import.
+   */
+  private openingAnchorDate(asOfDate: string): Date {
+    const anchor = new Date(asOfDate);
+    anchor.setUTCFullYear(anchor.getUTCFullYear() - 5);
+    return anchor;
+  }
+
   private async seedInitialBankAccounts(
     tx: Prisma.TransactionClient,
     companyId: string,
@@ -576,7 +594,7 @@ export class OnboardingService {
             data: {
               companyId,
               bankAccountId: account.id,
-              movementDate: new Date(asOfDate),
+              movementDate: this.openingAnchorDate(asOfDate),
               amount: Math.abs(row.openingBalance),
               isInflow: row.openingBalance >= 0,
               description: 'Opening cash balance',
@@ -602,7 +620,7 @@ export class OnboardingService {
         data: {
           companyId,
           bankAccountId: bankAccount.id,
-          movementDate: new Date(asOfDate),
+          movementDate: this.openingAnchorDate(asOfDate),
           amount: Math.abs(opening),
           isInflow: opening >= 0,
           description: 'Opening cash balance',

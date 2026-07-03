@@ -74,10 +74,12 @@ export class BudgetService {
         variancePercent: l.variancePercent,
       }));
 
-      const rollingForward = budgetLines.filter(
-        (l) =>
-          (l.budgetType === 'rolling' || l.budgetType === 'rolling_auto') &&
-          !pastWindow.has(l.period),
+      const rollingForward = this.dedupeRollingForward(
+        budgetLines.filter(
+          (l) =>
+            (l.budgetType === 'rolling' || l.budgetType === 'rolling_auto') &&
+            !pastWindow.has(l.period),
+        ),
       );
       for (const line of rollingForward) {
         const budgetAmount = Number(line.budgetAmount);
@@ -126,6 +128,33 @@ export class BudgetService {
       totalVariance: round2(totalVariance),
       lines,
     };
+  }
+
+  /**
+   * When a company has an explicit rolling_budget.csv upload (budgetType 'rolling') for a
+   * given period + category + account, the system also auto-generates a 'rolling_auto'
+   * fallback line (see syncRollingBudgetIfNeeded in upload-import.service.ts) that is never
+   * cleaned up once a real upload arrives. Left unfiltered, both lines flow into the
+   * forward-looking budget view and double up. Prefer the explicit 'rolling' line and drop
+   * the auto-generated fallback wherever both exist for the same (period, category, account).
+   */
+  private dedupeRollingForward<
+    T extends {
+      period: string;
+      category: BudgetCategory;
+      budgetType: string;
+      chartOfAccount?: { code: string } | null;
+    },
+  >(lines: T[]): T[] {
+    const byKey = new Map<string, T>();
+    for (const line of lines) {
+      const key = `${line.period}::${line.category}::${line.chartOfAccount?.code ?? ''}`;
+      const existing = byKey.get(key);
+      if (!existing || (existing.budgetType === 'rolling_auto' && line.budgetType === 'rolling')) {
+        byKey.set(key, line);
+      }
+    }
+    return Array.from(byKey.values());
   }
 
   /** Actual amount per account code = sum(debit - credit) across journal lines. */

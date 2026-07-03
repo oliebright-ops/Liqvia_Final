@@ -133,12 +133,32 @@ export class UploadActiveDataService {
       include: { chartOfAccount: true },
       orderBy: [{ period: 'asc' }, { category: 'asc' }],
     });
-    return lines.map((l) => ({
+    return this.dedupeRollingBudget(lines).map((l) => ({
       Period: l.period,
       Category: l.category,
       'Account Code': l.chartOfAccount?.code ?? '',
       'Budget Amount': Number(l.budgetAmount),
     }));
+  }
+
+  /**
+   * An explicit rolling_budget.csv upload (budgetType 'rolling') is never cleaned up
+   * against the system's auto-generated 'rolling_auto' fallback for the same
+   * period/category/account (see syncRollingBudgetIfNeeded in upload-import.service.ts),
+   * so both can coexist. Prefer the explicit upload when both exist.
+   */
+  private dedupeRollingBudget<
+    T extends { period: string; category: string; budgetType: string; chartOfAccount?: { code: string } | null },
+  >(lines: T[]): T[] {
+    const byKey = new Map<string, T>();
+    for (const line of lines) {
+      const key = `${line.period}::${line.category}::${line.chartOfAccount?.code ?? ''}`;
+      const existing = byKey.get(key);
+      if (!existing || (existing.budgetType === 'rolling_auto' && line.budgetType === 'rolling')) {
+        byKey.set(key, line);
+      }
+    }
+    return Array.from(byKey.values());
   }
 
   private async exportReceivables(companyId: string) {
