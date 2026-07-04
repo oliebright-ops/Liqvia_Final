@@ -42,7 +42,10 @@ export class BusinessPulseService {
     private readonly aiService: AiService,
   ) {}
 
-  async getPulse(companyId: string = DEFAULT_DEMO_COMPANY_ID): Promise<BusinessPulseReport> {
+  async getPulse(
+    companyId: string = DEFAULT_DEMO_COMPANY_ID,
+    locale?: string,
+  ): Promise<BusinessPulseReport> {
     const asOfDate = new Date().toISOString().slice(0, 10);
     const horizonEndDate = addDaysIso(asOfDate, OBLIGATION_HORIZON_DAYS);
 
@@ -54,7 +57,7 @@ export class BusinessPulseService {
         this.prisma.receivable.findMany({ where: { companyId, deletedAt: null } }),
         this.treasuryEngine.generateForCompany(companyId, false),
         this.freeCash.getReport(companyId, 13),
-        this.aiService.generateBusinessPulseBriefing(companyId),
+        this.aiService.generateBusinessPulseBriefing(companyId, locale),
       ]);
 
     const currency = company.currency;

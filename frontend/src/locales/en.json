@@ -878,7 +878,18 @@
     },
     "businessPulse": {
       "title": "Business Pulse",
-      "allClear": "Nothing urgent today — everything's on track."
+      "allClear": "Nothing urgent today — everything's on track.",
+      "dueToday": "{amount} due today ({date}).",
+      "dueInDays": "{amount} due in {days} day(s) ({date}).",
+      "overdueTitle": "{name} overdue",
+      "overdueMessage": "{amount} overdue by {days} day(s) (due {date}).",
+      "collectTitle": "Collect from {name}",
+      "expectingTitle": "Expecting payment from {name}",
+      "expectedMessage": "{amount} expected in {days} day(s) (due {date}).",
+      "noBufferTitle": "No safe cash buffer",
+      "noBufferMessage": "After known obligations, free available cash is {amount}.",
+      "thinBufferTitle": "Cash buffer is thin",
+      "thinBufferMessage": "Only {amount} free after known obligations, with {weeks} weeks of runway."
     },
     "decisionCentre": {
       "title": "Can I...?",

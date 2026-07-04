@@ -223,6 +223,7 @@ export class AiService {
    * prompt/format from the conversational AI CFO above (see BUSINESS_PULSE_SYSTEM_PROMPT). */
   async generateBusinessPulseBriefing(
     companyId: string = DEFAULT_DEMO_COMPANY_ID,
+    locale?: string,
   ): Promise<BusinessPulseBriefing> {
     const start = Date.now();
     const context = await this.aiData.buildContext(companyId);
@@ -234,7 +235,7 @@ export class AiService {
 
     if (apiKey) {
       try {
-        const result = await this.callOpenAiBusinessPulse(apiKey, context);
+        const result = await this.callOpenAiBusinessPulse(apiKey, context, locale);
         text = result.text;
         model = result.model;
         source = 'openai';
@@ -262,8 +263,12 @@ export class AiService {
   private async callOpenAiBusinessPulse(
     apiKey: string,
     context: TreasuryAiContext,
+    locale?: string,
   ): Promise<{ text: string; model: string }> {
     const model = process.env.OPENAI_MODEL ?? 'gpt-4o-mini';
+    const localeLine = locale
+      ? `\nRespond in ${locale === 'ru' ? 'Russian' : locale === 'es' ? 'Spanish' : locale === 'fr' ? 'French' : 'English'}.`
+      : '';
     const res = await fetch('https://api.openai.com/v1/chat/completions', {
       method: 'POST',
       headers: {
@@ -273,7 +278,7 @@ export class AiService {
       body: JSON.stringify({
         model,
         messages: [
-          { role: 'system', content: BUSINESS_PULSE_SYSTEM_PROMPT },
+          { role: 'system', content: BUSINESS_PULSE_SYSTEM_PROMPT + localeLine },
           { role: 'user', content: this.buildContextMessage(context) },
         ],
         temperature: 0.2,

@@ -878,7 +878,18 @@
     },
     "businessPulse": {
       "title": "Пульс бизнеса",
-      "allClear": "Сегодня ничего срочного — всё под контролем."
+      "allClear": "Сегодня ничего срочного — всё под контролем.",
+      "dueToday": "{amount} к оплате сегодня ({date}).",
+      "dueInDays": "{amount} к оплате через {days} дн. ({date}).",
+      "overdueTitle": "{name} — просрочка",
+      "overdueMessage": "{amount} просрочено на {days} дн. (срок {date}).",
+      "collectTitle": "Взыскать с {name}",
+      "expectingTitle": "Ожидается платёж от {name}",
+      "expectedMessage": "{amount} ожидается через {days} дн. (срок {date}).",
+      "noBufferTitle": "Нет безопасного запаса денег",
+      "noBufferMessage": "После известных обязательств свободные денежные средства составляют {amount}.",
+      "thinBufferTitle": "Запас денег невелик",
+      "thinBufferMessage": "Только {amount} свободно после известных обязательств, запас — {weeks} нед."
     },
     "decisionCentre": {
       "title": "Могу ли я...?",

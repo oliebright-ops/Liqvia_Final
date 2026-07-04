@@ -1,4 +1,4 @@
-import { ApPaymentPriority, formatCurrency } from '@liqvia2/shared';
+import { ApPaymentPriority } from '@liqvia2/shared';
 import { ObligationCategory } from '@prisma/client';
 
 export type PulseSeverity = 'critical' | 'warning' | 'info';
@@ -10,17 +10,26 @@ export type PulseCategory =
   | 'expected_receipt'
   | 'cash_buffer';
 
+/**
+ * Structured data only — no pre-baked English sentences. Business Pulse is shown in
+ * 4 locales, and a server-templated "X overdue by Y days" string can't be translated
+ * client-side; the frontend builds the localized title/message from these fields.
+ */
 export interface BusinessPulseItem {
   id: string;
   severity: PulseSeverity;
   category: PulseCategory;
-  title: string;
-  message: string;
-  amount?: number;
-  date?: string;
   linkPath: string;
   /** Internal urgency score used to rank/cap the list — not for display. */
   score: number;
+  /** Proper noun (obligation name / supplier / customer) — empty for cash_buffer. */
+  name: string;
+  amount: number;
+  currency: string;
+  dueDate?: string;
+  daysOverdue?: number;
+  daysUntilDue?: number;
+  runwayWeeks?: number;
 }
 
 /** How urgent each obligation category is, independent of timing — payroll/tax first. */
@@ -56,18 +65,18 @@ export function buildObligationItem(
   const daysUntilDue = daysBetween(asOfDate, obligation.dueDate);
   const urgencyMultiplier = daysUntilDue <= 0 ? 1.5 : daysUntilDue <= 3 ? 1.3 : daysUntilDue <= 7 ? 1.1 : 0.9;
   const severity: PulseSeverity = daysUntilDue <= 2 ? 'critical' : daysUntilDue <= 7 ? 'warning' : 'info';
-  const dueWord = daysUntilDue <= 0 ? 'due today' : daysUntilDue === 1 ? 'due tomorrow' : `due in ${daysUntilDue} days`;
 
   return {
     id: `obligation:${obligation.obligationId}:${obligation.dueDate}`,
     severity,
     category: 'obligation_due',
-    title: obligation.name,
-    message: `${formatCurrency(obligation.amount, currency)} ${dueWord} (${obligation.dueDate}).`,
-    amount: obligation.amount,
-    date: obligation.dueDate,
     linkPath: '/settings?tab=obligations',
     score: CATEGORY_WEIGHT[obligation.category] * urgencyMultiplier,
+    name: obligation.name,
+    amount: obligation.amount,
+    currency,
+    dueDate: obligation.dueDate,
+    daysUntilDue,
   };
 }
 
@@ -87,12 +96,13 @@ export function buildOverduePayableItem(payable: {
     id: `overdue_payable:${payable.id}`,
     severity,
     category: 'overdue_payable',
-    title: `${payable.counterparty} overdue`,
-    message: `${formatCurrency(payable.outstandingAmount, currency)} overdue by ${payable.daysOverdue} day(s) (due ${payable.dueDate}).`,
-    amount: payable.outstandingAmount,
-    date: payable.dueDate,
     linkPath: '/ledger',
     score: priorityWeight + Math.min(payable.daysOverdue, 60) + Math.min(payable.outstandingAmount / 1000, 30),
+    name: payable.counterparty,
+    amount: payable.outstandingAmount,
+    currency,
+    dueDate: payable.dueDate,
+    daysOverdue: payable.daysOverdue,
   };
 }
 
@@ -109,12 +119,13 @@ export function buildOverdueReceivableItem(receivable: {
     id: `overdue_receivable:${receivable.id}`,
     severity,
     category: 'overdue_receivable',
-    title: `Collect from ${receivable.counterparty}`,
-    message: `${formatCurrency(receivable.outstandingAmount, currency)} overdue by ${receivable.daysOverdue} day(s) (due ${receivable.dueDate}).`,
-    amount: receivable.outstandingAmount,
-    date: receivable.dueDate,
     linkPath: '/ledger',
     score: Math.min(receivable.daysOverdue, 90) * 0.8 + Math.min(receivable.outstandingAmount / 1000, 30),
+    name: receivable.counterparty,
+    amount: receivable.outstandingAmount,
+    currency,
+    dueDate: receivable.dueDate,
+    daysOverdue: receivable.daysOverdue,
   };
 }
 
@@ -130,12 +141,13 @@ export function buildExpectedReceiptItem(receivable: {
     id: `expected_receipt:${receivable.id}`,
     severity: 'info',
     category: 'expected_receipt',
-    title: `Expecting payment from ${receivable.counterparty}`,
-    message: `${formatCurrency(receivable.outstandingAmount, currency)} expected in ${daysUntilDue} day(s) (due ${receivable.dueDate}).`,
-    amount: receivable.outstandingAmount,
-    date: receivable.dueDate,
     linkPath: '/ledger',
     score: 20 + Math.min(receivable.outstandingAmount / 2000, 20),
+    name: receivable.counterparty,
+    amount: receivable.outstandingAmount,
+    currency,
+    dueDate: receivable.dueDate,
+    daysUntilDue,
   };
 }
 
@@ -143,7 +155,8 @@ export function buildExpectedReceiptItem(receivable: {
  * Only surfaced when genuinely concerning — a "you're fine" item here would just
  * repeat the runway KPI already on the dashboard. Framed around free cash (what's
  * safe to spend after known obligations) rather than runway-in-weeks, since that's
- * already shown elsewhere on the page.
+ * already shown elsewhere on the page. Severity alone distinguishes the negative-cash
+ * vs thin-runway wording on the client (critical vs warning).
  */
 export function buildCashBufferItem(
   freeAvailableCash: number,
@@ -155,11 +168,12 @@ export function buildCashBufferItem(
       id: 'cash_buffer',
       severity: 'critical',
       category: 'cash_buffer',
-      title: 'No safe cash buffer',
-      message: `After known obligations, free available cash is ${formatCurrency(freeAvailableCash, currency)}.`,
-      amount: freeAvailableCash,
       linkPath: '/forecast',
       score: 120,
+      name: '',
+      amount: freeAvailableCash,
+      currency,
+      runwayWeeks: runwayWeeks ?? undefined,
     };
   }
   if (runwayWeeks !== null && runwayWeeks < 6) {
@@ -167,11 +181,12 @@ export function buildCashBufferItem(
       id: 'cash_buffer',
       severity: 'warning',
       category: 'cash_buffer',
-      title: 'Cash buffer is thin',
-      message: `Only ${formatCurrency(freeAvailableCash, currency)} free after known obligations, with ${runwayWeeks.toFixed(1)} weeks of runway.`,
-      amount: freeAvailableCash,
       linkPath: '/forecast',
       score: 80,
+      name: '',
+      amount: freeAvailableCash,
+      currency,
+      runwayWeeks,
     };
   }
   return null;

@@ -149,15 +149,25 @@ export type NotificationsResponse =
 
 export type PulseSeverity = 'critical' | 'warning' | 'info';
 
+export type BusinessPulseCategory =
+  | 'obligation_due'
+  | 'overdue_payable'
+  | 'overdue_receivable'
+  | 'expected_receipt'
+  | 'cash_buffer';
+
 export interface BusinessPulseItemView {
   id: string;
   severity: PulseSeverity;
-  category: 'obligation_due' | 'overdue_payable' | 'overdue_receivable' | 'expected_receipt' | 'cash_buffer';
-  title: string;
-  message: string;
-  amount?: number;
-  date?: string;
+  category: BusinessPulseCategory;
   linkPath: string;
+  name: string;
+  amount: number;
+  currency: string;
+  dueDate?: string;
+  daysOverdue?: number;
+  daysUntilDue?: number;
+  runwayWeeks?: number;
 }
 
 export interface BusinessPulseReportView {

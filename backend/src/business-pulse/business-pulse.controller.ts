@@ -1,4 +1,4 @@
-import { Controller, Get, UseGuards } from '@nestjs/common';
+import { Controller, Get, Query, UseGuards } from '@nestjs/common';
 import { ApiOperation, ApiTags } from '@nestjs/swagger';
 import { AuthUser } from '../auth/auth.types';
 import { CurrentUser } from '../auth/current-user.decorator';
@@ -15,7 +15,7 @@ export class BusinessPulseController {
   @Get()
   @Permissions('treasury:read')
   @ApiOperation({ summary: 'Top-5 ranked urgency items + plain-English daily briefing' })
-  get(@CurrentUser() user: AuthUser) {
-    return this.businessPulse.getPulse(user.companyId!);
+  get(@CurrentUser() user: AuthUser, @Query('locale') locale?: string) {
+    return this.businessPulse.getPulse(user.companyId!, locale);
   }
 }

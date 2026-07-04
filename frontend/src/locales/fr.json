@@ -804,7 +804,18 @@
     },
     "businessPulse": {
       "title": "Pouls de l'entreprise",
-      "allClear": "Rien d'urgent aujourd'hui — tout va bien."
+      "allClear": "Rien d'urgent aujourd'hui — tout va bien.",
+      "dueToday": "{amount} à payer aujourd'hui ({date}).",
+      "dueInDays": "{amount} à payer dans {days} jour(s) ({date}).",
+      "overdueTitle": "{name} en retard",
+      "overdueMessage": "{amount} en retard de {days} jour(s) (échéance {date}).",
+      "collectTitle": "Encaisser auprès de {name}",
+      "expectingTitle": "Paiement attendu de {name}",
+      "expectedMessage": "{amount} attendu dans {days} jour(s) (échéance {date}).",
+      "noBufferTitle": "Aucune marge de trésorerie sûre",
+      "noBufferMessage": "Après les obligations connues, la trésorerie disponible libre est de {amount}.",
+      "thinBufferTitle": "La marge de trésorerie est faible",
+      "thinBufferMessage": "Seulement {amount} disponibles après les obligations connues, avec {weeks} semaines d'autonomie."
     },
     "decisionCentre": {
       "title": "Puis-je...?",

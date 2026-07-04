@@ -19,6 +19,9 @@ describe('buildObligationItem', () => {
     expect(item.severity).toBe('critical');
     expect(item.category).toBe('obligation_due');
     expect(item.linkPath).toBe('/settings?tab=obligations');
+    expect(item.name).toBe('Payroll run');
+    expect(item.amount).toBe(20000);
+    expect(item.daysUntilDue).toBe(0);
   });
 
   it('marks an obligation due in 10 days as info, not critical', () => {
@@ -28,6 +31,7 @@ describe('buildObligationItem', () => {
       'USD',
     );
     expect(item.severity).toBe('info');
+    expect(item.daysUntilDue).toBe(10);
   });
 
   it('scores payroll higher than a subscription due on the same day', () => {
@@ -59,6 +63,8 @@ describe('buildOverduePayableItem', () => {
       'USD',
     );
     expect(item.severity).toBe('critical');
+    expect(item.name).toBe('Payroll processor');
+    expect(item.daysOverdue).toBe(3);
   });
 
   it('marks a flexible-priority bill overdue by a few days as warning, not critical', () => {
@@ -99,6 +105,7 @@ describe('buildOverdueReceivableItem', () => {
       'USD',
     );
     expect(item.severity).toBe('critical');
+    expect(item.name).toBe('Client A');
   });
 
   it('marks a receivable overdue by 10 days as warning', () => {
@@ -119,6 +126,7 @@ describe('buildExpectedReceiptItem', () => {
     );
     expect(item.severity).toBe('info');
     expect(item.category).toBe('expected_receipt');
+    expect(item.daysUntilDue).toBe(6);
   });
 });
 
@@ -131,12 +139,14 @@ describe('buildCashBufferItem', () => {
     const item = buildCashBufferItem(-5000, 10, 'USD');
     expect(item).not.toBeNull();
     expect(item?.severity).toBe('critical');
+    expect(item?.amount).toBe(-5000);
   });
 
   it('returns a warning item when runway is under 6 weeks even with positive free cash', () => {
     const item = buildCashBufferItem(2000, 4, 'USD');
     expect(item).not.toBeNull();
     expect(item?.severity).toBe('warning');
+    expect(item?.runwayWeeks).toBe(4);
   });
 });
 
@@ -146,10 +156,11 @@ describe('rankPulseItems', () => {
       id: `item-${i}`,
       severity: 'info' as const,
       category: 'obligation_due' as const,
-      title: `Item ${i}`,
-      message: '',
       linkPath: '/',
       score: i,
+      name: `Item ${i}`,
+      amount: 0,
+      currency: 'USD',
     }));
     const ranked = rankPulseItems(candidates, 5);
     expect(ranked).toHaveLength(5);
@@ -159,8 +170,8 @@ describe('rankPulseItems', () => {
 
   it('does not mutate the input array', () => {
     const candidates = [
-      { id: 'a', severity: 'info' as const, category: 'obligation_due' as const, title: '', message: '', linkPath: '/', score: 1 },
-      { id: 'b', severity: 'info' as const, category: 'obligation_due' as const, title: '', message: '', linkPath: '/', score: 2 },
+      { id: 'a', severity: 'info' as const, category: 'obligation_due' as const, linkPath: '/', score: 1, name: '', amount: 0, currency: 'USD' },
+      { id: 'b', severity: 'info' as const, category: 'obligation_due' as const, linkPath: '/', score: 2, name: '', amount: 0, currency: 'USD' },
     ];
     const original = [...candidates];
     rankPulseItems(candidates, 5);

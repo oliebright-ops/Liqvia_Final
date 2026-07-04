@@ -2,10 +2,12 @@
 
 import Link from 'next/link';
 import { CircleAlert, CircleCheck, Info, Sparkles } from 'lucide-react';
+import { formatCurrency } from '@liqvia2/shared';
 import { useBusinessPulse } from '@/hooks/use-business-pulse';
-import { useLanguage } from '@/lib/i18n';
+import { useLanguage, TranslateFn } from '@/lib/i18n';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
+import { alertSeverityLabel } from '@/lib/alert-labels';
 import type { BusinessPulseItemView, PulseSeverity } from '@/lib/module-types';
 
 const SEVERITY_ICON: Record<PulseSeverity, typeof CircleAlert> = {
@@ -20,8 +22,71 @@ const SEVERITY_BADGE_VARIANT: Record<PulseSeverity, 'error' | 'warning' | 'muted
   info: 'muted',
 };
 
-function PulseItemRow({ item }: { item: BusinessPulseItemView }) {
+/** Builds the localized title/message for an item — the backend only sends
+ * structured data (name/amount/dates), never pre-formatted English sentences,
+ * so this is the one place the wording is assembled and can be translated. */
+function describeItem(item: BusinessPulseItemView, format: TranslateFn): { title: string; message: string } {
+  const fmt = (n: number) => formatCurrency(n, item.currency);
+
+  switch (item.category) {
+    case 'obligation_due': {
+      const days = item.daysUntilDue ?? 0;
+      const message =
+        days <= 0
+          ? format('businessPulse.dueToday', { amount: fmt(item.amount), date: item.dueDate ?? '' })
+          : format('businessPulse.dueInDays', {
+              amount: fmt(item.amount),
+              days: String(days),
+              date: item.dueDate ?? '',
+            });
+      return { title: item.name, message };
+    }
+    case 'overdue_payable':
+      return {
+        title: format('businessPulse.overdueTitle', { name: item.name }),
+        message: format('businessPulse.overdueMessage', {
+          amount: fmt(item.amount),
+          days: String(item.daysOverdue ?? 0),
+          date: item.dueDate ?? '',
+        }),
+      };
+    case 'overdue_receivable':
+      return {
+        title: format('businessPulse.collectTitle', { name: item.name }),
+        message: format('businessPulse.overdueMessage', {
+          amount: fmt(item.amount),
+          days: String(item.daysOverdue ?? 0),
+          date: item.dueDate ?? '',
+        }),
+      };
+    case 'expected_receipt':
+      return {
+        title: format('businessPulse.expectingTitle', { name: item.name }),
+        message: format('businessPulse.expectedMessage', {
+          amount: fmt(item.amount),
+          days: String(item.daysUntilDue ?? 0),
+          date: item.dueDate ?? '',
+        }),
+      };
+    case 'cash_buffer':
+      return item.severity === 'critical'
+        ? {
+            title: format('businessPulse.noBufferTitle'),
+            message: format('businessPulse.noBufferMessage', { amount: fmt(item.amount) }),
+          }
+        : {
+            title: format('businessPulse.thinBufferTitle'),
+            message: format('businessPulse.thinBufferMessage', {
+              amount: fmt(item.amount),
+              weeks: (item.runwayWeeks ?? 0).toFixed(1),
+            }),
+          };
+  }
+}
+
+function PulseItemRow({ item, format }: { item: BusinessPulseItemView; format: TranslateFn }) {
   const Icon = SEVERITY_ICON[item.severity];
+  const { title, message } = describeItem(item, format);
   return (
     <Link
       href={item.linkPath}
@@ -37,11 +102,11 @@ function PulseItemRow({ item }: { item: BusinessPulseItemView }) {
         }
       />
       <div className="min-w-0 flex-1">
-        <p className="truncate text-sm font-medium text-foreground">{item.title}</p>
-        <p className="text-xs text-muted-foreground">{item.message}</p>
+        <p className="truncate text-sm font-medium text-foreground">{title}</p>
+        <p className="text-xs text-muted-foreground">{message}</p>
       </div>
       <Badge variant={SEVERITY_BADGE_VARIANT[item.severity]} className="shrink-0">
-        {item.severity}
+        {alertSeverityLabel(format, item.severity)}
       </Badge>
     </Link>
   );
@@ -49,7 +114,7 @@ function PulseItemRow({ item }: { item: BusinessPulseItemView }) {
 
 export function BusinessPulseCard() {
   const { data, isLoading } = useBusinessPulse();
-  const { t } = useLanguage();
+  const { t, format } = useLanguage();
   const bp = (t.modules as Record<string, Record<string, unknown>>).businessPulse as Record<
     string,
     string
@@ -77,7 +142,7 @@ export function BusinessPulseCard() {
         ) : (
           <div className="space-y-2">
             {data.items.map((item) => (
-              <PulseItemRow key={item.id} item={item} />
+              <PulseItemRow key={item.id} item={item} format={format} />
             ))}
           </div>
         )}

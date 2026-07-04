@@ -804,7 +804,18 @@
     },
     "businessPulse": {
       "title": "Pulso del negocio",
-      "allClear": "Nada urgente hoy — todo va bien."
+      "allClear": "Nada urgente hoy — todo va bien.",
+      "dueToday": "{amount} vence hoy ({date}).",
+      "dueInDays": "{amount} vence en {days} día(s) ({date}).",
+      "overdueTitle": "{name} vencido",
+      "overdueMessage": "{amount} vencido hace {days} día(s) (vencía el {date}).",
+      "collectTitle": "Cobrar a {name}",
+      "expectingTitle": "Pago esperado de {name}",
+      "expectedMessage": "{amount} esperado en {days} día(s) (vence {date}).",
+      "noBufferTitle": "Sin margen de caja seguro",
+      "noBufferMessage": "Tras las obligaciones conocidas, el efectivo disponible libre es {amount}.",
+      "thinBufferTitle": "El margen de caja es escaso",
+      "thinBufferMessage": "Solo {amount} libres tras las obligaciones conocidas, con {weeks} semanas de autonomía."
     },
     "decisionCentre": {
       "title": "¿Puedo...?",
