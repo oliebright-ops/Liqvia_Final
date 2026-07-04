@@ -8,12 +8,15 @@ export type PulseCategory =
   | 'overdue_payable'
   | 'overdue_receivable'
   | 'expected_receipt'
-  | 'cash_buffer';
+  | 'cash_buffer'
+  | 'forecast_shortfall'
+  | 'stale_bank_data';
 
 /**
  * Structured data only — no pre-baked English sentences. Business Pulse is shown in
  * 4 locales, and a server-templated "X overdue by Y days" string can't be translated
- * client-side; the frontend builds the localized title/message from these fields.
+ * client-side; the frontend builds the localized title/message/action from these
+ * fields via its wording library (see business-pulse-card.tsx).
  */
 export interface BusinessPulseItem {
   id: string;
@@ -22,7 +25,7 @@ export interface BusinessPulseItem {
   linkPath: string;
   /** Internal urgency score used to rank/cap the list — not for display. */
   score: number;
-  /** Proper noun (obligation name / supplier / customer) — empty for cash_buffer. */
+  /** Proper noun (obligation name / supplier / customer) — empty when not applicable. */
   name: string;
   amount: number;
   currency: string;
@@ -30,6 +33,12 @@ export interface BusinessPulseItem {
   daysOverdue?: number;
   daysUntilDue?: number;
   runwayWeeks?: number;
+  /** overdue_payable only — distinguishes "payroll overdue" from "supplier overdue" wording. */
+  isPayrollPriority?: boolean;
+  /** forecast_shortfall only. */
+  weekIndex?: number;
+  /** stale_bank_data only. */
+  daysSinceUpdate?: number;
 }
 
 /** How urgent each obligation category is, independent of timing — payroll/tax first. */
@@ -88,7 +97,8 @@ export function buildOverduePayableItem(payable: {
   daysOverdue: number;
   supplierPriority: ApPaymentPriority;
 }, currency: string): BusinessPulseItem {
-  const isCriticalPriority = payable.supplierPriority === 'payroll' || payable.supplierPriority === 'tax';
+  const isPayrollPriority = payable.supplierPriority === 'payroll';
+  const isCriticalPriority = isPayrollPriority || payable.supplierPriority === 'tax';
   const severity: PulseSeverity = isCriticalPriority || payable.daysOverdue > 30 ? 'critical' : 'warning';
   const priorityWeight = isCriticalPriority ? 90 : 40;
 
@@ -103,6 +113,7 @@ export function buildOverduePayableItem(payable: {
     currency,
     dueDate: payable.dueDate,
     daysOverdue: payable.daysOverdue,
+    isPayrollPriority,
   };
 }
 
@@ -190,6 +201,57 @@ export function buildCashBufferItem(
     };
   }
   return null;
+}
+
+/**
+ * Distinct from buildCashBufferItem: that's a single point-in-time subtraction
+ * (cash minus all known outflows over the horizon); this walks the actual week-by-
+ * week forecast and flags the first week projected to go negative, which can catch
+ * a timing-driven dip that free-cash alone doesn't surface.
+ */
+export function buildForecastShortfallItem(
+  forecastLines: Array<{ weekIndex: number; weekStart: string; closingCash: number }>,
+  currency: string,
+): BusinessPulseItem | null {
+  const firstNegative = forecastLines
+    .slice()
+    .sort((a, b) => a.weekIndex - b.weekIndex)
+    .find((line) => line.closingCash < 0);
+  if (!firstNegative) return null;
+
+  const severity: PulseSeverity = firstNegative.weekIndex <= 4 ? 'critical' : 'warning';
+
+  return {
+    id: `forecast_shortfall:${firstNegative.weekIndex}`,
+    severity,
+    category: 'forecast_shortfall',
+    linkPath: '/forecast',
+    score: severity === 'critical' ? 110 : 65,
+    name: '',
+    amount: firstNegative.closingCash,
+    currency,
+    dueDate: firstNegative.weekStart,
+    weekIndex: firstNegative.weekIndex,
+  };
+}
+
+/** Low urgency by design (info/"Monitor") — a data-freshness nudge, not a risk. */
+export function buildStaleBankDataItem(
+  daysSinceUpdate: number | null,
+  currency: string,
+): BusinessPulseItem | null {
+  if (daysSinceUpdate === null || daysSinceUpdate <= 14) return null;
+  return {
+    id: 'stale_bank_data',
+    severity: 'info',
+    category: 'stale_bank_data',
+    linkPath: '/uploads',
+    score: 15,
+    name: '',
+    amount: 0,
+    currency,
+    daysSinceUpdate,
+  };
 }
 
 /** Sorts by urgency score (desc) and caps to the top N — the 30-second dashboard rule. */

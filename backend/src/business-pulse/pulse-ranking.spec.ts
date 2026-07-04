@@ -1,9 +1,11 @@
 import {
   buildCashBufferItem,
   buildExpectedReceiptItem,
+  buildForecastShortfallItem,
   buildObligationItem,
   buildOverduePayableItem,
   buildOverdueReceivableItem,
+  buildStaleBankDataItem,
   rankPulseItems,
 } from './pulse-ranking';
 
@@ -65,6 +67,7 @@ describe('buildOverduePayableItem', () => {
     expect(item.severity).toBe('critical');
     expect(item.name).toBe('Payroll processor');
     expect(item.daysOverdue).toBe(3);
+    expect(item.isPayrollPriority).toBe(true);
   });
 
   it('marks a flexible-priority bill overdue by a few days as warning, not critical', () => {
@@ -80,6 +83,7 @@ describe('buildOverduePayableItem', () => {
       'USD',
     );
     expect(item.severity).toBe('warning');
+    expect(item.isPayrollPriority).toBe(false);
   });
 
   it('escalates a flexible-priority bill to critical once overdue past 30 days', () => {
@@ -147,6 +151,57 @@ describe('buildCashBufferItem', () => {
     expect(item).not.toBeNull();
     expect(item?.severity).toBe('warning');
     expect(item?.runwayWeeks).toBe(4);
+  });
+});
+
+describe('buildForecastShortfallItem', () => {
+  it('returns null when no forecast week goes negative', () => {
+    const lines = [
+      { weekIndex: 1, weekStart: '2026-07-06', closingCash: 5000 },
+      { weekIndex: 2, weekStart: '2026-07-13', closingCash: 6000 },
+    ];
+    expect(buildForecastShortfallItem(lines, 'USD')).toBeNull();
+  });
+
+  it('flags the first (earliest) negative week, not just the most negative one', () => {
+    const lines = [
+      { weekIndex: 3, weekStart: '2026-07-20', closingCash: -20000 },
+      { weekIndex: 1, weekStart: '2026-07-06', closingCash: -500 },
+      { weekIndex: 2, weekStart: '2026-07-13', closingCash: 4000 },
+    ];
+    const item = buildForecastShortfallItem(lines, 'USD');
+    expect(item?.weekIndex).toBe(1);
+    expect(item?.amount).toBe(-500);
+  });
+
+  it('is critical when the shortfall is within 4 weeks, warning otherwise', () => {
+    const soon = buildForecastShortfallItem(
+      [{ weekIndex: 2, weekStart: '2026-07-13', closingCash: -100 }],
+      'USD',
+    );
+    const later = buildForecastShortfallItem(
+      [{ weekIndex: 9, weekStart: '2026-09-01', closingCash: -100 }],
+      'USD',
+    );
+    expect(soon?.severity).toBe('critical');
+    expect(later?.severity).toBe('warning');
+  });
+});
+
+describe('buildStaleBankDataItem', () => {
+  it('returns null when there is no bank data at all (null daysSinceUpdate)', () => {
+    expect(buildStaleBankDataItem(null, 'USD')).toBeNull();
+  });
+
+  it('returns null when bank data is fresh (14 days or fewer)', () => {
+    expect(buildStaleBankDataItem(14, 'USD')).toBeNull();
+  });
+
+  it('returns an info-severity item once bank data is more than 14 days old', () => {
+    const item = buildStaleBankDataItem(21, 'USD');
+    expect(item).not.toBeNull();
+    expect(item?.severity).toBe('info');
+    expect(item?.daysSinceUpdate).toBe(21);
   });
 });
 

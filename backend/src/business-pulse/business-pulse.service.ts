@@ -4,14 +4,17 @@ import { PrismaService } from '../prisma/prisma.service';
 import { RecurringObligationsService } from '../recurring-obligations/recurring-obligations.service';
 import { TreasuryEngineService } from '../treasury/treasury-engine.service';
 import { FreeCashService } from '../free-cash/free-cash.service';
+import { DataQualityService } from '../data-quality/data-quality.service';
 import { AiService } from '../ai/ai.service';
 import {
   BusinessPulseItem,
   buildCashBufferItem,
   buildExpectedReceiptItem,
+  buildForecastShortfallItem,
   buildObligationItem,
   buildOverduePayableItem,
   buildOverdueReceivableItem,
+  buildStaleBankDataItem,
   rankPulseItems,
 } from './pulse-ranking';
 
@@ -39,6 +42,7 @@ export class BusinessPulseService {
     private readonly recurringObligations: RecurringObligationsService,
     private readonly treasuryEngine: TreasuryEngineService,
     private readonly freeCash: FreeCashService,
+    private readonly dataQuality: DataQualityService,
     private readonly aiService: AiService,
   ) {}
 
@@ -49,16 +53,25 @@ export class BusinessPulseService {
     const asOfDate = new Date().toISOString().slice(0, 10);
     const horizonEndDate = addDaysIso(asOfDate, OBLIGATION_HORIZON_DAYS);
 
-    const [company, obligations, payablesRaw, receivablesRaw, engineResult, freeCashReport, briefing] =
-      await Promise.all([
-        this.prisma.company.findUniqueOrThrow({ where: { id: companyId } }),
-        this.recurringObligations.upcoming(companyId, asOfDate, horizonEndDate),
-        this.prisma.payable.findMany({ where: { companyId, deletedAt: null } }),
-        this.prisma.receivable.findMany({ where: { companyId, deletedAt: null } }),
-        this.treasuryEngine.generateForCompany(companyId, false),
-        this.freeCash.getReport(companyId, 13),
-        this.aiService.generateBusinessPulseBriefing(companyId, locale),
-      ]);
+    const [
+      company,
+      obligations,
+      payablesRaw,
+      receivablesRaw,
+      engineResult,
+      freeCashReport,
+      dataQualityReport,
+      briefing,
+    ] = await Promise.all([
+      this.prisma.company.findUniqueOrThrow({ where: { id: companyId } }),
+      this.recurringObligations.upcoming(companyId, asOfDate, horizonEndDate),
+      this.prisma.payable.findMany({ where: { companyId, deletedAt: null } }),
+      this.prisma.receivable.findMany({ where: { companyId, deletedAt: null } }),
+      this.treasuryEngine.generateForCompany(companyId, false),
+      this.freeCash.getReport(companyId, 13),
+      this.dataQuality.getReport(companyId),
+      this.aiService.generateBusinessPulseBriefing(companyId, locale),
+    ]);
 
     const currency = company.currency;
     const candidates: BusinessPulseItem[] = [];
@@ -117,6 +130,15 @@ export class BusinessPulseService {
       currency,
     );
     if (cashBufferItem) candidates.push(cashBufferItem);
+
+    const forecastShortfallItem = buildForecastShortfallItem(engineResult.forecastLines, currency);
+    if (forecastShortfallItem) candidates.push(forecastShortfallItem);
+
+    const staleBankDataItem = buildStaleBankDataItem(
+      dataQualityReport.modules.bankTransactions.daysSinceUpdate,
+      currency,
+    );
+    if (staleBankDataItem) candidates.push(staleBankDataItem);
 
     return {
       asOfDate,

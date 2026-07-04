@@ -154,7 +154,9 @@ export type BusinessPulseCategory =
   | 'overdue_payable'
   | 'overdue_receivable'
   | 'expected_receipt'
-  | 'cash_buffer';
+  | 'cash_buffer'
+  | 'forecast_shortfall'
+  | 'stale_bank_data';
 
 export interface BusinessPulseItemView {
   id: string;
@@ -168,6 +170,9 @@ export interface BusinessPulseItemView {
   daysOverdue?: number;
   daysUntilDue?: number;
   runwayWeeks?: number;
+  isPayrollPriority?: boolean;
+  weekIndex?: number;
+  daysSinceUpdate?: number;
 }
 
 export interface BusinessPulseReportView {
