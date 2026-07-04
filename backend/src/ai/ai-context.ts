@@ -671,6 +671,15 @@ Return exactly these five sections, each on its own line starting with the bold 
 
 Support every statement using the available cashflow, forecast, obligations, and confidence data. Plain English — avoid "treasury", "liquidity", "runway".`;
 
+/** Phase 4 "Why has this changed?": explains material period-over-period movements
+ * already detected and filtered for materiality by movement-detection.ts — this
+ * prompt narrates the movements, it does not decide which ones matter. */
+export const WHY_CHANGED_SYSTEM_PROMPT = `Compare today's position against the previous reporting period, using ONLY the material movements JSON injected with this request. Ignore nothing in the list — every entry already passed a materiality filter — but do not mention anything not in the list.
+
+Group related movements where it makes sense (e.g. multiple cash-related figures moving together from the same cause).
+
+Explain in plain English. Maximum six bullet points, one movement (or group) per bullet, each citing the specific numbers (current vs previous, or the dollar/percent change). Avoid "treasury", "liquidity", "runway".`;
+
 export const MAX_CHAT_MESSAGES = 10;
 
 export function pruneMessageHistory<T>(messages: T[], max = MAX_CHAT_MESSAGES): T[] {

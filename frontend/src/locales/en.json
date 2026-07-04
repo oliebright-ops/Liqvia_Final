@@ -904,6 +904,11 @@
       "strengthsLabel": "Strengths",
       "weaknessesLabel": "Weaknesses",
       "uploadDataCta": "Upload data"
+    },
+    "whyChanged": {
+      "trigger": "Why has this changed?",
+      "loading": "Comparing to the previous period…",
+      "title": "What changed"
     }
   },
   "onboarding": {

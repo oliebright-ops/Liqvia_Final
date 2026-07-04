@@ -23,6 +23,7 @@ import { ForecastQualityCard } from './forecast-quality-card';
 import { ForecastSection } from './forecast-section';
 import { KpiGrid } from './kpi-grid';
 import { RecentTransactions } from './recent-transactions';
+import { WhyChangedCard } from './why-changed-card';
 
 /** Demo mode uses live API data; only inject sample transactions when the ledger is empty. */
 function withDemoTransactionFallback(summary: SummaryReport, isDemoMode: boolean): SummaryReport {
@@ -138,6 +139,8 @@ export function TreasuryDashboard() {
       <BusinessPulseCard />
 
       <KpiGrid cards={view.kpiCards} format={format} />
+
+      <WhyChangedCard />
 
       <DataQualityBadge />
 

@@ -904,6 +904,11 @@
       "strengthsLabel": "Сильные стороны",
       "weaknessesLabel": "Слабые стороны",
       "uploadDataCta": "Загрузить данные"
+    },
+    "whyChanged": {
+      "trigger": "Почему это изменилось?",
+      "loading": "Сравнение с предыдущим периодом…",
+      "title": "Что изменилось"
     }
   },
   "onboarding": {

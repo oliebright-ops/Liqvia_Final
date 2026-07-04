@@ -830,6 +830,11 @@
       "strengthsLabel": "Puntos fuertes",
       "weaknessesLabel": "Puntos débiles",
       "uploadDataCta": "Cargar datos"
+    },
+    "whyChanged": {
+      "trigger": "¿Por qué cambió esto?",
+      "loading": "Comparando con el período anterior…",
+      "title": "Qué cambió"
     }
   },
   "onboarding": {

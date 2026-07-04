@@ -173,6 +173,7 @@ model Company {
   userLinks             UserCompanyLink[]
   recurringObligations  RecurringObligation[]
   notifications         Notification[]
+  kpiSnapshots          KpiSnapshot[]
 
   @@index([deletedAt])
 }
@@ -604,6 +605,26 @@ model Notification {
 
   @@unique([companyId, dedupeKey])
   @@index([companyId, read])
+}
+
+// --- KPI history (Phase 4: "Why has this changed?") ---
+
+model KpiSnapshot {
+  id                 String          @id @default(cuid())
+  companyId          String
+  asOfDate           DateTime
+  currentCash        Decimal         @db.Decimal(18, 2)
+  runwayWeeks        Decimal?        @db.Decimal(6, 2)
+  overdueReceivables Decimal         @db.Decimal(18, 2)
+  upcomingPayables   Decimal         @db.Decimal(18, 2)
+  freeAvailableCash  Decimal         @db.Decimal(18, 2)
+  liquidityStatus    LiquidityStatus
+  createdAt          DateTime        @default(now())
+
+  company Company @relation(fields: [companyId], references: [id], onDelete: Cascade)
+
+  @@unique([companyId, asOfDate])
+  @@index([companyId, asOfDate])
 }
 
 // --- AI ---

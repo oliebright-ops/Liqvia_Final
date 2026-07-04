@@ -207,3 +207,21 @@ export interface ConfidenceReportView {
   weaknesses: ConfidenceWeaknessView[];
   recommendedNextAction: string;
 }
+
+export interface MaterialMovementView {
+  label: string;
+  current: number;
+  previous: number;
+  delta: number;
+  percentChange: number | null;
+  currentPeriod: string;
+  previousPeriod: string;
+}
+
+export interface WhyChangedResponseView {
+  hasHistory: boolean;
+  movements: MaterialMovementView[];
+  text: string;
+  model: string;
+  source: 'openai' | 'rule_based';
+}

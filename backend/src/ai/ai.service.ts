@@ -6,6 +6,7 @@ import {
   buildSystemPrompt,
   BUSINESS_PULSE_SYSTEM_PROMPT,
   DECISION_CENTRE_SYSTEM_PROMPT,
+  WHY_CHANGED_SYSTEM_PROMPT,
   formatPayrollOutlook,
   TreasuryAiContext,
   extractHorizonMonths,
@@ -51,6 +52,24 @@ export interface DecisionScenarioSummary {
 }
 
 export interface DecisionCentreResult {
+  text: string;
+  model: string;
+  source: 'openai' | 'rule_based';
+}
+
+/** Minimal shape needed from a detected movement — kept local so AiService doesn't
+ * depend on the why-changed module's types. */
+export interface WhyChangedMovement {
+  label: string;
+  current: number;
+  previous: number;
+  delta: number;
+  percentChange: number | null;
+  currentPeriod: string;
+  previousPeriod: string;
+}
+
+export interface WhyChangedResult {
   text: string;
   model: string;
   source: 'openai' | 'rule_based';
@@ -433,6 +452,106 @@ export class AiService {
       '**Key Risks:** Timing and priority assumptions may not match reality — verify against actual figures.',
       '**Suggested Alternatives:** Consider phasing this in gradually or timing it for a stronger cash week.',
     ].join('\n');
+  }
+
+  /** Phase 4 "Why has this changed?" — narrates movements already detected and
+   * materiality-filtered elsewhere (see movement-detection.ts); this call does not
+   * decide what's material, only explains it in plain English. */
+  async generateWhyChanged(
+    companyId: string = DEFAULT_DEMO_COMPANY_ID,
+    movements: WhyChangedMovement[],
+    locale?: string,
+  ): Promise<WhyChangedResult> {
+    const start = Date.now();
+
+    if (movements.length === 0) {
+      const text = 'Nothing material has changed since the last comparison period.';
+      await this.audit(companyId, 'rule-based-no-movements', Date.now() - start);
+      return { text, model: 'rule-based-no-movements', source: 'rule_based' };
+    }
+
+    const apiKey = process.env.OPENAI_API_KEY;
+    let text: string;
+    let model: string;
+    let source: WhyChangedResult['source'];
+
+    if (apiKey) {
+      try {
+        const result = await this.callOpenAiWhyChanged(apiKey, movements, locale);
+        text = result.text;
+        model = result.model;
+        source = 'openai';
+      } catch (err) {
+        this.logger.error(`Why Changed failed, using rule-based fallback: ${String(err)}`);
+        text = this.ruleBasedWhyChanged(movements);
+        model = 'rule-based-fallback:api-error';
+        source = 'rule_based';
+      }
+    } else {
+      this.warnMissingApiKey(companyId);
+      text = this.ruleBasedWhyChanged(movements);
+      model = 'rule-based-fallback:no-api-key';
+      source = 'rule_based';
+    }
+
+    await this.audit(companyId, model, Date.now() - start);
+    await this.prisma.aiInsight.create({
+      data: { companyId, insightType: 'why_changed', content: text, context: { movements } as unknown as object },
+    });
+
+    return { text, model, source };
+  }
+
+  private async callOpenAiWhyChanged(
+    apiKey: string,
+    movements: WhyChangedMovement[],
+    locale?: string,
+  ): Promise<{ text: string; model: string }> {
+    const model = process.env.OPENAI_MODEL ?? 'gpt-4o-mini';
+    const localeLine = locale
+      ? `\nRespond in ${locale === 'ru' ? 'Russian' : locale === 'es' ? 'Spanish' : locale === 'fr' ? 'French' : 'English'}.`
+      : '';
+
+    const res = await fetch('https://api.openai.com/v1/chat/completions', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${apiKey}`,
+      },
+      body: JSON.stringify({
+        model,
+        messages: [
+          { role: 'system', content: WHY_CHANGED_SYSTEM_PROMPT + localeLine },
+          { role: 'user', content: `Material movements (JSON):\n${JSON.stringify(movements, null, 2)}` },
+        ],
+        temperature: 0.2,
+        max_tokens: 320,
+      }),
+    });
+
+    if (!res.ok) throw new Error(`OpenAI request failed: ${res.status}`);
+    const data = (await res.json()) as {
+      choices?: Array<{ message?: { content?: string } }>;
+    };
+    const text = data.choices?.[0]?.message?.content?.trim();
+    if (!text) throw new Error('Empty AI response');
+    return { text, model };
+  }
+
+  /** Deterministic fallback — one bullet per movement, citing the same numbers the
+   * AI prompt would have used. */
+  private ruleBasedWhyChanged(movements: WhyChangedMovement[]): string {
+    return movements
+      .slice(0, 6)
+      .map((m) => {
+        const direction = m.delta >= 0 ? 'up' : 'down';
+        const pct =
+          m.percentChange !== null
+            ? ` (${m.percentChange >= 0 ? '+' : ''}${m.percentChange.toFixed(0)}%)`
+            : '';
+        return `- **${m.label}** is ${direction} from ${Math.round(m.previous).toLocaleString()} to ${Math.round(m.current).toLocaleString()}${pct}.`;
+      })
+      .join('\n');
   }
 
   private resolveExplicitIntent(intent?: string): string | undefined {

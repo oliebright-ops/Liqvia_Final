@@ -830,6 +830,11 @@
       "strengthsLabel": "Points forts",
       "weaknessesLabel": "Points faibles",
       "uploadDataCta": "Importer des données"
+    },
+    "whyChanged": {
+      "trigger": "Pourquoi ce changement ?",
+      "loading": "Comparaison avec la période précédente…",
+      "title": "Ce qui a changé"
     }
   },
   "onboarding": {
