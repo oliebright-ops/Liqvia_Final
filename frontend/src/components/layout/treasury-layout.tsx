@@ -5,7 +5,6 @@ import { useLanguage } from '@/lib/i18n';
 import { Sidebar } from './sidebar';
 import { CompanySwitcher } from './company-switcher';
 import { LanguageSwitcher } from './language-switcher';
-import { NotificationsBell } from './notifications-bell';
 import { DemoBanner } from '@/components/onboarding/demo-banner';
 
 export function TreasuryLayout({ children }: { children: React.ReactNode }) {
@@ -20,7 +19,6 @@ export function TreasuryLayout({ children }: { children: React.ReactNode }) {
         <header className="flex items-center justify-between border-b border-border px-6 py-3">
           <div />
           <div className="flex items-center gap-3 text-sm text-muted-foreground">
-            <NotificationsBell />
             <CompanySwitcher compact />
             <LanguageSwitcher compact />
             {user && <span className="hidden text-foreground sm:inline">{user.name}</span>}

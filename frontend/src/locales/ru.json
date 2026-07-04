@@ -673,7 +673,6 @@
     "clearChat": "Очистить диалог",
     "emptyChat": "Задайте вопрос или выберите быстрое действие выше. Ответы основаны на текущих данных по кассе, запасу средств, ДЗ/КЗ и бюджету.",
     "sourceRule": "Правило-базированный брифинг (ключ ИИ не настроен)",
-    "sourceRuleApiError": "Правило-базированный брифинг (запрос ИИ не удался — используется резервный вариант)",
     "sourceOpenai": "Сгенерировано ИИ CFO · {model}",
     "disclosureBanner": "Это не универсальный ИИ: ответы формируются по заданным шаблонам (или GPT, если настроен) строго на основе загруженных данных — важные решения всегда проверяйте по первичным документам."
   },
@@ -730,7 +729,6 @@
       "tabCompany": "Компания",
       "tabTeam": "Команда",
       "tabCoa": "План счетов",
-      "tabObligations": "Регулярные обязательства",
       "save": "Сохранить",
       "saved": "Сохранено",
       "fieldName": "Имя",
@@ -820,60 +818,6 @@
           "summary": "Только загрузка файлов — без доступа к панелям и настройкам."
         }
       }
-    },
-    "dataQuality": {
-      "title": "Качество данных",
-      "scoreLabel": "Оценка {score}/100",
-      "moduleBankTransactions": "Банковские транзакции",
-      "moduleReceivables": "ДЗ (по срокам)",
-      "modulePayables": "КЗ (по срокам)",
-      "moduleBudgetActuals": "Бюджет / факт",
-      "status_fresh": "Актуально",
-      "status_stale": "Устарело",
-      "status_missing": "Нет данных"
-    },
-    "recurringObligations": {
-      "emptyTitle": "Регулярных обязательств пока нет",
-      "emptyHint": "Добавьте зарплату, аренду, налоги или платежи по кредитам, повторяющиеся по графику, чтобы прогнозы и ИИ CFO учитывали их.",
-      "colName": "Название",
-      "colCategory": "Категория",
-      "colAmount": "Сумма",
-      "colFrequency": "Периодичность",
-      "colNextDue": "Следующий срок",
-      "edit": "Изменить",
-      "remove": "Удалить",
-      "editTitle": "Изменить обязательство",
-      "createTitle": "Добавить регулярное обязательство",
-      "fieldName": "Название",
-      "fieldCategory": "Категория",
-      "fieldAmount": "Сумма",
-      "fieldFrequency": "Периодичность",
-      "fieldNextDue": "Следующая дата платежа",
-      "fieldNotes": "Примечания",
-      "save": "Сохранить изменения",
-      "create": "Добавить обязательство",
-      "cancel": "Отмена",
-      "category_payroll": "Зарплата",
-      "category_superannuation": "Пенсионные отчисления",
-      "category_payg_withholding": "Удержание налога",
-      "category_gst_bas": "НДС/BAS",
-      "category_rent": "Аренда",
-      "category_loan_repayment": "Погашение кредита",
-      "category_insurance": "Страхование",
-      "category_subscription": "Подписка",
-      "category_other": "Другое",
-      "frequency_weekly": "Еженедельно",
-      "frequency_fortnightly": "Раз в две недели",
-      "frequency_monthly": "Ежемесячно",
-      "frequency_quarterly": "Ежеквартально",
-      "frequency_annually": "Ежегодно"
-    },
-    "notifications": {
-      "title": "Уведомления",
-      "loading": "Загрузка…",
-      "empty": "Пока нет уведомлений.",
-      "upgradeCta": "Перейдите на Pro, чтобы открыть",
-      "markRead": "Отметить как прочитанное"
     }
   },
   "onboarding": {

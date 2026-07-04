@@ -7,23 +7,13 @@ import {
 } from '@liqvia2/shared';
 import { PrismaService } from '../prisma/prisma.service';
 import { DashboardService } from '../dashboard/dashboard.service';
-import { RecurringObligationsService } from '../recurring-obligations/recurring-obligations.service';
-import { DataQualityService } from '../data-quality/data-quality.service';
 import { TreasuryAiContext, analyzeUserQuery, buildTreasuryContext } from './ai-context';
-
-function addMonthsIso(dateStr: string, months: number): string {
-  const d = new Date(`${dateStr}T00:00:00.000Z`);
-  d.setUTCMonth(d.getUTCMonth() + months);
-  return d.toISOString().slice(0, 10);
-}
 
 @Injectable()
 export class AiDataService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly dashboard: DashboardService,
-    private readonly recurringObligations: RecurringObligationsService,
-    private readonly dataQuality: DataQualityService,
   ) {}
 
   async buildContext(
@@ -31,31 +21,23 @@ export class AiDataService {
     userQuestion?: string,
     explicitIntent?: string,
   ): Promise<TreasuryAiContext> {
-    const queryAsOfDate = new Date().toISOString().slice(0, 10);
-    const [dashboard, bankAccounts, movements, weeklyActualRows, upcomingObligations, dataQualityReport] =
-      await Promise.all([
-        this.dashboard.getDashboard(companyId),
-        this.prisma.bankAccount.findMany({
-          where: { companyId, deletedAt: null },
-          orderBy: { name: 'asc' },
-        }),
-        this.prisma.cashMovement.findMany({
-          where: { companyId },
-          orderBy: { movementDate: 'desc' },
-          take: 200,
-        }),
-        this.prisma.weeklyActual.findMany({
-          where: { companyId },
-          orderBy: [{ period: 'desc' }, { category: 'asc' }],
-          take: 40,
-        }),
-        this.recurringObligations.upcoming(
-          companyId,
-          queryAsOfDate,
-          addMonthsIso(queryAsOfDate, 3),
-        ),
-        this.dataQuality.getReport(companyId),
-      ]);
+    const [dashboard, bankAccounts, movements, weeklyActualRows] = await Promise.all([
+      this.dashboard.getDashboard(companyId),
+      this.prisma.bankAccount.findMany({
+        where: { companyId, deletedAt: null },
+        orderBy: { name: 'asc' },
+      }),
+      this.prisma.cashMovement.findMany({
+        where: { companyId },
+        orderBy: { movementDate: 'desc' },
+        take: 200,
+      }),
+      this.prisma.weeklyActual.findMany({
+        where: { companyId },
+        orderBy: [{ period: 'desc' }, { category: 'asc' }],
+        take: 40,
+      }),
+    ]);
 
     const accountById = new Map(bankAccounts.map((a) => [a.id, a]));
     const asOfDate = dashboard.asOfDate;
@@ -99,29 +81,33 @@ export class AiDataService {
 
     const recentInflows = cashTransactions.filter((t) => t.direction === 'IN').slice(0, 20);
 
-    const receivablesDetail = (
-      await this.prisma.receivable.findMany({
-        where: { companyId, deletedAt: null },
-        orderBy: { dueDate: 'asc' },
-        take: 30,
-      })
-    ).map((r) => {
-      const dueDate = r.dueDate.toISOString().slice(0, 10);
-      const daysOverdue =
-        dueDate < asOfDate
-          ? Math.floor(
-              (new Date(asOfDate).getTime() - new Date(dueDate).getTime()) / (1000 * 60 * 60 * 24),
-            )
-          : 0;
-      return {
-        counterparty: r.customerName,
-        amount: Number(r.outstandingAmount),
-        invoiceDate: r.invoiceDate.toISOString().slice(0, 10),
-        dueDate,
-        daysOverdue,
-        status: daysOverdue > 0 ? 'overdue' : 'open',
-      };
-    });
+    const receivablesDetail =
+      dashboard.kpis.overdueReceivables >= 0
+        ? (
+            await this.prisma.receivable.findMany({
+              where: { companyId, deletedAt: null },
+              orderBy: { dueDate: 'asc' },
+              take: 30,
+            })
+          ).map((r) => {
+            const dueDate = r.dueDate.toISOString().slice(0, 10);
+            const daysOverdue =
+              dueDate < asOfDate
+                ? Math.floor(
+                    (new Date(asOfDate).getTime() - new Date(dueDate).getTime()) /
+                      (1000 * 60 * 60 * 24),
+                  )
+                : 0;
+            return {
+              counterparty: r.customerName,
+              amount: Number(r.outstandingAmount),
+              invoiceDate: r.invoiceDate.toISOString().slice(0, 10),
+              dueDate,
+              daysOverdue,
+              status: daysOverdue > 0 ? 'overdue' : 'open',
+            };
+          })
+        : [];
 
     const payablesDetail = (
       await this.prisma.payable.findMany({
@@ -186,17 +172,6 @@ export class AiDataService {
         category: a.category,
         amount: Number(a.actualAmount),
       })),
-      recurringObligations: upcomingObligations.map((o) => ({
-        name: o.name,
-        category: o.category,
-        amount: o.amount,
-        frequency: o.frequency,
-        dueDate: o.dueDate,
-      })),
-      dataQuality: {
-        score: dataQualityReport.score,
-        warnings: dataQualityReport.warnings,
-      },
       dataModules: {
         bankTransactions: cashTransactions.length,
         receivables: receivablesDetail.length,

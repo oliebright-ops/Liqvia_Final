@@ -102,37 +102,6 @@ enum ExternalSource {
   bank_feed
 }
 
-enum ObligationCategory {
-  payroll
-  superannuation
-  payg_withholding
-  gst_bas
-  rent
-  loan_repayment
-  insurance
-  subscription
-  other
-}
-
-enum ObligationFrequency {
-  weekly
-  fortnightly
-  monthly
-  quarterly
-  annually
-}
-
-enum CompanyPlan {
-  free
-  pro
-}
-
-enum NotificationType {
-  obligation_due_soon
-  payroll_shortfall
-  runway_risk
-}
-
 // --- Tenant & auth ---
 
 model Company {
@@ -149,30 +118,27 @@ model Company {
   openingCashBalance    Decimal?  @db.Decimal(18, 2)
   onboardingCompleted   Boolean   @default(false)
   onboardingCompletedAt DateTime?
-  plan                  CompanyPlan @default(free)
   createdAt             DateTime  @default(now())
   updatedAt             DateTime  @updatedAt
   deletedAt             DateTime?
 
-  users                 UserProfile[]
-  chartOfAccounts       ChartOfAccount[]
-  journalEntries        JournalEntry[]
-  bankAccounts          BankAccount[]
-  cashMovements         CashMovement[]
-  cashForecasts         CashForecast[]
-  budgets               Budget[]
-  weeklyActuals         WeeklyActual[]
-  receivables           Receivable[]
-  payables              Payable[]
-  uploadBatches         UploadBatch[]
-  scenarios             Scenario[]
-  aiLogs                AiLog[]
-  aiInsights            AiInsight[]
-  auditLogs             AuditLog[]
-  alerts                Alert[]
-  userLinks             UserCompanyLink[]
-  recurringObligations  RecurringObligation[]
-  notifications         Notification[]
+  users            UserProfile[]
+  chartOfAccounts  ChartOfAccount[]
+  journalEntries   JournalEntry[]
+  bankAccounts     BankAccount[]
+  cashMovements    CashMovement[]
+  cashForecasts    CashForecast[]
+  budgets          Budget[]
+  weeklyActuals    WeeklyActual[]
+  receivables      Receivable[]
+  payables         Payable[]
+  uploadBatches    UploadBatch[]
+  scenarios        Scenario[]
+  aiLogs           AiLog[]
+  aiInsights       AiInsight[]
+  auditLogs        AuditLog[]
+  alerts           Alert[]
+  userLinks        UserCompanyLink[]
 
   @@index([deletedAt])
 }
@@ -561,49 +527,6 @@ model Alert {
 
   @@index([companyId, resolved])
   @@index([alertType])
-}
-
-// --- Recurring obligations ---
-
-model RecurringObligation {
-  id         String              @id @default(cuid())
-  companyId  String
-  name       String
-  category   ObligationCategory
-  amount     Decimal             @db.Decimal(18, 2)
-  frequency  ObligationFrequency
-  nextDueDate DateTime
-  notes      String?
-  active     Boolean             @default(true)
-  createdAt  DateTime            @default(now())
-  updatedAt  DateTime            @updatedAt
-  deletedAt  DateTime?
-
-  company Company @relation(fields: [companyId], references: [id], onDelete: Cascade)
-
-  @@index([companyId, active])
-  @@index([companyId, nextDueDate])
-}
-
-// --- Notifications ---
-
-model Notification {
-  id         String           @id @default(cuid())
-  companyId  String
-  type       NotificationType
-  severity   AlertSeverity
-  title      String
-  message    String
-  metadata   Json?
-  dedupeKey  String
-  read       Boolean          @default(false)
-  readAt     DateTime?
-  createdAt  DateTime         @default(now())
-
-  company Company @relation(fields: [companyId], references: [id], onDelete: Cascade)
-
-  @@unique([companyId, dedupeKey])
-  @@index([companyId, read])
 }
 
 // --- AI ---

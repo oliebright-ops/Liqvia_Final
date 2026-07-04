@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useRef, useState } from 'react';
-import { Info, Sparkles, TriangleAlert } from 'lucide-react';
+import { Info, Sparkles } from 'lucide-react';
 import { useAiChat } from '@/hooks/use-ai-chat';
 import { useAuth } from '@/lib/auth-context';
 import { useLanguage } from '@/lib/i18n';
@@ -9,7 +9,6 @@ import { Alert } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { PageHeader } from '@/components/treasury/page-header';
-import { DataQualityBadge } from '@/components/dashboard/data-quality-badge';
 import { MarkdownReply } from './markdown-reply';
 
 const QUICK_PROMPT_KEYS = [
@@ -27,7 +26,7 @@ export function AiCfoPage() {
   const { t, locale } = useLanguage();
   const ai = t.ai as Record<string, string>;
   const quick = t.aiQuick as Record<string, string>;
-  const { messages, loading, error, send, clear, lastSource, lastModel } = useAiChat();
+  const { messages, loading, error, send, clear, lastSource } = useAiChat();
 
   useEffect(() => {
     clear();
@@ -47,23 +46,10 @@ export function AiCfoPage() {
     <div className="space-y-6">
       <PageHeader title={ai.pageTitle ?? ai.title} subtitle={ai.pageSubtitle ?? ai.subtitle} />
 
-      <DataQualityBadge />
-
       {ai.disclosureBanner && (
         <Alert variant="info" className="flex items-start gap-2">
           <Info className="mt-0.5 h-4 w-4 shrink-0" />
           <span>{ai.disclosureBanner}</span>
-        </Alert>
-      )}
-
-      {lastSource === 'rule_based' && (
-        <Alert variant="warning" className="flex items-start gap-2">
-          <TriangleAlert className="mt-0.5 h-4 w-4 shrink-0" />
-          <span>
-            {lastModel === 'rule-based-fallback:api-error'
-              ? (ai.sourceRuleApiError ?? ai.sourceRule)
-              : ai.sourceRule}
-          </span>
         </Alert>
       )}
 
@@ -94,7 +80,12 @@ export function AiCfoPage() {
               </Button>
             )}
           </div>
-          <CardDescription>{ai.subtitle}</CardDescription>
+          <CardDescription>
+            {ai.subtitle}
+            {lastSource === 'rule_based' && (
+              <span className="mt-1 block text-[11px] text-muted-foreground">{ai.sourceRule}</span>
+            )}
+          </CardDescription>
         </CardHeader>
         <CardContent className="flex flex-1 flex-col gap-4">
           <div className="flex-1 space-y-4 overflow-y-auto rounded-lg border border-border bg-muted/20 p-4">

@@ -85,17 +85,6 @@ export interface TreasuryAiContext {
     budgetLines: number;
     forecastWeeks: number;
   };
-  recurringObligations: Array<{
-    name: string;
-    category: string;
-    amount: number;
-    frequency: string;
-    dueDate: string;
-  }>;
-  dataQuality?: {
-    score: number;
-    warnings: string[];
-  };
   queryAnalysis?: QueryAnalysis;
 }
 
@@ -215,7 +204,6 @@ export function buildTreasuryContext(dashboard: DashboardPayload): TreasuryAiCon
     budgetLines: [],
     forecastWeeks: [],
     weeklyActuals: [],
-    recurringObligations: [],
     dataModules: {
       bankTransactions: dashboard.recentTransactions.length,
       receivables: 0,
@@ -619,7 +607,7 @@ export function formatTransactionAnswer(
 
 export const AI_CFO_SYSTEM_PROMPT = `You are AI CFO — the executive treasury intelligence layer for Liqvia.
 
-Your role: analyze ONLY the JSON treasury context injected with each request (bankTransactions, receivablesDetail, payablesDetail, budgetLines, forecastWeeks, weeklyActuals, recurringObligations, dataQuality, alerts, queryAnalysis).
+Your role: analyze ONLY the JSON treasury context injected with each request (bankTransactions, receivablesDetail, payablesDetail, budgetLines, forecastWeeks, weeklyActuals, alerts, queryAnalysis).
 
 Rules:
 1. Never invent figures, counterparties, dates, or transaction purposes.
@@ -630,9 +618,7 @@ Rules:
 6. For transaction questions, search cashTransactions, recentOutflows, recentInflows, and queryAnalysis.relevantTransactions.
 7. If queryAnalysis is present, use its intent and relevantTransactions / relevantPayables / relevantReceivables.
 8. Use Markdown bullet lists. Tone: calm, precise, executive-friendly.
-9. Respond in the user's locale language when locale is provided in the context payload.
-10. recurringObligations are fixed/recurring commitments (payroll, super, PAYG, GST/BAS, rent, loan repayments, insurance, subscriptions) — distinct from payablesDetail, which is real uploaded AP bills. For payroll/rent/tax outlook questions, prefer recurringObligations when payablesDetail lacks a matching entry, and never sum the two together for the same obligation.
-11. If dataQuality.score is below 70 or dataQuality.warnings is non-empty, briefly caveat that the answer's confidence is limited by the listed stale/missing data before giving the figure.`;
+9. Respond in the user's locale language when locale is provided in the context payload.`;
 
 export function buildSystemPrompt(locale?: string): string {
   const localeLine = locale

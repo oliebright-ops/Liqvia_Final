@@ -37,31 +37,11 @@ export interface AiChatResponse {
 @Injectable()
 export class AiService {
   private readonly logger = new Logger(AiService.name);
-  /** Fires once per process so a misconfigured key doesn't spam identical error logs on every request. */
-  private hasLoggedMissingKeyForRealCompany = false;
 
   constructor(
     private readonly prisma: PrismaService,
     private readonly aiData: AiDataService,
   ) {}
-
-  /**
-   * True once no key is configured, logged at error level (not warn) so it surfaces in
-   * Render logs — every AI CFO response for every company otherwise silently falls back
-   * to rule-based templates with no operator-visible signal that OPENAI_API_KEY (marked
-   * `sync: false` in render.yaml) is unset, expired, or invalid.
-   */
-  private warnMissingApiKey(companyId: string): void {
-    const isRealCompany = companyId !== DEFAULT_DEMO_COMPANY_ID;
-    if (isRealCompany && !this.hasLoggedMissingKeyForRealCompany) {
-      this.hasLoggedMissingKeyForRealCompany = true;
-      this.logger.error(
-        `OPENAI_API_KEY is not set — AI CFO is serving rule-based fallback replies to a real company (${companyId}). Set OPENAI_API_KEY in the Render dashboard.`,
-      );
-    } else {
-      this.logger.error('OPENAI_API_KEY is not set — AI CFO is serving a rule-based fallback.');
-    }
-  }
 
   async chat(
     companyId: string = DEFAULT_DEMO_COMPANY_ID,
@@ -89,15 +69,14 @@ export class AiService {
         model = result.model;
         source = 'openai';
       } catch (err) {
-        this.logger.error(`OpenAI chat failed, using rule-based fallback: ${String(err)}`);
+        this.logger.warn(`OpenAI chat failed, using rule-based fallback: ${String(err)}`);
         reply = this.ruleBasedChatReply(context, history, explicitIntent);
-        model = 'rule-based-fallback:api-error';
+        model = 'rule-based-fallback';
         source = 'rule_based';
       }
     } else {
-      this.warnMissingApiKey(companyId);
       reply = this.ruleBasedChatReply(context, history, explicitIntent);
-      model = 'rule-based-fallback:no-api-key';
+      model = 'rule-based-fallback';
       source = 'rule_based';
     }
 
@@ -141,7 +120,7 @@ export class AiService {
         model = result.model;
         source = 'openai';
       } catch (err) {
-        this.logger.error(`OpenAI insight failed, using rule-based fallback: ${String(err)}`);
+        this.logger.warn(`OpenAI insight failed, using rule-based fallback: ${String(err)}`);
         insight = userQuestion
           ? this.ruleBasedChatReply(
               context,
@@ -149,11 +128,10 @@ export class AiService {
               explicitIntent,
             )
           : this.ruleBasedInsight(context);
-        model = 'rule-based-fallback:api-error';
+        model = 'rule-based-fallback';
         source = 'rule_based';
       }
     } else {
-      this.warnMissingApiKey(companyId);
       insight = userQuestion
         ? this.ruleBasedChatReply(
             context,
@@ -161,7 +139,7 @@ export class AiService {
             explicitIntent,
           )
         : this.ruleBasedInsight(context);
-      model = 'rule-based-fallback:no-api-key';
+      model = 'rule-based-fallback';
       source = 'rule_based';
     }
 
