@@ -3,6 +3,7 @@ import { DEFAULT_DEMO_COMPANY_ID } from '@liqvia2/shared';
 import { PrismaService } from '../prisma/prisma.service';
 import { AiDataService } from './ai-data.service';
 import {
+  buildCashDrivenBlock,
   buildSystemPrompt,
   BUSINESS_PULSE_SYSTEM_PROMPT,
   DECISION_CENTRE_SYSTEM_PROMPT,
@@ -269,6 +270,11 @@ export class AiService {
     const localeLine = locale
       ? `\nRespond in ${locale === 'ru' ? 'Russian' : locale === 'es' ? 'Spanish' : locale === 'fr' ? 'French' : 'English'}.`
       : '';
+    const cashDrivenBlock = buildCashDrivenBlock(
+      context.businessMode,
+      context.receivablesDetail.length > 0,
+      context.payablesDetail.length > 0,
+    );
     const res = await fetch('https://api.openai.com/v1/chat/completions', {
       method: 'POST',
       headers: {
@@ -278,7 +284,7 @@ export class AiService {
       body: JSON.stringify({
         model,
         messages: [
-          { role: 'system', content: BUSINESS_PULSE_SYSTEM_PROMPT + localeLine },
+          { role: 'system', content: BUSINESS_PULSE_SYSTEM_PROMPT + localeLine + cashDrivenBlock },
           { role: 'user', content: this.buildContextMessage(context) },
         ],
         temperature: 0.2,
@@ -586,7 +592,15 @@ export class AiService {
       body: JSON.stringify({
         model,
         messages: [
-          { role: 'system', content: buildSystemPrompt(locale) },
+          {
+            role: 'system',
+            content: buildSystemPrompt(
+              locale,
+              context.businessMode,
+              context.receivablesDetail.length > 0,
+              context.payablesDetail.length > 0,
+            ),
+          },
           { role: 'user', content: this.buildContextMessage(context, locale) },
           ...history.map((m) => ({ role: m.role, content: m.content })),
         ],
@@ -649,7 +663,15 @@ ${
       body: JSON.stringify({
         model,
         messages: [
-          { role: 'system', content: buildSystemPrompt(locale) },
+          {
+            role: 'system',
+            content: buildSystemPrompt(
+              locale,
+              context.businessMode,
+              context.receivablesDetail.length > 0,
+              context.payablesDetail.length > 0,
+            ),
+          },
           { role: 'user', content: userContent },
         ],
         temperature: 0.2,

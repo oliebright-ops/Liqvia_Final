@@ -1,10 +1,15 @@
 import {
   buildCashBufferItem,
+  buildCashInSettlementAccountsItem,
+  buildDirectDebitPressureItem,
   buildExpectedReceiptItem,
   buildForecastShortfallItem,
+  buildLowOperatingCashItem,
   buildObligationItem,
   buildOverduePayableItem,
   buildOverdueReceivableItem,
+  buildPayrollRiskItem,
+  buildSettlementDelayItem,
   buildStaleBankDataItem,
   rankPulseItems,
 } from './pulse-ranking';
@@ -231,5 +236,75 @@ describe('rankPulseItems', () => {
     const original = [...candidates];
     rankPulseItems(candidates, 5);
     expect(candidates).toEqual(original);
+  });
+});
+
+describe('buildPayrollRiskItem', () => {
+  it('returns null when payroll is comfortable or covered', () => {
+    expect(
+      buildPayrollRiskItem({ status: 'comfortable', bufferAfterPayroll: 5000, nextPayrollDate: ASOF }, 'AUD'),
+    ).toBeNull();
+    expect(
+      buildPayrollRiskItem({ status: 'covered', bufferAfterPayroll: 0, nextPayrollDate: ASOF }, 'AUD'),
+    ).toBeNull();
+    expect(buildPayrollRiskItem({ status: null, bufferAfterPayroll: 0, nextPayrollDate: null }, 'AUD')).toBeNull();
+  });
+
+  it('flags critical when payroll is a shortfall', () => {
+    const item = buildPayrollRiskItem(
+      { status: 'shortfall', bufferAfterPayroll: -4200, nextPayrollDate: ASOF },
+      'AUD',
+    );
+    expect(item?.severity).toBe('critical');
+    expect(item?.category).toBe('payroll_risk');
+    expect(item?.amount).toBe(-4200);
+  });
+});
+
+describe('buildDirectDebitPressureItem', () => {
+  it('returns null when upcoming debits are a small share of operating cash', () => {
+    expect(buildDirectDebitPressureItem(1000, 50000, 'AUD')).toBeNull();
+  });
+
+  it('flags warning when upcoming debits are 30%+ of operating cash', () => {
+    const item = buildDirectDebitPressureItem(20000, 50000, 'AUD');
+    expect(item?.severity).toBe('warning');
+    expect(item?.category).toBe('direct_debit_pressure');
+  });
+});
+
+describe('buildSettlementDelayItem', () => {
+  it('always returns a warning item for a given delayed settlement', () => {
+    const item = buildSettlementDelayItem(
+      { settlementId: 'set-1', source: 'NDIS settlement', amount: 42500, expectedDate: '2026-06-30', status: 'expected' },
+      'AUD',
+    );
+    expect(item.severity).toBe('warning');
+    expect(item.category).toBe('settlement_delay');
+    expect(item.name).toBe('NDIS settlement');
+  });
+});
+
+describe('buildCashInSettlementAccountsItem', () => {
+  it('returns null when clearing funds are a small share of total cash', () => {
+    expect(buildCashInSettlementAccountsItem(5000, 100000, 'AUD')).toBeNull();
+  });
+
+  it('flags info when clearing funds are 20%+ of total cash', () => {
+    const item = buildCashInSettlementAccountsItem(30000, 100000, 'AUD');
+    expect(item?.severity).toBe('info');
+    expect(item?.category).toBe('cash_in_settlement_accounts');
+  });
+});
+
+describe('buildLowOperatingCashItem', () => {
+  it('returns null when operating cash covers near-term obligations', () => {
+    expect(buildLowOperatingCashItem(20000, 5000, 'AUD')).toBeNull();
+  });
+
+  it('flags critical when operating cash is below near-term obligations', () => {
+    const item = buildLowOperatingCashItem(3000, 12000, 'AUD');
+    expect(item?.severity).toBe('critical');
+    expect(item?.category).toBe('low_operating_cash');
   });
 });

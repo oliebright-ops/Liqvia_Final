@@ -1,6 +1,7 @@
 'use client';
 
 import {
+  BUSINESS_MODES,
   CURRENCIES,
   FISCAL_MONTHS,
   FORECAST_HORIZONS,
@@ -67,6 +68,28 @@ export function CompanyStep({
             ))}
           </select>
         </label>
+
+        <div className="space-y-2">
+          <p className={labelClass}>{t('onboarding.businessMode.question')}</p>
+          <div className="space-y-2">
+            {BUSINESS_MODES.map((mode) => (
+              <label
+                key={mode.value}
+                className="flex cursor-pointer items-start gap-3 rounded-lg border border-slate-700 bg-slate-800 px-3 py-2.5 text-sm text-slate-200 has-[:checked]:border-blue-500 has-[:checked]:bg-slate-800/80"
+              >
+                <input
+                  type="radio"
+                  name="businessMode"
+                  value={mode.value}
+                  checked={(value.businessMode ?? 'invoice_driven') === mode.value}
+                  onChange={() => onChange({ ...value, businessMode: mode.value })}
+                  className="mt-1"
+                />
+                <span>{t(`onboarding.businessMode.option_${mode.value}`)}</span>
+              </label>
+            ))}
+          </div>
+        </div>
 
         <div className="grid gap-4 sm:grid-cols-2">
           <label className={labelClass}>

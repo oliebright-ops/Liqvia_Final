@@ -14,6 +14,7 @@ export const companyFormSchema = z.object({
   forecastLookbackWeeks: z.coerce.number().int().min(1).max(4),
   reportingPeriod: z.string().max(16).optional().or(z.literal('')),
   periodGranularity: z.enum(['monthly', 'weekly']),
+  businessMode: z.enum(['invoice_driven', 'cash_driven', 'mixed']),
 });
 
 export const inviteFormSchema = z.object({

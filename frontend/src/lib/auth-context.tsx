@@ -14,7 +14,7 @@ interface AuthContextValue {
   login: (email: string, password: string) => Promise<void>;
   register: (input: { name: string; email: string; password: string }) => Promise<void>;
   selectCompany: (companyId: string) => Promise<void>;
-  enterDemoMode: () => Promise<void>;
+  enterDemoMode: (companyId?: string) => Promise<void>;
   exploreDemo: () => Promise<void>;
   logout: () => void;
   refreshUser: () => Promise<void>;
@@ -105,11 +105,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     [router, applyAuthResponse],
   );
 
-  const enterDemoMode = useCallback(async () => {
-    const res = await apiPost<AuthResponse>('/onboarding/demo-mode', {});
-    await applyAuthResponse(res);
-    router.push('/dashboard');
-  }, [router, applyAuthResponse]);
+  const enterDemoMode = useCallback(
+    async (companyId?: string) => {
+      const res = await apiPost<AuthResponse>('/onboarding/demo-mode', companyId ? { companyId } : {});
+      await applyAuthResponse(res);
+      router.push('/dashboard');
+    },
+    [router, applyAuthResponse],
+  );
 
   const exploreDemo = useCallback(async () => {
     if (user) {

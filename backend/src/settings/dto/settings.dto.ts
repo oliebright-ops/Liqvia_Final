@@ -1,4 +1,4 @@
-import { AccountType, UserRole } from '@prisma/client';
+import { AccountType, BusinessMode, UserRole } from '@prisma/client';
 import {
   DASHBOARD_WIDGET_KEYS,
   FORECAST_HORIZON_MAX,
@@ -23,6 +23,7 @@ export const updateCompanySchema = z
     forecastLookbackWeeks: z.number().int().min(1).max(4).optional(),
     reportingPeriod: z.string().max(16).nullable().optional(),
     periodGranularity: z.enum(['monthly', 'weekly']).optional(),
+    businessMode: z.nativeEnum(BusinessMode).optional(),
   })
   .superRefine((data, ctx) => {
     if (data.reportingPeriod && data.periodGranularity) {

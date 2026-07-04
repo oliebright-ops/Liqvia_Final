@@ -6,14 +6,20 @@ import { TreasuryEngineService } from '../treasury/treasury-engine.service';
 import { FreeCashService } from '../free-cash/free-cash.service';
 import { DataQualityService } from '../data-quality/data-quality.service';
 import { AiService } from '../ai/ai.service';
+import { CashDrivenService } from '../cash-driven/cash-driven.service';
 import {
   BusinessPulseItem,
   buildCashBufferItem,
+  buildCashInSettlementAccountsItem,
+  buildDirectDebitPressureItem,
   buildExpectedReceiptItem,
   buildForecastShortfallItem,
+  buildLowOperatingCashItem,
   buildObligationItem,
   buildOverduePayableItem,
   buildOverdueReceivableItem,
+  buildPayrollRiskItem,
+  buildSettlementDelayItem,
   buildStaleBankDataItem,
   rankPulseItems,
 } from './pulse-ranking';
@@ -44,6 +50,7 @@ export class BusinessPulseService {
     private readonly freeCash: FreeCashService,
     private readonly dataQuality: DataQualityService,
     private readonly aiService: AiService,
+    private readonly cashDriven: CashDrivenService,
   ) {}
 
   async getPulse(
@@ -140,6 +147,11 @@ export class BusinessPulseService {
     );
     if (staleBankDataItem) candidates.push(staleBankDataItem);
 
+    if (company.businessMode === 'cash_driven') {
+      const cashDrivenItems = await this.buildCashDrivenItems(companyId, asOfDate, currency);
+      candidates.push(...cashDrivenItems);
+    }
+
     return {
       asOfDate,
       items: rankPulseItems(candidates, 5),
@@ -147,6 +159,55 @@ export class BusinessPulseService {
       briefingModel: briefing.model,
       briefingSource: briefing.source,
     };
+  }
+
+  private async buildCashDrivenItems(
+    companyId: string,
+    asOfDate: string,
+    currency: string,
+  ): Promise<BusinessPulseItem[]> {
+    const dashboard = await this.cashDriven.getDashboard(companyId);
+    const items: BusinessPulseItem[] = [];
+
+    const payrollRiskItem = buildPayrollRiskItem(dashboard.payrollReadiness, currency);
+    if (payrollRiskItem) items.push(payrollRiskItem);
+
+    const weekEndDate = addDaysIso(asOfDate, 7);
+    const dueThisWeekTotal = dashboard.upcomingObligations
+      .filter((o) => o.nextDueDate >= asOfDate && o.nextDueDate <= weekEndDate)
+      .reduce((sum, o) => sum + o.amount, 0);
+    const operatingCash = dashboard.cashByPurpose.byPurpose.operating ?? 0;
+    const directDebitPressureItem = buildDirectDebitPressureItem(dueThisWeekTotal, operatingCash, currency);
+    if (directDebitPressureItem) items.push(directDebitPressureItem);
+
+    const delayedSettlement = dashboard.settlementTimeline.find(
+      (s) => s.expectedDate < asOfDate && s.status !== 'received',
+    );
+    if (delayedSettlement) {
+      const settlementDelayItem = buildSettlementDelayItem(
+        {
+          settlementId: delayedSettlement.settlementId,
+          source: delayedSettlement.source,
+          amount: delayedSettlement.expectedAmount,
+          expectedDate: delayedSettlement.expectedDate,
+          status: delayedSettlement.status,
+        },
+        currency,
+      );
+      if (settlementDelayItem) items.push(settlementDelayItem);
+    }
+
+    const cashInSettlementAccountsItem = buildCashInSettlementAccountsItem(
+      dashboard.cashByPurpose.restrictedOrClearingFunds,
+      dashboard.cashByPurpose.totalCash,
+      currency,
+    );
+    if (cashInSettlementAccountsItem) items.push(cashInSettlementAccountsItem);
+
+    const lowOperatingCashItem = buildLowOperatingCashItem(operatingCash, dueThisWeekTotal, currency);
+    if (lowOperatingCashItem) items.push(lowOperatingCashItem);
+
+    return items;
   }
 }
 

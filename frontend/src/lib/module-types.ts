@@ -4,6 +4,7 @@ export interface BankAccountView {
   bankName: string;
   accountNumberMasked: string;
   currency: string;
+  accountPurpose: AccountPurpose;
   openingBalance: number;
   currentBalance: number;
   status: 'active' | 'inactive';
@@ -58,6 +59,7 @@ export interface CompanySettings {
   periodGranularity: 'monthly' | 'weekly';
   openingCashBalance: number | null;
   onboardingCompleted: boolean;
+  businessMode: BusinessMode;
 }
 
 export interface TeamMemberView {
@@ -95,13 +97,19 @@ export type ObligationCategory =
   | 'superannuation'
   | 'payg_withholding'
   | 'gst_bas'
+  | 'tax'
   | 'rent'
   | 'loan_repayment'
   | 'insurance'
   | 'subscription'
+  | 'utilities'
+  | 'vehicle'
+  | 'merchant_fees'
   | 'other';
 
 export type ObligationFrequency = 'weekly' | 'fortnightly' | 'monthly' | 'quarterly' | 'annually';
+
+export type ConfidenceLevel = 'high' | 'medium' | 'low';
 
 export interface RecurringObligationView {
   id: string;
@@ -110,6 +118,39 @@ export interface RecurringObligationView {
   amount: number;
   frequency: ObligationFrequency;
   nextDueDate: string;
+  notes: string | null;
+  active: boolean;
+  paymentMethod: string | null;
+  linkedBankAccountId: string | null;
+  confidence: ConfidenceLevel | null;
+}
+
+export type BusinessMode = 'invoice_driven' | 'cash_driven' | 'mixed';
+
+export type AccountPurpose =
+  | 'operating'
+  | 'payroll_reserve'
+  | 'tax_reserve'
+  | 'ndis_settlement'
+  | 'merchant_clearing'
+  | 'amex_settlement'
+  | 'savings'
+  | 'emergency_reserve'
+  | 'loan_offset'
+  | 'project_funds'
+  | 'other';
+
+export type SettlementStatus = 'expected' | 'pending' | 'received' | 'delayed' | 'unknown';
+
+export interface ExpectedSettlementView {
+  id: string;
+  source: string;
+  amount: number;
+  frequency: ObligationFrequency;
+  nextExpectedDate: string;
+  destinationAccountId: string | null;
+  status: SettlementStatus;
+  confidence: ConfidenceLevel | null;
   notes: string | null;
   active: boolean;
 }
@@ -156,7 +197,12 @@ export type BusinessPulseCategory =
   | 'expected_receipt'
   | 'cash_buffer'
   | 'forecast_shortfall'
-  | 'stale_bank_data';
+  | 'stale_bank_data'
+  | 'payroll_risk'
+  | 'direct_debit_pressure'
+  | 'settlement_delay'
+  | 'cash_in_settlement_accounts'
+  | 'low_operating_cash';
 
 export interface BusinessPulseItemView {
   id: string;
@@ -239,4 +285,67 @@ export interface WhyChangedResponseView {
   text: string;
   model: string;
   source: 'openai' | 'rule_based';
+}
+
+export type PayrollReadinessStatus = 'comfortable' | 'covered' | 'shortfall';
+
+export interface PayrollReadinessView {
+  nextPayrollDate: string | null;
+  expectedPayrollAmount: number;
+  availablePayrollCash: number;
+  bufferAfterPayroll: number;
+  status: PayrollReadinessStatus | null;
+}
+
+export interface UpcomingObligationOccurrenceView {
+  obligationId: string;
+  name: string;
+  category: string;
+  amount: number;
+  frequency: string;
+  nextDueDate: string;
+  paymentMethod: string | null;
+  linkedBankAccount: string | null;
+  confidence: ConfidenceLevel | null;
+}
+
+export interface SettlementOccurrenceView {
+  settlementId: string;
+  source: string;
+  expectedAmount: number;
+  expectedDate: string;
+  destinationAccount: string | null;
+  status: SettlementStatus;
+  confidence: ConfidenceLevel | null;
+}
+
+export interface WeeklyCashMovementView {
+  weekIndex: number;
+  weekStartDate: string;
+  openingCash: number;
+  expectedIncoming: number;
+  expectedOutgoing: number;
+  closingCash: number;
+  netMovement: number;
+}
+
+export interface CashByPurposeView {
+  totalCash: number;
+  currency: string;
+  payrollReserve: number;
+  taxReserve: number;
+  emergencyReserve: number;
+  restrictedOrClearingFunds: number;
+  otherReserved: number;
+  knownUpcomingObligations: number;
+  availableToSpend: number;
+  byPurpose: Record<AccountPurpose, number>;
+}
+
+export interface CashDrivenDashboardView {
+  payrollReadiness: PayrollReadinessView;
+  upcomingObligations: UpcomingObligationOccurrenceView[];
+  settlementTimeline: SettlementOccurrenceView[];
+  weeklyCashMovement: WeeklyCashMovementView[];
+  cashByPurpose: CashByPurposeView;
 }

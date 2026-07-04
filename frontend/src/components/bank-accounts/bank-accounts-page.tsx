@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react';
 import { useBankAccounts, useBankTransactions } from '@/hooks/use-bank-accounts';
 import { useTreasurySummary } from '@/hooks/use-treasury-summary';
-import { formatCurrency } from '@liqvia2/shared';
+import { ACCOUNT_PURPOSES, formatCurrency } from '@liqvia2/shared';
 import { useLanguage } from '@/lib/i18n';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -12,12 +12,13 @@ import { FinancialTable } from '@/components/ui/financial-table';
 import { PageHeader } from '@/components/treasury/page-header';
 import { translateBankAccountName } from '@/lib/bank-account-labels';
 import { cn } from '@/lib/utils';
+import type { AccountPurpose } from '@/lib/module-types';
 
 export function BankAccountsPage() {
   const { t, format } = useLanguage();
   const mod = t.modules as Record<string, Record<string, string>>;
   const bank = mod.bankAccounts;
-  const { summary, loading, error } = useBankAccounts();
+  const { summary, loading, error, updatePurpose } = useBankAccounts();
   const { data: treasury } = useTreasurySummary();
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const activeAccountId =
@@ -110,6 +111,39 @@ export function BankAccountsPage() {
               </button>
             ))}
           </div>
+
+          <Card>
+            <CardHeader>
+              <CardTitle>{bank.purposeTitle}</CardTitle>
+              <p className="text-xs text-muted-foreground">{bank.purposeSubtitle}</p>
+            </CardHeader>
+            <CardContent className="space-y-2">
+              {summary.accounts.map((acc) => (
+                <div
+                  key={acc.id}
+                  className="flex items-center justify-between gap-3 rounded-lg border border-border px-3 py-2"
+                >
+                  <div className="min-w-0">
+                    <p className="truncate text-sm font-medium text-foreground">
+                      {translateBankAccountName(acc.accountName, format)}
+                    </p>
+                    <p className="text-xs text-muted-foreground">{acc.bankName}</p>
+                  </div>
+                  <select
+                    value={acc.accountPurpose}
+                    onChange={(e) => void updatePurpose(acc.id, e.target.value as AccountPurpose)}
+                    className="rounded-lg border border-border bg-background px-2 py-1.5 text-xs"
+                  >
+                    {ACCOUNT_PURPOSES.map((purpose) => (
+                      <option key={purpose} value={purpose}>
+                        {bank[`purpose_${purpose}`]}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              ))}
+            </CardContent>
+          </Card>
 
           {selected && (
             <Card>

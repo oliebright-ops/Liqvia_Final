@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { OnboardingPhase, sumBankAccountOpeningBalances } from '@liqvia2/shared';
+import { NDIS_DEMO_COMPANY_ID, OnboardingPhase, sumBankAccountOpeningBalances } from '@liqvia2/shared';
 import { apiGet, apiPost } from '@/lib/api';
 import { AuthResponse, OnboardingContext } from '@/lib/auth-types';
 import { useAuth } from '@/lib/auth-context';
@@ -153,17 +153,20 @@ export function OnboardingWizard() {
     [selectCompany],
   );
 
-  const handleDemoMode = useCallback(async () => {
-    setDemoLoading(true);
-    setError(null);
-    try {
-      await enterDemoMode();
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to enter demo mode');
-    } finally {
-      setDemoLoading(false);
-    }
-  }, [enterDemoMode]);
+  const handleDemoMode = useCallback(
+    async (companyId?: string) => {
+      setDemoLoading(true);
+      setError(null);
+      try {
+        await enterDemoMode(companyId);
+      } catch (err) {
+        setError(err instanceof Error ? err.message : 'Failed to enter demo mode');
+      } finally {
+        setDemoLoading(false);
+      }
+    },
+    [enterDemoMode],
+  );
 
   if (loading || !user) {
     return (
@@ -179,6 +182,7 @@ export function OnboardingWizard() {
         <WelcomeStep
           onSetupCompany={() => goTo('company')}
           onDemoMode={() => void handleDemoMode()}
+          onNdisDemoMode={() => void handleDemoMode(NDIS_DEMO_COMPANY_ID)}
           demoLoading={demoLoading}
         />
       )}

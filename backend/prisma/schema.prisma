@@ -107,10 +107,14 @@ enum ObligationCategory {
   superannuation
   payg_withholding
   gst_bas
+  tax
   rent
   loan_repayment
   insurance
   subscription
+  utilities
+  vehicle
+  merchant_fees
   other
 }
 
@@ -133,67 +137,106 @@ enum NotificationType {
   runway_risk
 }
 
+enum BusinessMode {
+  invoice_driven
+  cash_driven
+  mixed
+}
+
+/// What a bank account is actually used for — lets Cash-Driven Mode tell "your
+/// real spendable cash" apart from payroll/tax reserves and in-transit settlement
+/// funds sitting in merchant/Amex/NDIS-style clearing accounts.
+enum AccountPurpose {
+  operating
+  payroll_reserve
+  tax_reserve
+  ndis_settlement
+  merchant_clearing
+  amex_settlement
+  savings
+  emergency_reserve
+  loan_offset
+  project_funds
+  other
+}
+
+enum ConfidenceLevel {
+  high
+  medium
+  low
+}
+
+enum SettlementStatus {
+  expected
+  pending
+  received
+  delayed
+  unknown
+}
+
 // --- Tenant & auth ---
 
 model Company {
-  id                    String    @id @default(cuid())
+  id                    String            @id @default(cuid())
   name                  String
   industry              String?
-  currency              String    @default("USD")
-  locale                String    @default("en")
-  fiscalYearStart       Int       @default(1)
-  forecastHorizonWeeks  Int       @default(13)
-  forecastLookbackWeeks Int       @default(4)
+  currency              String            @default("USD")
+  locale                String            @default("en")
+  fiscalYearStart       Int               @default(1)
+  forecastHorizonWeeks  Int               @default(13)
+  forecastLookbackWeeks Int               @default(4)
   reportingPeriod       String?
   periodGranularity     PeriodGranularity @default(monthly)
-  openingCashBalance    Decimal?  @db.Decimal(18, 2)
-  onboardingCompleted   Boolean   @default(false)
+  openingCashBalance    Decimal?          @db.Decimal(18, 2)
+  onboardingCompleted   Boolean           @default(false)
   onboardingCompletedAt DateTime?
-  plan                  CompanyPlan @default(free)
-  createdAt             DateTime  @default(now())
-  updatedAt             DateTime  @updatedAt
+  plan                  CompanyPlan       @default(free)
+  businessMode          BusinessMode      @default(invoice_driven)
+  createdAt             DateTime          @default(now())
+  updatedAt             DateTime          @updatedAt
   deletedAt             DateTime?
 
-  users                 UserProfile[]
-  chartOfAccounts       ChartOfAccount[]
-  journalEntries        JournalEntry[]
-  bankAccounts          BankAccount[]
-  cashMovements         CashMovement[]
-  cashForecasts         CashForecast[]
-  budgets               Budget[]
-  weeklyActuals         WeeklyActual[]
-  receivables           Receivable[]
-  payables              Payable[]
-  uploadBatches         UploadBatch[]
-  scenarios             Scenario[]
-  aiLogs                AiLog[]
-  aiInsights            AiInsight[]
-  auditLogs             AuditLog[]
-  alerts                Alert[]
-  userLinks             UserCompanyLink[]
-  recurringObligations  RecurringObligation[]
-  notifications         Notification[]
-  kpiSnapshots          KpiSnapshot[]
+  users                UserProfile[]
+  chartOfAccounts      ChartOfAccount[]
+  journalEntries       JournalEntry[]
+  bankAccounts         BankAccount[]
+  cashMovements        CashMovement[]
+  cashForecasts        CashForecast[]
+  budgets              Budget[]
+  weeklyActuals        WeeklyActual[]
+  receivables          Receivable[]
+  payables             Payable[]
+  uploadBatches        UploadBatch[]
+  scenarios            Scenario[]
+  aiLogs               AiLog[]
+  aiInsights           AiInsight[]
+  auditLogs            AuditLog[]
+  alerts               Alert[]
+  userLinks            UserCompanyLink[]
+  recurringObligations RecurringObligation[]
+  expectedSettlements  ExpectedSettlement[]
+  notifications        Notification[]
+  kpiSnapshots         KpiSnapshot[]
 
   @@index([deletedAt])
 }
 
 model UserProfile {
-  id           String   @id @default(cuid())
-  email        String   @unique
-  passwordHash String
-  name         String
-  companyId    String?
-  isDemoMode   Boolean  @default(false)
-  role         UserRole @default(member)
+  id                   String   @id @default(cuid())
+  email                String   @unique
+  passwordHash         String
+  name                 String
+  companyId            String?
+  isDemoMode           Boolean  @default(false)
+  role                 UserRole @default(member)
   dashboardWidgetPrefs Json?
-  createdAt    DateTime @default(now())
-  updatedAt    DateTime @updatedAt
-  createdBy    String?
-  updatedBy    String?
+  createdAt            DateTime @default(now())
+  updatedAt            DateTime @updatedAt
+  createdBy            String?
+  updatedBy            String?
 
-  company      Company?          @relation(fields: [companyId], references: [id], onDelete: SetNull)
-  companyLinks UserCompanyLink[]
+  company             Company?             @relation(fields: [companyId], references: [id], onDelete: SetNull)
+  companyLinks        UserCompanyLink[]
   passwordResetTokens PasswordResetToken[]
 
   journalEntriesCreated JournalEntry[] @relation("JournalEntryCreatedBy")
@@ -236,16 +279,16 @@ model UserCompanyLink {
 // --- Actuals: accounting ---
 
 model ChartOfAccount {
-  id               String        @id @default(cuid())
-  companyId        String
-  code             String
-  name             String
-  accountType      AccountType
-  externalSource   ExternalSource @default(manual)
-  externalId       String?
-  createdAt        DateTime      @default(now())
-  updatedAt        DateTime      @updatedAt
-  deletedAt        DateTime?
+  id             String         @id @default(cuid())
+  companyId      String
+  code           String
+  name           String
+  accountType    AccountType
+  externalSource ExternalSource @default(manual)
+  externalId     String?
+  createdAt      DateTime       @default(now())
+  updatedAt      DateTime       @updatedAt
+  deletedAt      DateTime?
 
   company      Company       @relation(fields: [companyId], references: [id], onDelete: Cascade)
   journalLines JournalLine[]
@@ -269,8 +312,8 @@ model JournalEntry {
   createdById    String?
   deletedAt      DateTime?
 
-  company   Company      @relation(fields: [companyId], references: [id], onDelete: Cascade)
-  createdBy UserProfile? @relation("JournalEntryCreatedBy", fields: [createdById], references: [id])
+  company   Company       @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  createdBy UserProfile?  @relation("JournalEntryCreatedBy", fields: [createdById], references: [id])
   lines     JournalLine[]
 
   @@index([companyId, period])
@@ -278,12 +321,12 @@ model JournalEntry {
 }
 
 model JournalLine {
-  id              String   @id @default(cuid())
-  journalEntryId  String
+  id               String   @id @default(cuid())
+  journalEntryId   String
   chartOfAccountId String
-  debit           Decimal  @default(0) @db.Decimal(18, 2)
-  credit          Decimal  @default(0) @db.Decimal(18, 2)
-  createdAt       DateTime @default(now())
+  debit            Decimal  @default(0) @db.Decimal(18, 2)
+  credit           Decimal  @default(0) @db.Decimal(18, 2)
+  createdAt        DateTime @default(now())
 
   journalEntry   JournalEntry   @relation(fields: [journalEntryId], references: [id], onDelete: Cascade)
   chartOfAccount ChartOfAccount @relation(fields: [chartOfAccountId], references: [id])
@@ -295,21 +338,25 @@ model JournalLine {
 // --- Actuals: cash & AR/AP ---
 
 model BankAccount {
-  id                 String         @id @default(cuid())
-  companyId          String
-  name               String
+  id                  String         @id @default(cuid())
+  companyId           String
+  name                String
   accountNumberMasked String
-  currency           String
-  externalSource     ExternalSource @default(manual)
-  externalId         String?
-  createdAt          DateTime       @default(now())
-  updatedAt          DateTime       @updatedAt
-  deletedAt          DateTime?
+  currency            String
+  accountPurpose      AccountPurpose @default(operating)
+  externalSource      ExternalSource @default(manual)
+  externalId          String?
+  createdAt           DateTime       @default(now())
+  updatedAt           DateTime       @updatedAt
+  deletedAt           DateTime?
 
-  company       Company        @relation(fields: [companyId], references: [id], onDelete: Cascade)
-  cashMovements CashMovement[]
+  company             Company               @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  cashMovements       CashMovement[]
+  linkedObligations   RecurringObligation[] @relation("ObligationLinkedAccount")
+  expectedSettlements ExpectedSettlement[]  @relation("SettlementDestinationAccount")
 
   @@index([companyId])
+  @@index([companyId, accountPurpose])
 }
 
 model CashMovement {
@@ -331,18 +378,18 @@ model CashMovement {
 }
 
 model Receivable {
-  id                 String   @id @default(cuid())
-  companyId          String
-  customerName       String
-  invoiceNumber      String
-  invoiceDate        DateTime
-  dueDate            DateTime
-  outstandingAmount  Decimal  @db.Decimal(18, 2)
-  currency           String
-  uploadBatchId      String?
-  createdAt          DateTime @default(now())
-  updatedAt          DateTime @updatedAt
-  deletedAt          DateTime?
+  id                String    @id @default(cuid())
+  companyId         String
+  customerName      String
+  invoiceNumber     String
+  invoiceDate       DateTime
+  dueDate           DateTime
+  outstandingAmount Decimal   @db.Decimal(18, 2)
+  currency          String
+  uploadBatchId     String?
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
+  deletedAt         DateTime?
 
   company     Company      @relation(fields: [companyId], references: [id], onDelete: Cascade)
   uploadBatch UploadBatch? @relation(fields: [uploadBatchId], references: [id])
@@ -376,13 +423,13 @@ model Payable {
 // --- Budget (actuals comparison input) ---
 
 model Budget {
-  id        String    @id @default(cuid())
-  companyId String
-  name      String
+  id         String    @id @default(cuid())
+  companyId  String
+  name       String
   fiscalYear Int
-  createdAt DateTime  @default(now())
-  updatedAt DateTime  @updatedAt
-  deletedAt DateTime?
+  createdAt  DateTime  @default(now())
+  updatedAt  DateTime  @updatedAt
+  deletedAt  DateTime?
 
   company Company      @relation(fields: [companyId], references: [id], onDelete: Cascade)
   lines   BudgetLine[]
@@ -466,23 +513,23 @@ model ForecastLine {
 // --- Scenario layer ---
 
 model Scenario {
-  id                      String   @id @default(cuid())
-  companyId               String
-  name                    String
-  revenueDeclinePercent   Decimal  @default(0) @db.Decimal(5, 2)
-  revenueGrowthPercent    Decimal  @default(0) @db.Decimal(5, 2)
-  payrollIncreasePercent  Decimal  @default(0) @db.Decimal(5, 2)
-  receivableDelayDays     Int      @default(0)
-  payableDelayDays        Int      @default(0)
-  expenseGrowthPercent    Decimal  @default(0) @db.Decimal(5, 2)
-  taxIncreasePercent      Decimal  @default(0) @db.Decimal(5, 2)
-  oneOffInflowAmount      Decimal  @default(0) @db.Decimal(18, 2)
-  oneOffInflowWeek        Int      @default(1)
-  oneOffOutflowAmount     Decimal  @default(0) @db.Decimal(18, 2)
-  oneOffOutflowWeek       Int      @default(1)
-  createdAt               DateTime @default(now())
-  updatedAt               DateTime @updatedAt
-  createdById             String?
+  id                     String   @id @default(cuid())
+  companyId              String
+  name                   String
+  revenueDeclinePercent  Decimal  @default(0) @db.Decimal(5, 2)
+  revenueGrowthPercent   Decimal  @default(0) @db.Decimal(5, 2)
+  payrollIncreasePercent Decimal  @default(0) @db.Decimal(5, 2)
+  receivableDelayDays    Int      @default(0)
+  payableDelayDays       Int      @default(0)
+  expenseGrowthPercent   Decimal  @default(0) @db.Decimal(5, 2)
+  taxIncreasePercent     Decimal  @default(0) @db.Decimal(5, 2)
+  oneOffInflowAmount     Decimal  @default(0) @db.Decimal(18, 2)
+  oneOffInflowWeek       Int      @default(1)
+  oneOffOutflowAmount    Decimal  @default(0) @db.Decimal(18, 2)
+  oneOffOutflowWeek      Int      @default(1)
+  createdAt              DateTime @default(now())
+  updatedAt              DateTime @updatedAt
+  createdById            String?
 
   company       Company        @relation(fields: [companyId], references: [id], onDelete: Cascade)
   createdBy     UserProfile?   @relation("ScenarioCreatedBy", fields: [createdById], references: [id])
@@ -493,14 +540,14 @@ model Scenario {
 }
 
 model ScenarioLine {
-  id               String   @id @default(cuid())
+  id               String          @id @default(cuid())
   scenarioId       String
   weekIndex        Int
   weekStart        DateTime
-  openingCash      Decimal  @db.Decimal(18, 2)
-  forecastInflows  Decimal  @db.Decimal(18, 2)
-  forecastOutflows Decimal  @db.Decimal(18, 2)
-  closingCash      Decimal  @db.Decimal(18, 2)
+  openingCash      Decimal         @db.Decimal(18, 2)
+  forecastInflows  Decimal         @db.Decimal(18, 2)
+  forecastOutflows Decimal         @db.Decimal(18, 2)
+  closingCash      Decimal         @db.Decimal(18, 2)
   liquidityStatus  LiquidityStatus
 
   scenario Scenario @relation(fields: [scenarioId], references: [id], onDelete: Cascade)
@@ -522,9 +569,9 @@ model UploadBatch {
   updatedAt    DateTime           @updatedAt
   createdById  String?
 
-  company      Company       @relation(fields: [companyId], references: [id], onDelete: Cascade)
-  createdBy    UserProfile?  @relation("UploadBatchCreatedBy", fields: [createdById], references: [id])
-  errors       UploadError[]
+  company       Company        @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  createdBy     UserProfile?   @relation("UploadBatchCreatedBy", fields: [createdById], references: [id])
+  errors        UploadError[]
   receivables   Receivable[]
   payables      Payable[]
   weeklyActuals WeeklyActual[]
@@ -534,7 +581,7 @@ model UploadBatch {
 }
 
 model UploadError {
-  id            String @id @default(cuid())
+  id            String   @id @default(cuid())
   uploadBatchId String
   rowNumber     Int?
   columnName    String?
@@ -549,14 +596,14 @@ model UploadError {
 // --- Alerts ---
 
 model Alert {
-  id        String        @id @default(cuid())
-  companyId String
-  alertType AlertType
-  severity  AlertSeverity
-  message   String
-  metadata  Json?
-  resolved  Boolean       @default(false)
-  createdAt DateTime      @default(now())
+  id         String        @id @default(cuid())
+  companyId  String
+  alertType  AlertType
+  severity   AlertSeverity
+  message    String
+  metadata   Json?
+  resolved   Boolean       @default(false)
+  createdAt  DateTime      @default(now())
   resolvedAt DateTime?
 
   company Company @relation(fields: [companyId], references: [id], onDelete: Cascade)
@@ -568,39 +615,74 @@ model Alert {
 // --- Recurring obligations ---
 
 model RecurringObligation {
-  id         String              @id @default(cuid())
-  companyId  String
-  name       String
-  category   ObligationCategory
-  amount     Decimal             @db.Decimal(18, 2)
-  frequency  ObligationFrequency
-  nextDueDate DateTime
-  notes      String?
-  active     Boolean             @default(true)
-  createdAt  DateTime            @default(now())
-  updatedAt  DateTime            @updatedAt
-  deletedAt  DateTime?
+  id                  String              @id @default(cuid())
+  companyId           String
+  name                String
+  category            ObligationCategory
+  amount              Decimal             @db.Decimal(18, 2)
+  frequency           ObligationFrequency
+  nextDueDate         DateTime
+  notes               String?
+  active              Boolean             @default(true)
+  /// e.g. "Direct debit", "Bank transfer" — Cash-Driven Mode's Upcoming Obligations
+  /// module surfaces this so an owner knows how the payment actually leaves the business.
+  paymentMethod       String?
+  linkedBankAccountId String?
+  confidence          ConfidenceLevel?
+  createdAt           DateTime            @default(now())
+  updatedAt           DateTime            @updatedAt
+  deletedAt           DateTime?
 
-  company Company @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  company           Company      @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  linkedBankAccount BankAccount? @relation("ObligationLinkedAccount", fields: [linkedBankAccountId], references: [id], onDelete: SetNull)
 
   @@index([companyId, active])
   @@index([companyId, nextDueDate])
 }
 
+// --- Cash-Driven Mode: expected settlements ---
+
+/// Mirror of RecurringObligation for the INCOMING side — government/NDIS payments,
+/// payment-processor and merchant settlements (Amex, Pay.com, Stripe, Square, CBA
+/// merchant, etc.) — for businesses whose cash arrives via settlement rails rather
+/// than customer invoices, so there's nothing to put on an AR ageing report.
+model ExpectedSettlement {
+  id                   String              @id @default(cuid())
+  companyId            String
+  source               String
+  amount               Decimal             @db.Decimal(18, 2)
+  frequency            ObligationFrequency
+  nextExpectedDate     DateTime
+  destinationAccountId String?
+  status               SettlementStatus    @default(expected)
+  confidence           ConfidenceLevel?
+  notes                String?
+  active               Boolean             @default(true)
+  createdAt            DateTime            @default(now())
+  updatedAt            DateTime            @updatedAt
+  deletedAt            DateTime?
+
+  company            Company      @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  destinationAccount BankAccount? @relation("SettlementDestinationAccount", fields: [destinationAccountId], references: [id], onDelete: SetNull)
+
+  @@index([companyId, active])
+  @@index([companyId, nextExpectedDate])
+}
+
 // --- Notifications ---
 
 model Notification {
-  id         String           @id @default(cuid())
-  companyId  String
-  type       NotificationType
-  severity   AlertSeverity
-  title      String
-  message    String
-  metadata   Json?
-  dedupeKey  String
-  read       Boolean          @default(false)
-  readAt     DateTime?
-  createdAt  DateTime         @default(now())
+  id        String           @id @default(cuid())
+  companyId String
+  type      NotificationType
+  severity  AlertSeverity
+  title     String
+  message   String
+  metadata  Json?
+  dedupeKey String
+  read      Boolean          @default(false)
+  readAt    DateTime?
+  createdAt DateTime         @default(now())
 
   company Company @relation(fields: [companyId], references: [id], onDelete: Cascade)
 
@@ -647,12 +729,12 @@ model AiLog {
 }
 
 model AiInsight {
-  id        String   @id @default(cuid())
-  companyId String
+  id          String   @id @default(cuid())
+  companyId   String
   insightType String
-  content   String
-  context   Json?
-  createdAt DateTime @default(now())
+  content     String
+  context     Json?
+  createdAt   DateTime @default(now())
 
   company Company @relation(fields: [companyId], references: [id], onDelete: Cascade)
 

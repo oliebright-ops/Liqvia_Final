@@ -205,5 +205,75 @@ export function describeBusinessPulseItem(
           'Upload or refresh bank transactions before relying on the forecast.',
         ),
       };
+    case 'payroll_risk':
+      return {
+        title: t(format, `${NS}.payrollRiskTitle`, 'Payroll may not be fully covered'),
+        message: t(
+          format,
+          `${NS}.payrollRiskMessage`,
+          'Based on current available cash and expected payroll, the business may not have enough cash set aside for the next payroll run.',
+        ),
+        action: t(
+          format,
+          `${NS}.payrollRiskAction`,
+          'Transfer funds into the payroll account or delay non-essential payments before payroll is due.',
+        ),
+      };
+    case 'direct_debit_pressure':
+      return {
+        title: t(format, `${NS}.directDebitPressureTitle`, 'Upcoming direct debits may reduce cash buffer'),
+        message: t(
+          format,
+          `${NS}.directDebitPressureMessage`,
+          'Several fixed payments are due soon and may reduce available operating cash.',
+        ),
+        action: t(
+          format,
+          `${NS}.directDebitPressureAction`,
+          'Review upcoming direct debits and make sure the linked accounts have enough funds.',
+        ),
+      };
+    case 'settlement_delay':
+      return {
+        title: t(format, `${NS}.settlementDelayTitle`, 'Expected settlement has not arrived'),
+        message: t(
+          format,
+          `${NS}.settlementDelayMessage`,
+          'An expected funding or payment processor settlement has not been matched to recent bank transactions.',
+        ),
+        action: t(
+          format,
+          `${NS}.settlementDelayAction`,
+          'Check the payment platform or government portal and confirm the expected payment date.',
+        ),
+      };
+    case 'cash_in_settlement_accounts':
+      return {
+        title: t(format, `${NS}.cashInSettlementTitle`, 'Cash may be sitting in settlement accounts'),
+        message: t(
+          format,
+          `${NS}.cashInSettlementMessage`,
+          'Some cash appears to be held in merchant, Amex, NDIS, or settlement accounts rather than the main operating account.',
+        ),
+        action: t(
+          format,
+          `${NS}.cashInSettlementAction`,
+          'Consider transferring surplus funds into the operating or payroll account.',
+        ),
+      };
+    case 'low_operating_cash':
+      return {
+        title: t(format, `${NS}.lowOperatingCashTitle`, 'Operating cash is running low'),
+        message: t(
+          format,
+          `${NS}.lowOperatingCashMessage`,
+          'The main operating account may not have enough cash to cover near-term expenses, even though total cash across all accounts may look healthy.',
+        ),
+        action: t(
+          format,
+          `${NS}.lowOperatingCashAction`,
+          'Review balances by account purpose and transfer funds where needed.',
+        ),
+      };
   }
 }

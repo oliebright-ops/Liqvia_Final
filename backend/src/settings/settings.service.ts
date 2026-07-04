@@ -43,6 +43,7 @@ export class SettingsService {
       periodGranularity: company.periodGranularity,
       openingCashBalance: company.openingCashBalance ? Number(company.openingCashBalance) : null,
       onboardingCompleted: company.onboardingCompleted,
+      businessMode: company.businessMode,
     };
   }
 

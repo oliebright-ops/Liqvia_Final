@@ -5,10 +5,12 @@ import { useTranslations } from '@/lib/i18n';
 export function WelcomeStep({
   onSetupCompany,
   onDemoMode,
+  onNdisDemoMode,
   demoLoading,
 }: {
   onSetupCompany: () => void;
   onDemoMode: () => void;
+  onNdisDemoMode?: () => void;
   demoLoading?: boolean;
 }) {
   const t = useTranslations();
@@ -58,6 +60,17 @@ export function WelcomeStep({
           </div>
           <span className="text-amber-400/70">›</span>
         </button>
+
+        {onNdisDemoMode && (
+          <button
+            type="button"
+            onClick={onNdisDemoMode}
+            disabled={demoLoading}
+            className="w-full rounded-xl border border-slate-700/60 bg-slate-800/30 px-5 py-3 text-left text-sm text-slate-400 transition-colors hover:border-amber-500/50 hover:text-amber-200 disabled:opacity-50"
+          >
+            {t('onboarding.welcome.ndisDemoLink')}
+          </button>
+        )}
       </div>
 
       <p className="mt-8 text-xs text-slate-500">{t('onboarding.welcome.noLinks')}</p>

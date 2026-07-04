@@ -7,6 +7,7 @@ import * as bcrypt from 'bcryptjs';
 import { PrismaService } from '../prisma/prisma.service';
 import { UploadImportService } from '../uploads/upload-import.service';
 import { buildDemoPackFiles, DEMO_PACK_PROFILES } from './demo-pack-generator';
+import { isNdisDemoDataReady, seedNdisDemoCompany } from './ndis-demo-seed';
 
 interface DemoCompany {
   id: string;
@@ -116,6 +117,8 @@ export async function seedDemoCompanies(app: INestApplication): Promise<void> {
     }
   }
 
+  await seedNdisDemoCompany(app);
+
   console.log('[demo-seed] Demo seed complete.');
 }
 
@@ -126,7 +129,7 @@ export async function runDemoSeedOnStartup(app: INestApplication): Promise<void>
 
   const prisma = app.get(PrismaService);
   const force = process.env.SEED_DEMO_ON_STARTUP === 'true';
-  const ready = await isDemoDataReady(prisma);
+  const ready = (await isDemoDataReady(prisma)) && (await isNdisDemoDataReady(prisma));
 
   if (!force && ready) {
     return;

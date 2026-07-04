@@ -16,6 +16,7 @@ export function createInitialOnboardingState(): OnboardingWizardState {
       openingCashBalance: 0,
       locale: 'en',
       bankAccounts: [createDefaultBankAccountRow('GBP')],
+      businessMode: 'invoice_driven',
     },
     teamMembers: [],
   };

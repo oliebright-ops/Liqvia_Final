@@ -27,6 +27,24 @@ export const FISCAL_MONTHS = [
 
 export const FORECAST_HORIZONS = [13, 26] as const;
 
+export type BusinessMode = 'invoice_driven' | 'cash_driven' | 'mixed';
+
+export const BUSINESS_MODES: Array<{ value: BusinessMode; label: string }> = [
+  {
+    value: 'invoice_driven',
+    label: 'Invoice-based business — We issue invoices and track receivables/payables.',
+  },
+  {
+    value: 'cash_driven',
+    label:
+      'Cash-driven business — We mainly rely on recurring income, settlements, payroll, and direct debits.',
+  },
+  {
+    value: 'mixed',
+    label: 'Mixed business — We use both invoices and recurring/settlement-based cash flows.',
+  },
+];
+
 export type OnboardingPhase =
   | 'welcome'
   | 'select'
@@ -44,6 +62,33 @@ export const SETUP_STEPS: OnboardingPhase[] = ['company', 'team', 'upload', 'pre
 export const ONBOARDING_STEPS = SETUP_STEPS;
 
 export const DEMO_COMPANY_ID = 'demo-consulting';
+
+export type AccountPurpose =
+  | 'operating'
+  | 'payroll_reserve'
+  | 'tax_reserve'
+  | 'ndis_settlement'
+  | 'merchant_clearing'
+  | 'amex_settlement'
+  | 'savings'
+  | 'emergency_reserve'
+  | 'loan_offset'
+  | 'project_funds'
+  | 'other';
+
+export const ACCOUNT_PURPOSES: AccountPurpose[] = [
+  'operating',
+  'payroll_reserve',
+  'tax_reserve',
+  'ndis_settlement',
+  'merchant_clearing',
+  'amex_settlement',
+  'savings',
+  'emergency_reserve',
+  'loan_offset',
+  'project_funds',
+  'other',
+];
 
 export interface OnboardingBankAccountInput {
   name: string;
@@ -63,6 +108,7 @@ export interface OnboardingCompanyInput {
   openingCashBalance: number;
   locale?: string;
   bankAccounts?: OnboardingBankAccountInput[];
+  businessMode?: BusinessMode;
 }
 
 export function createDefaultBankAccountRow(currency?: string): OnboardingBankAccountInput {

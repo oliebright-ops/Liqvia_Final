@@ -1,4 +1,4 @@
-import { ObligationCategory, ObligationFrequency } from '@prisma/client';
+import { ConfidenceLevel, ObligationCategory, ObligationFrequency } from '@prisma/client';
 import { z } from 'zod';
 
 export const createRecurringObligationSchema = z.object({
@@ -9,6 +9,9 @@ export const createRecurringObligationSchema = z.object({
   nextDueDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'nextDueDate must be YYYY-MM-DD'),
   notes: z.string().max(2000).nullable().optional(),
   active: z.boolean().optional(),
+  paymentMethod: z.string().max(100).nullable().optional(),
+  linkedBankAccountId: z.string().nullable().optional(),
+  confidence: z.nativeEnum(ConfidenceLevel).nullable().optional(),
 });
 
 export type CreateRecurringObligationDto = z.infer<typeof createRecurringObligationSchema>;

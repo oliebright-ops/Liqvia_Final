@@ -12,6 +12,7 @@ import {
 } from '@liqvia2/shared';
 import { PrismaService } from '../prisma/prisma.service';
 import { RecurringObligationsService } from '../recurring-obligations/recurring-obligations.service';
+import { ExpectedSettlementsService } from '../expected-settlements/expected-settlements.service';
 import { AlertRulesService } from './alert-rules.service';
 import { ForecastCalculationService } from './forecast-calculation.service';
 import { LiquidityRiskService } from './liquidity-risk.service';
@@ -60,6 +61,19 @@ export interface LoadedFinancialData {
     invoiceDate: string;
     dueDate: string;
   }>;
+  /**
+   * receivables PLUS synthetic settlement inflows — used only for the cash-flow
+   * forecast projection. Kept separate from `receivables` so AR-ageing KPIs
+   * (overdueReceivables, arDue30Days) and the AI context's receivablesDetail stay
+   * strictly real-invoice data; otherwise a Cash-Driven company's settlement
+   * inflows would get described as "accounts receivable to collect", which is
+   * meaningless when there's no invoiced customer behind the figure.
+   */
+  forecastReceivables: Array<{
+    outstandingAmount: number;
+    invoiceDate: string;
+    dueDate: string;
+  }>;
   payables: Array<{
     id: string;
     counterparty: string;
@@ -86,6 +100,7 @@ export class TreasuryEngineService {
     private readonly kpis: TreasuryKpiService,
     private readonly alerts: AlertRulesService,
     private readonly recurringObligations: RecurringObligationsService,
+    private readonly expectedSettlements: ExpectedSettlementsService,
   ) {}
 
   async generateForCompany(
@@ -238,6 +253,17 @@ export class TreasuryEngineService {
     );
     payables.push(...syntheticPayables);
 
+    // Cash-Driven Mode inflow counterpart — expected settlements (NDIS, merchant,
+    // Amex, etc.) modeled as synthetic receivables so the forecast has inflows even
+    // when there's no real AR ageing data (see asSyntheticReceivables doc comment).
+    // Forecast-only: kept out of `receivables` so AR-ageing KPIs/AI context stay clean.
+    const syntheticReceivables = await this.expectedSettlements.asSyntheticReceivables(
+      companyId,
+      asOfDate,
+      horizonEndDate,
+    );
+    const forecastReceivables = [...receivables, ...syntheticReceivables];
+
     let weeklyActualsRows =
       weeklyActuals.length > 0
         ? weeklyActuals.map((a) => ({
@@ -270,6 +296,7 @@ export class TreasuryEngineService {
       bankAccountIds,
       movements,
       receivables,
+      forecastReceivables,
       payables,
       weeklyActuals: weeklyActualsRows,
       openingCash,
@@ -282,7 +309,7 @@ export class TreasuryEngineService {
       openingCash: rawData.openingCash,
       forecastLookbackWeeks: rawData.company.forecastLookbackWeeks ?? 4,
       weeklyActuals: rawData.weeklyActuals,
-      receivables: rawData.receivables.map((r) => ({
+      receivables: rawData.forecastReceivables.map((r) => ({
         outstandingAmount: r.outstandingAmount,
         invoiceDate: r.invoiceDate,
         dueDate: r.dueDate,

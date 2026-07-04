@@ -24,6 +24,7 @@ import {
   translateUploadTemplateLabel,
 } from '@/lib/upload-template-i18n';
 import { useDashboard } from '@/hooks/use-dashboard';
+import { useCompanySettings } from '@/hooks/use-company-settings';
 import { PageHeader } from '@/components/treasury/page-header';
 import { Alert } from '@/components/ui/alert';
 import { Badge } from '@/components/ui/badge';
@@ -73,6 +74,8 @@ export function UploadCenter() {
   const canUpload = can('uploads:write');
   const canWipe = can('settings:admin');
   const { data: dashboard } = useDashboard();
+  const { settings: companySettings } = useCompanySettings();
+  const isCashDriven = companySettings?.businessMode === 'cash_driven';
   const [templateType, setTemplateType] = useState<UploadTemplateType>('trial_balance');
   const [fileName, setFileName] = useState<string | null>(null);
   const [csvContent, setCsvContent] = useState<string | null>(null);
@@ -372,6 +375,8 @@ export function UploadCenter() {
           {wipeMessage}
         </Alert>
       )}
+
+      {isCashDriven && <Alert variant="success">{t('upload.cashDrivenBanner')}</Alert>}
 
       <UploadTemplatesPanel forceInitialOpen={welcomeFromUrl} />
       <UploadValidationSpecPanel />

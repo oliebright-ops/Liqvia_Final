@@ -11,12 +11,14 @@ import {
 import { useDashboardWidgetPrefs } from '@/hooks/use-dashboard-widget-prefs';
 import { useFreeAvailableCash } from '@/hooks/use-free-available-cash';
 import { useTreasurySummary } from '@/hooks/use-treasury-summary';
+import { useCompanySettings } from '@/hooks/use-company-settings';
 import { useLanguage } from '@/lib/i18n';
 import type { SummaryReport } from '@liqvia2/shared';
 import { Alert } from '@/components/ui/alert';
 import { AiInsightSection } from './ai-insight-section';
 import { AlertSection } from './alert-section';
 import { BusinessPulseCard } from './business-pulse-card';
+import { CashDrivenSection } from './cash-driven-section';
 import { DashboardHeader } from './dashboard-header';
 import { DashboardLoading } from './dashboard-loading';
 import { DataQualityBadge } from './data-quality-badge';
@@ -48,6 +50,8 @@ export function TreasuryDashboard() {
     () => typeof window !== 'undefined' && localStorage.getItem(STATUS_BADGE_DISMISS_KEY) === '1',
   );
   const { prefs } = useDashboardWidgetPrefs();
+  const { settings: companySettings } = useCompanySettings();
+  const isCashDriven = companySettings?.businessMode === 'cash_driven';
   const { data, loading, error, isFetching } = useTreasurySummary(viewHorizonWeeks);
   const horizonWeeks = viewHorizonWeeks ?? data?.liquidity.horizonWeeks ?? DEFAULT_FORECAST_HORIZON;
   const { data: freeCash, isFetching: freeCashFetching } = useFreeAvailableCash(horizonWeeks);
@@ -139,6 +143,8 @@ export function TreasuryDashboard() {
       )}
 
       {prefs.businessPulse && <BusinessPulseCard />}
+
+      {isCashDriven && <CashDrivenSection />}
 
       {prefs.kpiGrid && <KpiGrid cards={view.kpiCards} format={format} />}
 

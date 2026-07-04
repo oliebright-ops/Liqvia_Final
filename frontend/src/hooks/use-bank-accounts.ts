@@ -1,10 +1,10 @@
 'use client';
 
 import { useCallback, useEffect, useState } from 'react';
-import { apiGet } from '@/lib/api';
-import { BankAccountLedgerView, BankAccountsSummary } from '@/lib/module-types';
+import { apiGet, apiPatch } from '@/lib/api';
+import { AccountPurpose, BankAccountLedgerView, BankAccountsSummary } from '@/lib/module-types';
 import { useAuth } from '@/lib/auth-context';
-import { onWorkspaceRefresh } from '@/lib/workspace-refresh';
+import { onWorkspaceRefresh, notifyWorkspaceRefresh } from '@/lib/workspace-refresh';
 
 export function useBankAccounts() {
   const { user } = useAuth();
@@ -33,7 +33,16 @@ export function useBankAccounts() {
 
   useEffect(() => onWorkspaceRefresh(() => void refetch()), [refetch]);
 
-  return { summary, loading, error, refetch };
+  const updatePurpose = useCallback(
+    async (bankAccountId: string, accountPurpose: AccountPurpose) => {
+      await apiPatch(`/bank-accounts/${bankAccountId}`, { accountPurpose });
+      notifyWorkspaceRefresh();
+      await refetch();
+    },
+    [refetch],
+  );
+
+  return { summary, loading, error, refetch, updatePurpose };
 }
 
 export function useBankTransactions(bankAccountId: string | null, asOfDate?: string) {

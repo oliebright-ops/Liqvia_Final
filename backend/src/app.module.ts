@@ -17,6 +17,8 @@ import { BankAccountsModule } from './bank-accounts/bank-accounts.module';
 import { SettingsModule } from './settings/settings.module';
 import { FreeCashModule } from './free-cash/free-cash.module';
 import { RecurringObligationsModule } from './recurring-obligations/recurring-obligations.module';
+import { ExpectedSettlementsModule } from './expected-settlements/expected-settlements.module';
+import { CashDrivenModule } from './cash-driven/cash-driven.module';
 import { DataQualityModule } from './data-quality/data-quality.module';
 import { NotificationsModule } from './notifications/notifications.module';
 import { BusinessPulseModule } from './business-pulse/business-pulse.module';
@@ -49,6 +51,8 @@ import { WhyChangedModule } from './why-changed/why-changed.module';
     SettingsModule,
     FreeCashModule,
     RecurringObligationsModule,
+    ExpectedSettlementsModule,
+    CashDrivenModule,
     DataQualityModule,
     NotificationsModule,
     AiModule,

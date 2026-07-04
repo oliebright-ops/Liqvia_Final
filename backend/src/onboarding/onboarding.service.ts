@@ -7,7 +7,7 @@ import {
 import { UserRole } from '@prisma/client';
 import type { Prisma } from '@prisma/client';
 import * as bcrypt from 'bcryptjs';
-import { DEFAULT_DEMO_COMPANY_ID } from '@liqvia2/shared';
+import { DEFAULT_DEMO_COMPANY_ID, DEMO_COMPANY_IDS } from '@liqvia2/shared';
 import { isDemoGuestEnabled } from '../demo/demo-access';
 import { PrismaService } from '../prisma/prisma.service';
 import { BankAccountsService } from '../bank-accounts/bank-accounts.service';
@@ -77,13 +77,18 @@ export class OnboardingService {
     return this.auth.buildAuthResponse(updated);
   }
 
-  async enableDemoMode(user: AuthUser): Promise<AuthResponse> {
+  async enableDemoMode(user: AuthUser, requestedCompanyId?: string): Promise<AuthResponse> {
     if (!isDemoGuestEnabled()) {
       throw new ForbiddenException('Demo access is currently unavailable');
     }
 
+    const companyId =
+      requestedCompanyId && (DEMO_COMPANY_IDS as readonly string[]).includes(requestedCompanyId)
+        ? requestedCompanyId
+        : DEFAULT_DEMO_COMPANY_ID;
+
     const demo = await this.prisma.company.findUnique({
-      where: { id: DEFAULT_DEMO_COMPANY_ID },
+      where: { id: companyId },
     });
     if (!demo) {
       throw new NotFoundException('Demo company not found. Run prisma:seed:demo first.');
@@ -93,7 +98,7 @@ export class OnboardingService {
       where: { id: user.id },
       data: {
         isDemoMode: true,
-        companyId: DEFAULT_DEMO_COMPANY_ID,
+        companyId,
         role: UserRole.viewer,
       },
       include: { company: true },
@@ -136,6 +141,7 @@ export class OnboardingService {
           forecastHorizonWeeks: dto.company.forecastHorizonWeeks,
           openingCashBalance,
           onboardingCompleted: false,
+          businessMode: dto.company.businessMode ?? 'invoice_driven',
         },
       });
 
@@ -343,7 +349,10 @@ export class OnboardingService {
         currentBalance: account.currentBalance,
       })),
       completedTemplateCount: completedTemplates.size,
-      recommendedTemplates: ['trial_balance', 'bank_balances', 'ar_ageing', 'ap_ageing', 'budget'],
+      recommendedTemplates:
+        company.businessMode === 'cash_driven'
+          ? ['bank_balances', 'bank_transactions']
+          : ['trial_balance', 'bank_balances', 'ar_ageing', 'ap_ageing', 'budget'],
     };
   }
 

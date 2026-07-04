@@ -4,7 +4,7 @@ import { useCallback, useEffect, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { CURRENCIES, createDefaultBankAccountRow, OnboardingBankAccountInput, sumBankAccountOpeningBalances } from '@liqvia2/shared';
+import { BUSINESS_MODES, CURRENCIES, createDefaultBankAccountRow, OnboardingBankAccountInput, sumBankAccountOpeningBalances } from '@liqvia2/shared';
 import { apiDelete, apiGet, apiPatch, apiPost } from '@/lib/api';
 import { notifyWorkspaceRefresh } from '@/lib/workspace-refresh';
 import { useAuth } from '@/lib/auth-context';
@@ -387,6 +387,7 @@ function CompanyTab() {
           forecastLookbackWeeks: c.forecastLookbackWeeks ?? 4,
           reportingPeriod: c.reportingPeriod ?? '',
           periodGranularity: c.periodGranularity ?? 'monthly',
+          businessMode: c.businessMode ?? 'invoice_driven',
         }),
       )
       .finally(() => setLoading(false));
@@ -484,6 +485,16 @@ function CompanyTab() {
               disabled={!isAdmin}
             />
             <p className="mt-1 text-xs text-muted-foreground">{set.field_reportingPeriodHint}</p>
+          </div>
+          <div className="sm:col-span-2">
+            <label className="text-xs text-muted-foreground">{set.field_businessMode}</label>
+            <select {...form.register('businessMode')} className={fieldClass()} disabled={!isAdmin}>
+              {BUSINESS_MODES.map((mode) => (
+                <option key={mode.value} value={mode.value}>
+                  {format(`onboarding.businessMode.option_${mode.value}`)}
+                </option>
+              ))}
+            </select>
           </div>
           {isAdmin && (
             <div className="sm:col-span-2">

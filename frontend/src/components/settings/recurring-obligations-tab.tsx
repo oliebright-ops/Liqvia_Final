@@ -21,9 +21,13 @@ const CATEGORIES: ObligationCategory[] = [
   'superannuation',
   'payg_withholding',
   'gst_bas',
+  'tax',
   'rent',
   'loan_repayment',
   'insurance',
+  'utilities',
+  'vehicle',
+  'merchant_fees',
   'subscription',
   'other',
 ];

@@ -40,7 +40,8 @@ export interface TreasuryAiContext {
     direction: string;
   }>;
   alerts: Array<{ type: string; severity: string; message: string }>;
-  bankAccounts: Array<{ name: string; currency: string; balance: number }>;
+  businessMode?: string;
+  bankAccounts: Array<{ name: string; currency: string; balance: number; accountPurpose?: string }>;
   cashTransactions: TreasuryAiTransaction[];
   recentOutflows: TreasuryAiTransaction[];
   recentInflows: TreasuryAiTransaction[];
@@ -91,6 +92,42 @@ export interface TreasuryAiContext {
     amount: number;
     frequency: string;
     dueDate: string;
+    paymentMethod?: string | null;
+    linkedBankAccount?: string | null;
+    confidence?: string | null;
+  }>;
+  /** Cash-Driven Mode only — populated when businessMode is cash_driven or mixed. */
+  payrollReadiness?: {
+    nextPayrollDate: string | null;
+    expectedPayrollAmount: number;
+    availablePayrollCash: number;
+    bufferAfterPayroll: number;
+    status: string | null;
+  };
+  settlementTimeline?: Array<{
+    source: string;
+    expectedAmount: number;
+    expectedDate: string;
+    destinationAccount: string | null;
+    status: string;
+    confidence?: string | null;
+  }>;
+  cashByPurpose?: {
+    totalCash: number;
+    payrollReserve: number;
+    taxReserve: number;
+    emergencyReserve: number;
+    restrictedOrClearingFunds: number;
+    knownUpcomingObligations: number;
+    availableToSpend: number;
+  };
+  weeklyCashMovement?: Array<{
+    weekStartDate: string;
+    openingCash: number;
+    expectedIncoming: number;
+    expectedOutgoing: number;
+    closingCash: number;
+    netMovement: number;
   }>;
   dataQuality?: {
     score: number;
@@ -634,11 +671,55 @@ Rules:
 10. recurringObligations are fixed/recurring commitments (payroll, super, PAYG, GST/BAS, rent, loan repayments, insurance, subscriptions) — distinct from payablesDetail, which is real uploaded AP bills. For payroll/rent/tax outlook questions, prefer recurringObligations when payablesDetail lacks a matching entry, and never sum the two together for the same obligation.
 11. If dataQuality.score is below 70 or dataQuality.warnings is non-empty, briefly caveat that the answer's confidence is limited by the listed stale/missing data before giving the figure.`;
 
-export function buildSystemPrompt(locale?: string): string {
+/** Phase 6 cash-driven instruction — verbatim per spec, must not be paraphrased. */
+export const CASH_DRIVEN_SYSTEM_INSTRUCTION = `The company is using Cash-Driven Mode. Do not assume the business has AR/AP ageing reports. Do not over-focus on receivables or payables unless such data exists.
+
+Focus your advice on:
+- payroll readiness
+- recurring expenses
+- direct debit timing
+- expected settlements
+- total cash versus available operating cash
+- cash trapped in settlement or reserve accounts
+- upcoming fixed obligations
+- forecast cash shortfalls
+- account transfers between bank accounts
+
+Explain advice in simple language suitable for a business owner.`;
+
+/**
+ * Reinforces CASH_DRIVEN_SYSTEM_INSTRUCTION with a data-driven note when the company
+ * genuinely has zero AR/AP records — models sometimes suggest "collect receivables"
+ * out of habit even when told not to over-focus on AR/AP; naming the concrete absence
+ * of data is a stronger deterrent than the general instruction alone.
+ */
+export function buildCashDrivenBlock(
+  businessMode?: string,
+  hasReceivables = true,
+  hasPayables = true,
+): string {
+  if (businessMode !== 'cash_driven') return '';
+  const notes: string[] = [];
+  if (!hasReceivables) {
+    notes.push('This company currently has no accounts-receivable data — do not mention collecting, chasing, or accelerating receivables or invoices.');
+  }
+  if (!hasPayables) {
+    notes.push('This company currently has no accounts-payable data — do not mention overdue supplier bills or AP ageing.');
+  }
+  const dataNote = notes.length > 0 ? `\n\n${notes.join(' ')}` : '';
+  return `\n\n${CASH_DRIVEN_SYSTEM_INSTRUCTION}${dataNote}`;
+}
+
+export function buildSystemPrompt(
+  locale?: string,
+  businessMode?: string,
+  hasReceivables = true,
+  hasPayables = true,
+): string {
   const localeLine = locale
     ? `\n10. Respond in ${locale === 'ru' ? 'Russian' : locale === 'es' ? 'Spanish' : locale === 'fr' ? 'French' : 'English'}.`
     : '';
-  return AI_CFO_SYSTEM_PROMPT + localeLine;
+  return AI_CFO_SYSTEM_PROMPT + localeLine + buildCashDrivenBlock(businessMode, hasReceivables, hasPayables);
 }
 
 /** Business Pulse: a 30-second, plain-English daily briefing — distinct from the

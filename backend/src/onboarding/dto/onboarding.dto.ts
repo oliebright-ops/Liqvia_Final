@@ -35,6 +35,9 @@ export class OnboardingCompanyDto {
     },
   })
   bankAccounts?: OnboardingBankAccountDto[];
+
+  @ApiPropertyOptional({ enum: ['invoice_driven', 'cash_driven', 'mixed'], example: 'invoice_driven' })
+  businessMode?: 'invoice_driven' | 'cash_driven' | 'mixed';
 }
 
 export class OnboardingBankAccountDto {
@@ -71,6 +74,11 @@ export class OnboardingCreateCompanyDto {
 
   @ApiPropertyOptional({ type: [OnboardingTeamMemberDto] })
   teamMembers?: OnboardingTeamMemberDto[];
+}
+
+export class DemoModeDto {
+  @ApiPropertyOptional({ example: 'demo-ndis-care', description: 'Which demo company to enter' })
+  companyId?: string;
 }
 
 export class SelectCompanyDto {

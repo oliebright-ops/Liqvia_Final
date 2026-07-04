@@ -4,7 +4,7 @@ import { Throttle } from '@nestjs/throttler';
 import { CurrentUser } from '../auth/current-user.decorator';
 import { SkipCompanyAccess } from '../auth/decorators';
 import { AuthUser } from '../auth/auth.types';
-import { AddEntityDto, OnboardingCreateCompanyDto, SelectCompanyDto } from './dto/onboarding.dto';
+import { AddEntityDto, DemoModeDto, OnboardingCreateCompanyDto, SelectCompanyDto } from './dto/onboarding.dto';
 import { OnboardingService } from './onboarding.service';
 
 @ApiTags('Onboarding')
@@ -32,8 +32,8 @@ export class OnboardingController {
   // more than a couple of times per minute while exploring the product. See F19/F20.
   @Throttle({ demo: { limit: 8, ttl: 60_000 } })
   @ApiOperation({ summary: 'Enter demo mode with pre-populated sample data' })
-  demoMode(@CurrentUser() user: AuthUser) {
-    return this.onboarding.enableDemoMode(user);
+  demoMode(@CurrentUser() user: AuthUser, @Body() body: DemoModeDto) {
+    return this.onboarding.enableDemoMode(user, body?.companyId);
   }
 
   @Post('create-company')

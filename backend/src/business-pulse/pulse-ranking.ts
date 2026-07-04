@@ -10,7 +10,12 @@ export type PulseCategory =
   | 'expected_receipt'
   | 'cash_buffer'
   | 'forecast_shortfall'
-  | 'stale_bank_data';
+  | 'stale_bank_data'
+  | 'payroll_risk'
+  | 'direct_debit_pressure'
+  | 'settlement_delay'
+  | 'cash_in_settlement_accounts'
+  | 'low_operating_cash';
 
 /**
  * Structured data only — no pre-baked English sentences. Business Pulse is shown in
@@ -47,10 +52,14 @@ const CATEGORY_WEIGHT: Record<ObligationCategory, number> = {
   payg_withholding: 90,
   superannuation: 88,
   gst_bas: 85,
+  tax: 85,
   loan_repayment: 70,
   rent: 65,
   insurance: 40,
+  utilities: 35,
+  merchant_fees: 30,
   subscription: 20,
+  vehicle: 25,
   other: 30,
 };
 
@@ -251,6 +260,107 @@ export function buildStaleBankDataItem(
     amount: 0,
     currency,
     daysSinceUpdate,
+  };
+}
+
+/** Cash-Driven Mode only — payroll obligation exceeds cash actually available to pay it. */
+export function buildPayrollRiskItem(
+  payrollReadiness: { status: string | null; bufferAfterPayroll: number; nextPayrollDate: string | null },
+  currency: string,
+): BusinessPulseItem | null {
+  if (payrollReadiness.status !== 'shortfall') return null;
+  return {
+    id: 'payroll_risk',
+    severity: 'critical',
+    category: 'payroll_risk',
+    linkPath: '/settings?tab=bank-accounts',
+    score: 130,
+    name: '',
+    amount: payrollReadiness.bufferAfterPayroll,
+    currency,
+    dueDate: payrollReadiness.nextPayrollDate ?? undefined,
+  };
+}
+
+/** Cash-Driven Mode only — obligations due within the next 7 days materially eat into operating cash. */
+export function buildDirectDebitPressureItem(
+  dueThisWeekTotal: number,
+  operatingCash: number,
+  currency: string,
+): BusinessPulseItem | null {
+  if (dueThisWeekTotal <= 0 || operatingCash <= 0) return null;
+  if (dueThisWeekTotal < operatingCash * 0.3) return null;
+  return {
+    id: 'direct_debit_pressure',
+    severity: 'warning',
+    category: 'direct_debit_pressure',
+    linkPath: '/settings?tab=obligations',
+    score: 75,
+    name: '',
+    amount: dueThisWeekTotal,
+    currency,
+  };
+}
+
+/** Cash-Driven Mode only — an expected settlement is past its expected date and not yet received. */
+export function buildSettlementDelayItem(
+  settlement: { settlementId: string; source: string; amount: number; expectedDate: string; status: string },
+  currency: string,
+): BusinessPulseItem {
+  return {
+    id: `settlement_delay:${settlement.settlementId}`,
+    severity: 'warning',
+    category: 'settlement_delay',
+    linkPath: '/settings?tab=settlements',
+    score: 70,
+    name: settlement.source,
+    amount: settlement.amount,
+    currency,
+    dueDate: settlement.expectedDate,
+  };
+}
+
+/** Cash-Driven Mode only — a meaningful share of total cash is sitting in clearing/merchant accounts, not spendable. */
+export function buildCashInSettlementAccountsItem(
+  clearingFundsTotal: number,
+  totalCash: number,
+  currency: string,
+): BusinessPulseItem | null {
+  if (totalCash <= 0 || clearingFundsTotal <= 0) return null;
+  if (clearingFundsTotal < totalCash * 0.2) return null;
+  return {
+    id: 'cash_in_settlement_accounts',
+    severity: 'info',
+    category: 'cash_in_settlement_accounts',
+    linkPath: '/settings?tab=bank-accounts',
+    score: 25,
+    name: '',
+    amount: clearingFundsTotal,
+    currency,
+  };
+}
+
+/**
+ * Cash-Driven Mode only — the operating account specifically can't cover near-term
+ * obligations even though total cash across all accounts (reserves, clearing, etc.)
+ * looks healthy. Distinct from cash_buffer, which looks at total free cash.
+ */
+export function buildLowOperatingCashItem(
+  operatingCash: number,
+  nearTermObligationsTotal: number,
+  currency: string,
+): BusinessPulseItem | null {
+  if (nearTermObligationsTotal <= 0) return null;
+  if (operatingCash >= nearTermObligationsTotal) return null;
+  return {
+    id: 'low_operating_cash',
+    severity: 'critical',
+    category: 'low_operating_cash',
+    linkPath: '/settings?tab=bank-accounts',
+    score: 100,
+    name: '',
+    amount: operatingCash,
+    currency,
   };
 }
 

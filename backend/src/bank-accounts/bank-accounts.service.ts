@@ -1,4 +1,5 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
+import { AccountPurpose } from '@prisma/client';
 import {
   computeAccountLedger,
   matchBankMovements,
@@ -12,6 +13,7 @@ export interface BankAccountView {
   bankName: string;
   accountNumberMasked: string;
   currency: string;
+  accountPurpose: AccountPurpose;
   openingBalance: number;
   currentBalance: number;
   status: 'active' | 'inactive';
@@ -162,8 +164,26 @@ export class BankAccountsService {
     };
   }
 
+  async updateAccountPurpose(companyId: string, bankAccountId: string, accountPurpose: AccountPurpose) {
+    const account = await this.prisma.bankAccount.findFirst({
+      where: { id: bankAccountId, companyId, deletedAt: null },
+    });
+    if (!account) throw new NotFoundException('Bank account not found');
+
+    return this.prisma.bankAccount.update({
+      where: { id: bankAccountId },
+      data: { accountPurpose },
+    });
+  }
+
   private toAccountView(
-    acc: { id: string; name: string; accountNumberMasked: string; currency: string },
+    acc: {
+      id: string;
+      name: string;
+      accountNumberMasked: string;
+      currency: string;
+      accountPurpose: AccountPurpose;
+    },
     movements: MovementRow[],
     asOfDate: string,
   ): BankAccountView {
@@ -177,6 +197,7 @@ export class BankAccountsService {
       bankName,
       accountNumberMasked: acc.accountNumberMasked,
       currency: acc.currency,
+      accountPurpose: acc.accountPurpose,
       openingBalance: ledger.openingBalance,
       currentBalance: ledger.closingBalance,
       status: 'active',

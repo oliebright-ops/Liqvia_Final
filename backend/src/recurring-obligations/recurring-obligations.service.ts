@@ -14,9 +14,13 @@ const CATEGORY_TO_PRIORITY: Record<ObligationCategory, ApPaymentPriority> = {
   superannuation: 'tax',
   payg_withholding: 'tax',
   gst_bas: 'tax',
+  tax: 'tax',
   rent: 'critical',
   loan_repayment: 'critical',
   insurance: 'flexible',
+  utilities: 'critical',
+  vehicle: 'flexible',
+  merchant_fees: 'non_essential',
   subscription: 'non_essential',
   other: 'flexible',
 };
@@ -56,6 +60,9 @@ export class RecurringObligationsService {
         nextDueDate: new Date(`${dto.nextDueDate}T00:00:00.000Z`),
         notes: dto.notes ?? null,
         active: dto.active ?? true,
+        paymentMethod: dto.paymentMethod ?? null,
+        linkedBankAccountId: dto.linkedBankAccountId ?? null,
+        confidence: dto.confidence ?? null,
       },
     });
   }
@@ -82,6 +89,9 @@ export class RecurringObligationsService {
         }),
         ...(dto.notes !== undefined && { notes: dto.notes }),
         ...(dto.active !== undefined && { active: dto.active }),
+        ...(dto.paymentMethod !== undefined && { paymentMethod: dto.paymentMethod }),
+        ...(dto.linkedBankAccountId !== undefined && { linkedBankAccountId: dto.linkedBankAccountId }),
+        ...(dto.confidence !== undefined && { confidence: dto.confidence }),
       },
     });
   }
