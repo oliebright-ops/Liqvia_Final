@@ -11,10 +11,17 @@ import {
   WeeklyForecastLine,
 } from '@liqvia2/shared';
 import { PrismaService } from '../prisma/prisma.service';
+import { RecurringObligationsService } from '../recurring-obligations/recurring-obligations.service';
 import { AlertRulesService } from './alert-rules.service';
 import { ForecastCalculationService } from './forecast-calculation.service';
 import { LiquidityRiskService } from './liquidity-risk.service';
 import { TreasuryKpiService } from './treasury-kpi.service';
+
+function addWeeksIso(dateStr: string, weeks: number): string {
+  const d = new Date(`${dateStr}T00:00:00.000Z`);
+  d.setUTCDate(d.getUTCDate() + weeks * 7);
+  return d.toISOString().slice(0, 10);
+}
 
 export interface TreasuryEngineResult {
   companyId: string;
@@ -78,6 +85,7 @@ export class TreasuryEngineService {
     private readonly liquidity: LiquidityRiskService,
     private readonly kpis: TreasuryKpiService,
     private readonly alerts: AlertRulesService,
+    private readonly recurringObligations: RecurringObligationsService,
   ) {}
 
   async generateForCompany(
@@ -218,6 +226,17 @@ export class TreasuryEngineService {
       dueDate: p.dueDate.toISOString().slice(0, 10),
       supplierPriority: p.supplierPriority,
     }));
+
+    // Recurring obligations (payroll, rent, GST/BAS, loan repayments, etc.) are projected
+    // fresh per request and merged in as synthetic payable-like rows — never persisted as
+    // real Payable records, so AP ageing screens only ever show actual uploaded bills.
+    const horizonEndDate = addWeeksIso(asOfDate, company.forecastHorizonWeeks ?? 13);
+    const syntheticPayables = await this.recurringObligations.asSyntheticPayables(
+      companyId,
+      asOfDate,
+      horizonEndDate,
+    );
+    payables.push(...syntheticPayables);
 
     let weeklyActualsRows =
       weeklyActuals.length > 0

@@ -11,6 +11,7 @@ export function useAiChat() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [lastSource, setLastSource] = useState<AiChatResponse['source'] | null>(null);
+  const [lastModel, setLastModel] = useState<string | null>(null);
 
   const send = useCallback(
     async (content: string, options?: { locale?: string; intent?: string }) => {
@@ -28,6 +29,7 @@ export function useAiChat() {
         });
         setMessages(res.messages.slice(-MAX_MESSAGES));
         setLastSource(res.source);
+        setLastModel(res.model);
         return res;
       } catch (e) {
         setError(e instanceof Error ? e.message : 'Failed to send');
@@ -43,7 +45,8 @@ export function useAiChat() {
   const clear = useCallback(() => {
     setMessages([]);
     setLastSource(null);
+    setLastModel(null);
   }, []);
 
-  return { messages, loading, error, send, clear, lastSource };
+  return { messages, loading, error, send, clear, lastSource, lastModel };
 }
