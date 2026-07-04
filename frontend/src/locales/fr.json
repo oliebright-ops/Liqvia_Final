@@ -819,6 +819,17 @@
       "checking": "Vérification…",
       "customPlaceholder": "Posez une question précise sur votre entreprise…",
       "error": "Impossible d'obtenir une réponse — veuillez réessayer."
+    },
+    "confidenceLayer": {
+      "title": "Qualité de la prévision",
+      "rating_high": "Confiance élevée",
+      "rating_medium": "Confiance moyenne",
+      "rating_low": "Confiance faible",
+      "showDetails": "Voir les détails",
+      "hideDetails": "Masquer les détails",
+      "strengthsLabel": "Points forts",
+      "weaknessesLabel": "Points faibles",
+      "uploadDataCta": "Importer des données"
     }
   },
   "onboarding": {

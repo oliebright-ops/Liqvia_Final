@@ -191,3 +191,19 @@ export interface DecisionCentreResponseView {
   model: string;
   source: 'openai' | 'rule_based';
 }
+
+export type ConfidenceRating = 'high' | 'medium' | 'low';
+
+export interface ConfidenceWeaknessView {
+  problem: string;
+  businessImpact: string;
+  fix: string;
+}
+
+export interface ConfidenceReportView {
+  score: number;
+  rating: ConfidenceRating;
+  strengths: string[];
+  weaknesses: ConfidenceWeaknessView[];
+  recommendedNextAction: string;
+}

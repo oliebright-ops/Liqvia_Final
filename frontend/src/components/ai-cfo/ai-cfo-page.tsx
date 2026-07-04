@@ -10,6 +10,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { PageHeader } from '@/components/treasury/page-header';
 import { DataQualityBadge } from '@/components/dashboard/data-quality-badge';
+import { ForecastQualityCard } from '@/components/dashboard/forecast-quality-card';
 import { DecisionCentreCard } from './decision-centre-card';
 import { MarkdownReply } from './markdown-reply';
 
@@ -49,6 +50,8 @@ export function AiCfoPage() {
       <PageHeader title={ai.pageTitle ?? ai.title} subtitle={ai.pageSubtitle ?? ai.subtitle} />
 
       <DataQualityBadge />
+
+      <ForecastQualityCard />
 
       {ai.disclosureBanner && (
         <Alert variant="info" className="flex items-start gap-2">

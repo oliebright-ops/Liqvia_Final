@@ -1,6 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { DEFAULT_DEMO_COMPANY_ID } from '@liqvia2/shared';
 import { PrismaService } from '../prisma/prisma.service';
+import { buildConfidenceReport, ConfidenceReport } from './confidence-checklist';
 
 export type ModuleStatus = 'missing' | 'stale' | 'fresh';
 
@@ -126,5 +127,39 @@ export class DataQualityService {
       });
 
     return { score, modules, warnings };
+  }
+
+  /** Phase 3 "Confidence Layer" — an explainable checklist built on top of getReport(),
+   * plus signals getReport() doesn't cover (bank connectivity, history depth, whether
+   * payroll/tax is modeled, budget presence). Every weakness carries its own fix. */
+  async getConfidenceReport(companyId: string = DEFAULT_DEMO_COMPANY_ID): Promise<ConfidenceReport> {
+    const asOf = new Date();
+
+    const [dataQuality, bankAccountCount, earliestMovement, obligations, budgetCount] = await Promise.all([
+      this.getReport(companyId),
+      this.prisma.bankAccount.count({ where: { companyId, deletedAt: null } }),
+      this.prisma.cashMovement.findFirst({
+        where: { companyId },
+        orderBy: { movementDate: 'asc' },
+        select: { movementDate: true },
+      }),
+      this.prisma.recurringObligation.findMany({
+        where: { companyId, deletedAt: null, active: true },
+        select: { category: true },
+      }),
+      this.prisma.budget.count({ where: { companyId, deletedAt: null } }),
+    ]);
+
+    const historyWeeks = earliestMovement
+      ? Math.max(0, Math.floor((asOf.getTime() - earliestMovement.movementDate.getTime()) / (1000 * 60 * 60 * 24 * 7)))
+      : 0;
+
+    return buildConfidenceReport({
+      dataQuality,
+      bankAccountCount,
+      historyWeeks,
+      obligationCategories: obligations.map((o) => o.category),
+      hasBudget: budgetCount > 0,
+    });
   }
 }

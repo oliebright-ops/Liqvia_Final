@@ -19,6 +19,7 @@ import { BusinessPulseCard } from './business-pulse-card';
 import { DashboardHeader } from './dashboard-header';
 import { DashboardLoading } from './dashboard-loading';
 import { DataQualityBadge } from './data-quality-badge';
+import { ForecastQualityCard } from './forecast-quality-card';
 import { ForecastSection } from './forecast-section';
 import { KpiGrid } from './kpi-grid';
 import { RecentTransactions } from './recent-transactions';
@@ -139,6 +140,8 @@ export function TreasuryDashboard() {
       <KpiGrid cards={view.kpiCards} format={format} />
 
       <DataQualityBadge />
+
+      <ForecastQualityCard />
 
       <div className="grid gap-6 lg:grid-cols-3">
         <ForecastSection

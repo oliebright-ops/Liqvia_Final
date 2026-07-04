@@ -819,6 +819,17 @@
       "checking": "Consultando…",
       "customPlaceholder": "Haga una pregunta de negocio específica…",
       "error": "No se pudo obtener una respuesta — inténtelo de nuevo."
+    },
+    "confidenceLayer": {
+      "title": "Calidad de la previsión",
+      "rating_high": "Confianza alta",
+      "rating_medium": "Confianza media",
+      "rating_low": "Confianza baja",
+      "showDetails": "Ver detalles",
+      "hideDetails": "Ocultar detalles",
+      "strengthsLabel": "Puntos fuertes",
+      "weaknessesLabel": "Puntos débiles",
+      "uploadDataCta": "Cargar datos"
     }
   },
   "onboarding": {

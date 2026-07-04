@@ -893,6 +893,17 @@
       "checking": "Checking…",
       "customPlaceholder": "Ask a specific business question…",
       "error": "Couldn't get an answer — please try again."
+    },
+    "confidenceLayer": {
+      "title": "Forecast Quality",
+      "rating_high": "High confidence",
+      "rating_medium": "Medium confidence",
+      "rating_low": "Low confidence",
+      "showDetails": "Show details",
+      "hideDetails": "Hide details",
+      "strengthsLabel": "Strengths",
+      "weaknessesLabel": "Weaknesses",
+      "uploadDataCta": "Upload data"
     }
   },
   "onboarding": {

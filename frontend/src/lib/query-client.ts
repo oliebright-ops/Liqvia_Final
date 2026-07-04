@@ -23,3 +23,6 @@ export const notificationsKey = (companyId: string | null) =>
 
 export const businessPulseKey = (companyId: string | null) =>
   ['business-pulse', companyId] as const;
+
+export const confidenceReportKey = (companyId: string | null) =>
+  ['confidence-report', companyId] as const;

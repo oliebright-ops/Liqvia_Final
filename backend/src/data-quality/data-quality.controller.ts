@@ -18,4 +18,11 @@ export class DataQualityController {
   get(@CurrentUser() user: AuthUser) {
     return this.dataQuality.getReport(user.companyId!);
   }
+
+  @Get('confidence')
+  @Permissions('treasury:read')
+  @ApiOperation({ summary: 'Explainable forecast confidence checklist (strengths/weaknesses/fixes)' })
+  getConfidence(@CurrentUser() user: AuthUser) {
+    return this.dataQuality.getConfidenceReport(user.companyId!);
+  }
 }

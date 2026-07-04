@@ -893,6 +893,17 @@
       "checking": "Проверка…",
       "customPlaceholder": "Задайте конкретный вопрос о бизнесе…",
       "error": "Не удалось получить ответ — попробуйте снова."
+    },
+    "confidenceLayer": {
+      "title": "Качество прогноза",
+      "rating_high": "Высокая уверенность",
+      "rating_medium": "Средняя уверенность",
+      "rating_low": "Низкая уверенность",
+      "showDetails": "Показать детали",
+      "hideDetails": "Скрыть детали",
+      "strengthsLabel": "Сильные стороны",
+      "weaknessesLabel": "Слабые стороны",
+      "uploadDataCta": "Загрузить данные"
     }
   },
   "onboarding": {
