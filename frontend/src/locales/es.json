@@ -4,7 +4,7 @@
     "tagline": "Flujo de caja y tesorería con IA",
     "description": "Previsión de caja a 13 semanas, inteligencia de liquidez e información ejecutiva para pymes.",
     "feature": {
-      "dashboard": "Resumen de tesorería con autonomía de caja e indicadores de liquidez",
+      "dashboard": "Vea lo que entra, lo que sale y cuánto efectivo puede gastar con seguridad",
       "bankAccounts": "Cuentas bancarias con posición de caja agregada y transacciones",
       "planning": "Previsión a 13 semanas, presupuesto vs real y libro CxC/CxP",
       "aiCfo": "Asistente CFO con IA basado en sus datos financieros en vivo"
@@ -130,7 +130,7 @@
   },
   "nav": {
     "home": "Resumen",
-    "overview": "Resumen de tesorería",
+    "overview": "Resumen de caja",
     "forecast": "Previsión de caja",
     "budget": "Presupuesto vs real",
     "ledger": "Libro mayor (CxC/CxP)",
@@ -301,10 +301,10 @@
     "transactionsHint": "Cargue saldos bancarios o conecte un feed para ver la actividad reciente."
   },
   "dashboard": {
-    "title": "Panel de tesorería",
-    "subtitle": "Vista ejecutiva de caja, liquidez, previsión y riesgo.",
+    "title": "Resumen de caja",
+    "subtitle": "Lo que entra, lo que sale y cuánto efectivo puede gastar con seguridad.",
     "asOf": "A fecha de {date}",
-    "loading": "Cargando datos de tesorería…",
+    "loading": "Cargando sus datos de caja…",
     "totalCash": "Caja total",
     "reconciliationPending": "Conciliación pendiente",
     "demoDataBadge": "Datos de demostración",
@@ -465,7 +465,7 @@
     "scenario": "Escenario"
   },
   "errors": {
-    "loadFailed": "Error al cargar los datos de tesorería. Inténtelo de nuevo.",
+    "loadFailed": "Error al cargar sus datos de caja. Inténtelo de nuevo.",
     "apiUnreachable": "No se puede conectar con la API. Inicie el servidor con pnpm dev (backend en el puerto 3001)."
   },
   "layout": {
@@ -616,8 +616,8 @@
   "ai": {
     "title": "Asistente CFO con IA",
     "pageTitle": "CFO con IA",
-    "pageSubtitle": "Inteligencia de tesorería conversacional basada en sus datos financieros en vivo.",
-    "subtitle": "Informe ejecutivo impulsado por datos de tesorería en tiempo real.",
+    "pageSubtitle": "Haga preguntas en lenguaje sencillo sobre su caja, basadas en sus datos financieros en vivo.",
+    "subtitle": "Informe ejecutivo impulsado por sus datos financieros en tiempo real.",
     "ask": "Pregunte al CFO con IA",
     "placeholder": "p. ej. ¿Cuál es mi mayor riesgo de liquidez este trimestre?",
     "generate": "Enviar",

@@ -4,7 +4,7 @@
     "tagline": "AI Cash Flow & Treasury",
     "description": "13-week cash forecast, liquidity intelligence, and executive CFO insights for SMEs.",
     "feature": {
-      "dashboard": "Treasury overview with cash runway & liquidity KPIs",
+      "dashboard": "See what's coming in, what's going out, and how much cash is safely yours to spend",
       "bankAccounts": "Bank accounts with aggregate cash position & transactions",
       "planning": "13-week forecast, budget vs actual & AR/AP ledger",
       "aiCfo": "AI CFO assistant grounded in your live financial data"
@@ -130,7 +130,7 @@
   },
   "nav": {
     "home": "Overview",
-    "overview": "Treasury Overview",
+    "overview": "Cash Overview",
     "forecast": "Cash Forecast",
     "budget": "Budget vs Actual",
     "ledger": "Ledger (AR/AP)",
@@ -313,10 +313,10 @@
     "transactionsHint": "Upload bank balances or connect a feed to see recent cash activity."
   },
   "dashboard": {
-    "title": "Treasury dashboard",
-    "subtitle": "Executive view of cash, liquidity, forecast and risk.",
+    "title": "Cash overview",
+    "subtitle": "What's coming in, what's going out, and how much cash you can safely spend.",
     "asOf": "As of {date}",
-    "loading": "Loading treasury data…",
+    "loading": "Loading your cash data…",
     "totalCash": "Total cash",
     "reconciliationPending": "Reconciliation pending",
     "demoDataBadge": "Demo data",
@@ -477,7 +477,7 @@
     "scenario": "Scenario"
   },
   "errors": {
-    "loadFailed": "Failed to load treasury data. Please try again.",
+    "loadFailed": "Failed to load your cash data. Please try again.",
     "apiUnreachable": "Cannot reach the API. Start the app with pnpm dev (UI + API on port 3000)."
   },
   "layout": {
@@ -663,8 +663,8 @@
   "ai": {
     "title": "AI CFO Insight",
     "pageTitle": "AI CFO",
-    "pageSubtitle": "Conversational treasury intelligence grounded in your live financial data.",
-    "subtitle": "Executive briefing powered by live treasury data injection.",
+    "pageSubtitle": "Ask plain-English questions about your cash, grounded in your live financial data.",
+    "subtitle": "Executive briefing powered by your live financial data.",
     "ask": "Ask the AI CFO",
     "placeholder": "e.g. What is my biggest liquidity risk this quarter?",
     "generate": "Send",

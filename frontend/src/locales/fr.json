@@ -4,7 +4,7 @@
     "tagline": "Trésorerie et flux de trésorerie IA",
     "description": "Prévisions de trésorerie sur 13 semaines, intelligence de liquidité et analyses CFO pour les PME.",
     "feature": {
-      "dashboard": "Vue d'ensemble de trésorerie avec autonomie et indicateurs de liquidité",
+      "dashboard": "Voyez ce qui entre, ce qui sort, et combien vous pouvez dépenser en toute sécurité",
       "bankAccounts": "Comptes bancaires avec position de trésorerie agrégée et transactions",
       "planning": "Prévision 13 semaines, budget vs réalisé et grand livre AR/AP",
       "aiCfo": "Assistant AI CFO fondé sur vos données financières en direct"
@@ -130,7 +130,7 @@
   },
   "nav": {
     "home": "Vue d'ensemble",
-    "overview": "Vue d'ensemble de la trésorerie",
+    "overview": "Aperçu de la caisse",
     "forecast": "Prévisions de trésorerie",
     "budget": "Budget vs réalisé",
     "ledger": "Grand livre (AR/AP)",
@@ -301,10 +301,10 @@
     "transactionsHint": "Importez les soldes bancaires ou connectez un flux pour voir l'activité récente."
   },
   "dashboard": {
-    "title": "Tableau de bord de trésorerie",
-    "subtitle": "Vue exécutive de la trésorerie, de la liquidité, des prévisions et des risques.",
+    "title": "Aperçu de la caisse",
+    "subtitle": "Ce qui entre, ce qui sort, et combien vous pouvez dépenser en toute sécurité.",
     "asOf": "Au {date}",
-    "loading": "Chargement des données de trésorerie…",
+    "loading": "Chargement de vos données de caisse…",
     "totalCash": "Trésorerie totale",
     "reconciliationPending": "Rapprochement en attente",
     "demoDataBadge": "Données de démonstration",
@@ -465,7 +465,7 @@
     "scenario": "Scénario"
   },
   "errors": {
-    "loadFailed": "Échec du chargement des données de trésorerie. Veuillez réessayer.",
+    "loadFailed": "Échec du chargement de vos données de caisse. Veuillez réessayer.",
     "apiUnreachable": "Impossible de joindre l'API. Démarrez le serveur avec pnpm dev (backend sur le port 3001)."
   },
   "layout": {
@@ -616,8 +616,8 @@
   "ai": {
     "title": "Analyse AI CFO",
     "pageTitle": "AI CFO",
-    "pageSubtitle": "Intelligence de trésorerie conversationnelle fondée sur vos données financières en direct.",
-    "subtitle": "Briefing exécutif alimenté par l'injection de données de trésorerie en direct.",
+    "pageSubtitle": "Posez des questions simples sur votre caisse, fondées sur vos données financières en direct.",
+    "subtitle": "Briefing exécutif alimenté par vos données financières en direct.",
     "ask": "Interroger l'AI CFO",
     "placeholder": "p. ex. Quel est mon plus grand risque de liquidité ce trimestre ?",
     "generate": "Envoyer",
