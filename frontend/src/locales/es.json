@@ -684,6 +684,7 @@
       "tabTeam": "Equipo",
       "tabCoa": "Plan de cuentas",
       "tabObligations": "Obligaciones recurrentes",
+      "tabDashboardWidgets": "Widgets del panel",
       "save": "Guardar cambios",
       "saved": "Guardado",
       "fieldName": "Nombre",
@@ -835,6 +836,19 @@
       "trigger": "¿Por qué cambió esto?",
       "loading": "Comparando con el período anterior…",
       "title": "Qué cambió"
+    },
+    "dashboardWidgets": {
+      "title": "Widgets del panel",
+      "subtitle": "Elija qué aparece en su panel — cada miembro del equipo puede configurarlo de forma distinta.",
+      "widget_businessPulse": "Pulso del negocio (las 5 cosas más importantes de hoy)",
+      "widget_kpiGrid": "Métricas clave (caja, autonomía, CxC, CxP)",
+      "widget_dataQuality": "Indicador de calidad de datos",
+      "widget_forecastQuality": "Checklist de calidad de la previsión",
+      "widget_whyChanged": "Panel \"¿Por qué cambió esto?\"",
+      "widget_forecast": "Gráfico de previsión de caja",
+      "widget_alerts": "Panel de alertas",
+      "widget_recentTransactions": "Transacciones recientes",
+      "widget_aiInsight": "Información del CFO con IA"
     }
   },
   "onboarding": {

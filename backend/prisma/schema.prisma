@@ -186,6 +186,7 @@ model UserProfile {
   companyId    String?
   isDemoMode   Boolean  @default(false)
   role         UserRole @default(member)
+  dashboardWidgetPrefs Json?
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
   createdBy    String?

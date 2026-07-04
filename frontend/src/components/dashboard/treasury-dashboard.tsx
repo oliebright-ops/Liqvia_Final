@@ -8,6 +8,7 @@ import {
   mapSummaryToDashboardView,
   resolveDashboardStatusBadge,
 } from '@/lib/dashboard-controller';
+import { useDashboardWidgetPrefs } from '@/hooks/use-dashboard-widget-prefs';
 import { useFreeAvailableCash } from '@/hooks/use-free-available-cash';
 import { useTreasurySummary } from '@/hooks/use-treasury-summary';
 import { useLanguage } from '@/lib/i18n';
@@ -46,6 +47,7 @@ export function TreasuryDashboard() {
   const [statusBadgeDismissed, setStatusBadgeDismissed] = useState(
     () => typeof window !== 'undefined' && localStorage.getItem(STATUS_BADGE_DISMISS_KEY) === '1',
   );
+  const { prefs } = useDashboardWidgetPrefs();
   const { data, loading, error, isFetching } = useTreasurySummary(viewHorizonWeeks);
   const horizonWeeks = viewHorizonWeeks ?? data?.liquidity.horizonWeeks ?? DEFAULT_FORECAST_HORIZON;
   const { data: freeCash, isFetching: freeCashFetching } = useFreeAvailableCash(horizonWeeks);
@@ -136,37 +138,47 @@ export function TreasuryDashboard() {
         <p className="text-xs text-muted-foreground">{format('dashboard.refreshing')}</p>
       )}
 
-      <BusinessPulseCard />
+      {prefs.businessPulse && <BusinessPulseCard />}
 
-      <KpiGrid cards={view.kpiCards} format={format} />
+      {prefs.kpiGrid && <KpiGrid cards={view.kpiCards} format={format} />}
 
-      <WhyChangedCard />
+      {prefs.whyChanged && <WhyChangedCard />}
 
-      <DataQualityBadge />
+      {prefs.dataQuality && <DataQualityBadge />}
 
-      <ForecastQualityCard />
+      {prefs.forecastQuality && <ForecastQualityCard />}
 
-      <div className="grid gap-6 lg:grid-cols-3">
-        <ForecastSection
-          forecast={view.forecast}
-          horizonWeeks={horizonWeeks}
-          currency={view.currency}
-          t={t}
-          format={format}
-        />
-        <AlertSection
-          alerts={view.alerts}
-          liquidityStatus={view.liquidityStatus}
-          currency={view.currency}
-          t={t}
-          format={format}
-        />
-      </div>
+      {(prefs.forecast || prefs.alerts) && (
+        <div className="grid gap-6 lg:grid-cols-3">
+          {prefs.forecast && (
+            <ForecastSection
+              forecast={view.forecast}
+              horizonWeeks={horizonWeeks}
+              currency={view.currency}
+              t={t}
+              format={format}
+            />
+          )}
+          {prefs.alerts && (
+            <AlertSection
+              alerts={view.alerts}
+              liquidityStatus={view.liquidityStatus}
+              currency={view.currency}
+              t={t}
+              format={format}
+            />
+          )}
+        </div>
+      )}
 
-      <div className="grid gap-6 lg:grid-cols-2">
-        <RecentTransactions transactions={view.recentTransactions} loading={false} t={t} />
-        <AiInsightSection companyId={view.companyId} t={t} />
-      </div>
+      {(prefs.recentTransactions || prefs.aiInsight) && (
+        <div className="grid gap-6 lg:grid-cols-2">
+          {prefs.recentTransactions && (
+            <RecentTransactions transactions={view.recentTransactions} loading={false} t={t} />
+          )}
+          {prefs.aiInsight && <AiInsightSection companyId={view.companyId} t={t} />}
+        </div>
+      )}
     </div>
   );
 }

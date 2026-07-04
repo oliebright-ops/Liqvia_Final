@@ -5,6 +5,7 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import { AccountType, UserRole } from '@prisma/client';
+import { DashboardWidgetPrefs, normalizeDashboardWidgetPrefs } from '@liqvia2/shared';
 import { PrismaService } from '../prisma/prisma.service';
 import { AuthUser } from '../auth/auth.types';
 import { UsersService } from '../users/users.service';
@@ -13,6 +14,7 @@ import {
   InviteTeamMemberDto,
   UpdateChartOfAccountDto,
   UpdateCompanyDto,
+  UpdateDashboardWidgetsDto,
   UpdateProfileDto,
 } from './dto/settings.dto';
 
@@ -69,6 +71,26 @@ export class SettingsService {
       data: { name: dto.name },
       select: { id: true, name: true, email: true, role: true },
     });
+  }
+
+  async getDashboardWidgets(userId: string): Promise<DashboardWidgetPrefs> {
+    const user = await this.prisma.userProfile.findUnique({
+      where: { id: userId },
+      select: { dashboardWidgetPrefs: true },
+    });
+    return normalizeDashboardWidgetPrefs(user?.dashboardWidgetPrefs);
+  }
+
+  async updateDashboardWidgets(
+    userId: string,
+    dto: UpdateDashboardWidgetsDto,
+  ): Promise<DashboardWidgetPrefs> {
+    const updated = await this.prisma.userProfile.update({
+      where: { id: userId },
+      data: { dashboardWidgetPrefs: dto },
+      select: { dashboardWidgetPrefs: true },
+    });
+    return normalizeDashboardWidgetPrefs(updated.dashboardWidgetPrefs);
   }
 
   async listTeam(companyId: string) {

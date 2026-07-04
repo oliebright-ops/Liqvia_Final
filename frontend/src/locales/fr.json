@@ -684,6 +684,7 @@
       "tabTeam": "Équipe",
       "tabCoa": "Plan comptable",
       "tabObligations": "Obligations récurrentes",
+      "tabDashboardWidgets": "Widgets du tableau de bord",
       "save": "Enregistrer",
       "saved": "Enregistré",
       "fieldName": "Nom",
@@ -835,6 +836,19 @@
       "trigger": "Pourquoi ce changement ?",
       "loading": "Comparaison avec la période précédente…",
       "title": "Ce qui a changé"
+    },
+    "dashboardWidgets": {
+      "title": "Widgets du tableau de bord",
+      "subtitle": "Choisissez ce qui s'affiche sur votre tableau de bord — chaque membre de l'équipe peut le régler différemment.",
+      "widget_businessPulse": "Pouls de l'entreprise (les 5 points essentiels du jour)",
+      "widget_kpiGrid": "Indicateurs clés (caisse, autonomie, AR, AP)",
+      "widget_dataQuality": "Indicateur de qualité des données",
+      "widget_forecastQuality": "Liste de qualité de la prévision",
+      "widget_whyChanged": "Panneau « Pourquoi ce changement ? »",
+      "widget_forecast": "Graphique de prévision de trésorerie",
+      "widget_alerts": "Panneau d'alertes",
+      "widget_recentTransactions": "Transactions récentes",
+      "widget_aiInsight": "Analyse de l'AI CFO"
     }
   },
   "onboarding": {

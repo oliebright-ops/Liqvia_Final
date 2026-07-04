@@ -31,10 +31,11 @@ import { FinancialTable } from '@/components/ui/financial-table';
 import { PageHeader } from '@/components/treasury/page-header';
 import { RoleAccessMatrix, roleLabel, YourAccessCard } from '@/components/settings/role-access-guide';
 import { RecurringObligationsTab } from '@/components/settings/recurring-obligations-tab';
+import { DashboardWidgetsTab } from '@/components/settings/dashboard-widgets-tab';
 import { ManualBankAccountsEditor } from '@/components/onboarding/manual-bank-accounts-editor';
 import { cn } from '@/lib/utils';
 
-type Tab = 'profile' | 'access' | 'entities' | 'company' | 'team' | 'coa' | 'obligations';
+type Tab = 'profile' | 'access' | 'entities' | 'company' | 'team' | 'coa' | 'obligations' | 'dashboardWidgets';
 
 export function SettingsPage() {
   const { can } = useAuth();
@@ -50,6 +51,7 @@ export function SettingsPage() {
     { id: 'team', label: set.tabTeam, visible: can('settings:admin') },
     { id: 'coa', label: set.tabCoa, visible: can('settings:admin') },
     { id: 'obligations', label: set.tabObligations, visible: can('treasury:read') },
+    { id: 'dashboardWidgets', label: set.tabDashboardWidgets, visible: can('settings:profile') },
   ];
   const tabs = allTabs.filter((item) => item.visible);
   const initialTab = (searchParams.get('tab') as Tab | null) ?? tabs[0]?.id ?? 'profile';
@@ -82,6 +84,7 @@ export function SettingsPage() {
       {tab === 'team' && <TeamTab />}
       {tab === 'coa' && <CoaTab />}
       {tab === 'obligations' && <RecurringObligationsTab />}
+      {tab === 'dashboardWidgets' && <DashboardWidgetsTab />}
     </div>
   );
 }

@@ -731,6 +731,7 @@
       "tabTeam": "Team",
       "tabCoa": "Chart of Accounts",
       "tabObligations": "Recurring Obligations",
+      "tabDashboardWidgets": "Dashboard Widgets",
       "save": "Save changes",
       "saved": "Saved",
       "fieldName": "Name",
@@ -909,6 +910,19 @@
       "trigger": "Why has this changed?",
       "loading": "Comparing to the previous period…",
       "title": "What changed"
+    },
+    "dashboardWidgets": {
+      "title": "Dashboard Widgets",
+      "subtitle": "Choose what appears on your dashboard — everyone on your team can set this differently.",
+      "widget_businessPulse": "Business Pulse (today's top 5 things to know)",
+      "widget_kpiGrid": "Key metrics (cash, runway, receivables, payables)",
+      "widget_dataQuality": "Data quality badge",
+      "widget_forecastQuality": "Forecast quality checklist",
+      "widget_whyChanged": "\"Why has this changed?\" panel",
+      "widget_forecast": "Cash forecast chart",
+      "widget_alerts": "Alerts panel",
+      "widget_recentTransactions": "Recent transactions",
+      "widget_aiInsight": "AI CFO insight"
     }
   },
   "onboarding": {

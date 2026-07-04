@@ -1,5 +1,6 @@
 import { AccountType, UserRole } from '@prisma/client';
 import {
+  DASHBOARD_WIDGET_KEYS,
   FORECAST_HORIZON_MAX,
   FORECAST_HORIZON_MIN,
   validateReportingPeriod,
@@ -76,3 +77,12 @@ export type ChartOfAccountDto = z.infer<typeof chartOfAccountSchema>;
 export const updateChartOfAccountSchema = chartOfAccountSchema.partial();
 
 export type UpdateChartOfAccountDto = z.infer<typeof updateChartOfAccountSchema>;
+
+export const updateDashboardWidgetsSchema = z.object(
+  Object.fromEntries(DASHBOARD_WIDGET_KEYS.map((key) => [key, z.boolean()])) as Record<
+    (typeof DASHBOARD_WIDGET_KEYS)[number],
+    z.ZodBoolean
+  >,
+);
+
+export type UpdateDashboardWidgetsDto = z.infer<typeof updateDashboardWidgetsSchema>;

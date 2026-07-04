@@ -20,6 +20,7 @@ import {
   inviteTeamMemberSchema,
   updateChartOfAccountSchema,
   updateCompanySchema,
+  updateDashboardWidgetsSchema,
   updateHorizonSchema,
   updateMemberRoleSchema,
   updateProfileSchema,
@@ -63,6 +64,23 @@ export class SettingsController {
   @ApiOperation({ summary: 'Update current user profile' })
   updateProfile(@CurrentUser() user: AuthUser, @Body() body: unknown) {
     return this.settings.updateProfile(user.id, parseBody(updateProfileSchema, body));
+  }
+
+  @Get('dashboard-widgets')
+  @Permissions('settings:profile')
+  @ApiOperation({ summary: 'Get the current user\'s dashboard widget visibility preferences' })
+  getDashboardWidgets(@CurrentUser() user: AuthUser) {
+    return this.settings.getDashboardWidgets(user.id);
+  }
+
+  @Patch('dashboard-widgets')
+  @Permissions('settings:profile')
+  @ApiOperation({ summary: 'Update the current user\'s dashboard widget visibility preferences' })
+  updateDashboardWidgets(@CurrentUser() user: AuthUser, @Body() body: unknown) {
+    return this.settings.updateDashboardWidgets(
+      user.id,
+      parseBody(updateDashboardWidgetsSchema, body),
+    );
   }
 
   @Get('team')
