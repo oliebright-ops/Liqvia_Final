@@ -30,10 +30,11 @@ import { EmptyState } from '@/components/ui/empty-state';
 import { FinancialTable } from '@/components/ui/financial-table';
 import { PageHeader } from '@/components/treasury/page-header';
 import { RoleAccessMatrix, roleLabel, YourAccessCard } from '@/components/settings/role-access-guide';
+import { RecurringObligationsTab } from '@/components/settings/recurring-obligations-tab';
 import { ManualBankAccountsEditor } from '@/components/onboarding/manual-bank-accounts-editor';
 import { cn } from '@/lib/utils';
 
-type Tab = 'profile' | 'access' | 'entities' | 'company' | 'team' | 'coa';
+type Tab = 'profile' | 'access' | 'entities' | 'company' | 'team' | 'coa' | 'obligations';
 
 export function SettingsPage() {
   const { can } = useAuth();
@@ -48,6 +49,7 @@ export function SettingsPage() {
     { id: 'company', label: set.tabCompany, visible: can('settings:admin') },
     { id: 'team', label: set.tabTeam, visible: can('settings:admin') },
     { id: 'coa', label: set.tabCoa, visible: can('settings:admin') },
+    { id: 'obligations', label: set.tabObligations, visible: can('treasury:read') },
   ];
   const tabs = allTabs.filter((item) => item.visible);
   const initialTab = (searchParams.get('tab') as Tab | null) ?? tabs[0]?.id ?? 'profile';
@@ -79,6 +81,7 @@ export function SettingsPage() {
       {tab === 'company' && <CompanyTab />}
       {tab === 'team' && <TeamTab />}
       {tab === 'coa' && <CoaTab />}
+      {tab === 'obligations' && <RecurringObligationsTab />}
     </div>
   );
 }

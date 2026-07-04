@@ -79,6 +79,7 @@ describe('AI CFO intent routing', () => {
     budgetLines: [],
     forecastWeeks: [],
     weeklyActuals: [],
+    recurringObligations: [],
     dataModules: {
       bankTransactions: 1,
       receivables: 1,

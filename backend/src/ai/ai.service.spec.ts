@@ -33,6 +33,7 @@ describe('AiService rule-based insight', () => {
     budgetLines: [],
     forecastWeeks: [],
     weeklyActuals: [],
+    recurringObligations: [],
     dataModules: {
       bankTransactions: 0,
       receivables: 0,
@@ -68,6 +69,7 @@ describe('AiService rule-based insight', () => {
       budgetLines: [],
       forecastWeeks: [],
       weeklyActuals: [],
+      recurringObligations: [],
       dataModules: {
         bankTransactions: 0,
         receivables: 0,

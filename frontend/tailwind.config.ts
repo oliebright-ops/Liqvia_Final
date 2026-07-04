@@ -36,6 +36,7 @@ const config: Config = {
           positive: 'hsl(var(--cash-positive))',
           negative: 'hsl(var(--cash-negative))',
         },
+        warning: 'hsl(var(--warning))',
       },
     },
   },

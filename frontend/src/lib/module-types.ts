@@ -89,3 +89,60 @@ export interface AiChatResponse {
   model: string;
   source: 'openai' | 'rule_based';
 }
+
+export type ObligationCategory =
+  | 'payroll'
+  | 'superannuation'
+  | 'payg_withholding'
+  | 'gst_bas'
+  | 'rent'
+  | 'loan_repayment'
+  | 'insurance'
+  | 'subscription'
+  | 'other';
+
+export type ObligationFrequency = 'weekly' | 'fortnightly' | 'monthly' | 'quarterly' | 'annually';
+
+export interface RecurringObligationView {
+  id: string;
+  name: string;
+  category: ObligationCategory;
+  amount: number;
+  frequency: ObligationFrequency;
+  nextDueDate: string;
+  notes: string | null;
+  active: boolean;
+}
+
+export type DataQualityModuleStatus = 'missing' | 'stale' | 'fresh';
+
+export interface DataQualityModuleView {
+  status: DataQualityModuleStatus;
+  lastUpdated: string | null;
+  daysSinceUpdate: number | null;
+}
+
+export interface DataQualityReportView {
+  score: number;
+  modules: {
+    bankTransactions: DataQualityModuleView;
+    receivables: DataQualityModuleView;
+    payables: DataQualityModuleView;
+    budgetActuals: DataQualityModuleView;
+  };
+  warnings: string[];
+}
+
+export interface NotificationView {
+  id: string;
+  type: 'obligation_due_soon' | 'payroll_shortfall' | 'runway_risk';
+  severity: 'info' | 'warning' | 'critical';
+  title: string;
+  message: string;
+  read: boolean;
+  createdAt: string;
+}
+
+export type NotificationsResponse =
+  | { locked: true; unreadCount: number; message: string; preview: Array<{ severity: string; type: string }> }
+  | { locked: false; notifications: NotificationView[] };

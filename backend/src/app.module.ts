@@ -16,6 +16,9 @@ import { LedgerModule } from './ledger/ledger.module';
 import { BankAccountsModule } from './bank-accounts/bank-accounts.module';
 import { SettingsModule } from './settings/settings.module';
 import { FreeCashModule } from './free-cash/free-cash.module';
+import { RecurringObligationsModule } from './recurring-obligations/recurring-obligations.module';
+import { DataQualityModule } from './data-quality/data-quality.module';
+import { NotificationsModule } from './notifications/notifications.module';
 
 @Module({
   imports: [
@@ -42,6 +45,9 @@ import { FreeCashModule } from './free-cash/free-cash.module';
     BankAccountsModule,
     SettingsModule,
     FreeCashModule,
+    RecurringObligationsModule,
+    DataQualityModule,
+    NotificationsModule,
     AiModule,
   ],
   controllers: [HealthController],
