@@ -146,3 +146,24 @@ export interface NotificationView {
 export type NotificationsResponse =
   | { locked: true; unreadCount: number; message: string; preview: Array<{ severity: string; type: string }> }
   | { locked: false; notifications: NotificationView[] };
+
+export type PulseSeverity = 'critical' | 'warning' | 'info';
+
+export interface BusinessPulseItemView {
+  id: string;
+  severity: PulseSeverity;
+  category: 'obligation_due' | 'overdue_payable' | 'overdue_receivable' | 'expected_receipt' | 'cash_buffer';
+  title: string;
+  message: string;
+  amount?: number;
+  date?: string;
+  linkPath: string;
+}
+
+export interface BusinessPulseReportView {
+  asOfDate: string;
+  items: BusinessPulseItemView[];
+  briefing: string;
+  briefingModel: string;
+  briefingSource: 'openai' | 'rule_based';
+}

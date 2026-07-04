@@ -20,3 +20,6 @@ export const dataQualityKey = (companyId: string | null) =>
 
 export const notificationsKey = (companyId: string | null) =>
   ['notifications', companyId] as const;
+
+export const businessPulseKey = (companyId: string | null) =>
+  ['business-pulse', companyId] as const;

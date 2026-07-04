@@ -800,6 +800,10 @@
       "empty": "Aucune notification pour le moment.",
       "upgradeCta": "Passez à Pro pour débloquer",
       "markRead": "Marquer comme lu"
+    },
+    "businessPulse": {
+      "title": "Pouls de l'entreprise",
+      "allClear": "Rien d'urgent aujourd'hui — tout va bien."
     }
   },
   "onboarding": {

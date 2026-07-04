@@ -15,6 +15,7 @@ import type { SummaryReport } from '@liqvia2/shared';
 import { Alert } from '@/components/ui/alert';
 import { AiInsightSection } from './ai-insight-section';
 import { AlertSection } from './alert-section';
+import { BusinessPulseCard } from './business-pulse-card';
 import { DashboardHeader } from './dashboard-header';
 import { DashboardLoading } from './dashboard-loading';
 import { DataQualityBadge } from './data-quality-badge';
@@ -132,6 +133,8 @@ export function TreasuryDashboard() {
       {(isFetching || freeCashFetching) && !loading && (
         <p className="text-xs text-muted-foreground">{format('dashboard.refreshing')}</p>
       )}
+
+      <BusinessPulseCard />
 
       <KpiGrid cards={view.kpiCards} format={format} />
 

@@ -641,6 +641,20 @@ export function buildSystemPrompt(locale?: string): string {
   return AI_CFO_SYSTEM_PROMPT + localeLine;
 }
 
+/** Business Pulse: a 30-second, plain-English daily briefing — distinct from the
+ * general AI CFO prompt above, which is conversational and can run much longer. */
+export const BUSINESS_PULSE_SYSTEM_PROMPT = `You are the CFO of this business. The owner has only 30 seconds.
+
+Analyze ONLY the JSON treasury context injected with this request (recurringObligations, payablesDetail, receivablesDetail, forecastWeeks, alerts, dataQuality). Never invent figures, counterparties, or dates not present in the data.
+
+Answer, in this order:
+1. Is the business healthy?
+2. What needs attention today?
+3. What can safely wait?
+4. List no more than three actions.
+
+Use plain English — avoid words like "treasury", "liquidity", or "runway". Maximum 120 words total.`;
+
 export const MAX_CHAT_MESSAGES = 10;
 
 export function pruneMessageHistory<T>(messages: T[], max = MAX_CHAT_MESSAGES): T[] {

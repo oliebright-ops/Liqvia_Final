@@ -4,6 +4,7 @@ import { PrismaService } from '../prisma/prisma.service';
 import { AiDataService } from './ai-data.service';
 import {
   buildSystemPrompt,
+  BUSINESS_PULSE_SYSTEM_PROMPT,
   formatPayrollOutlook,
   TreasuryAiContext,
   extractHorizonMonths,
@@ -30,6 +31,12 @@ export interface AiChatResponse {
   reply: string;
   messages: Array<{ role: 'user' | 'assistant'; content: string }>;
   context: TreasuryAiContext;
+  model: string;
+  source: 'openai' | 'rule_based';
+}
+
+export interface BusinessPulseBriefing {
+  text: string;
   model: string;
   source: 'openai' | 'rule_based';
 }
@@ -176,6 +183,120 @@ export class AiService {
     });
 
     return { insight, context, model, source };
+  }
+
+  /** Phase 1 "Business Pulse" — a ≤120-word, plain-English daily briefing, distinct
+   * prompt/format from the conversational AI CFO above (see BUSINESS_PULSE_SYSTEM_PROMPT). */
+  async generateBusinessPulseBriefing(
+    companyId: string = DEFAULT_DEMO_COMPANY_ID,
+  ): Promise<BusinessPulseBriefing> {
+    const start = Date.now();
+    const context = await this.aiData.buildContext(companyId);
+
+    const apiKey = process.env.OPENAI_API_KEY;
+    let text: string;
+    let model: string;
+    let source: BusinessPulseBriefing['source'];
+
+    if (apiKey) {
+      try {
+        const result = await this.callOpenAiBusinessPulse(apiKey, context);
+        text = result.text;
+        model = result.model;
+        source = 'openai';
+      } catch (err) {
+        this.logger.error(`Business Pulse briefing failed, using rule-based fallback: ${String(err)}`);
+        text = this.ruleBasedBusinessPulse(context);
+        model = 'rule-based-fallback:api-error';
+        source = 'rule_based';
+      }
+    } else {
+      this.warnMissingApiKey(companyId);
+      text = this.ruleBasedBusinessPulse(context);
+      model = 'rule-based-fallback:no-api-key';
+      source = 'rule_based';
+    }
+
+    await this.audit(companyId, model, Date.now() - start);
+    await this.prisma.aiInsight.create({
+      data: { companyId, insightType: 'business_pulse', content: text, context: context as unknown as object },
+    });
+
+    return { text, model, source };
+  }
+
+  private async callOpenAiBusinessPulse(
+    apiKey: string,
+    context: TreasuryAiContext,
+  ): Promise<{ text: string; model: string }> {
+    const model = process.env.OPENAI_MODEL ?? 'gpt-4o-mini';
+    const res = await fetch('https://api.openai.com/v1/chat/completions', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${apiKey}`,
+      },
+      body: JSON.stringify({
+        model,
+        messages: [
+          { role: 'system', content: BUSINESS_PULSE_SYSTEM_PROMPT },
+          { role: 'user', content: this.buildContextMessage(context) },
+        ],
+        temperature: 0.2,
+        max_tokens: 220,
+      }),
+    });
+
+    if (!res.ok) throw new Error(`OpenAI request failed: ${res.status}`);
+    const data = (await res.json()) as {
+      choices?: Array<{ message?: { content?: string } }>;
+    };
+    const text = data.choices?.[0]?.message?.content?.trim();
+    if (!text) throw new Error('Empty AI response');
+    return { text, model };
+  }
+
+  /** Deterministic fallback matching the Business Pulse prompt's 4-part structure. */
+  private ruleBasedBusinessPulse(c: TreasuryAiContext): string {
+    const healthLine =
+      c.liquidityStatus === 'healthy'
+        ? 'The business looks healthy.'
+        : c.liquidityStatus === 'moderate'
+          ? 'Cash is stable but tightening.'
+          : c.liquidityStatus === 'high_risk'
+            ? 'Cash is under pressure.'
+            : 'Cash position is critical.';
+
+    const soonestObligation = [...c.recurringObligations].sort((a, b) =>
+      a.dueDate.localeCompare(b.dueDate),
+    )[0];
+    const overduePayables = c.payablesDetail.filter((p) => p.daysOverdue > 0);
+    const overdueReceivables = c.receivablesDetail.filter((r) => r.daysOverdue > 0);
+
+    const attentionParts: string[] = [];
+    if (soonestObligation) {
+      attentionParts.push(`${soonestObligation.name} due ${soonestObligation.dueDate}`);
+    }
+    if (overduePayables.length > 0) {
+      attentionParts.push(`${overduePayables.length} overdue bill(s)`);
+    }
+    const attention = attentionParts.length > 0 ? attentionParts.join('; ') : 'nothing urgent today';
+
+    const wait =
+      overdueReceivables.length > 0
+        ? `${overdueReceivables.length} overdue invoice(s) can be chased this week`
+        : 'routine items can wait';
+
+    const actions: string[] = [];
+    if (soonestObligation) actions.push(`Confirm funds are set aside for ${soonestObligation.name}.`);
+    if (overduePayables.length > 0) actions.push('Review overdue supplier bills.');
+    if (overdueReceivables.length > 0) actions.push('Follow up on overdue invoices.');
+    const actionsText = actions
+      .slice(0, 3)
+      .map((a, i) => `${i + 1}. ${a}`)
+      .join(' ');
+
+    return `${healthLine} Needs attention: ${attention}. Can wait: ${wait}. ${actionsText}`.trim();
   }
 
   private resolveExplicitIntent(intent?: string): string | undefined {

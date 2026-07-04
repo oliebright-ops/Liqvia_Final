@@ -19,6 +19,7 @@ import { FreeCashModule } from './free-cash/free-cash.module';
 import { RecurringObligationsModule } from './recurring-obligations/recurring-obligations.module';
 import { DataQualityModule } from './data-quality/data-quality.module';
 import { NotificationsModule } from './notifications/notifications.module';
+import { BusinessPulseModule } from './business-pulse/business-pulse.module';
 
 @Module({
   imports: [
@@ -49,6 +50,7 @@ import { NotificationsModule } from './notifications/notifications.module';
     DataQualityModule,
     NotificationsModule,
     AiModule,
+    BusinessPulseModule,
   ],
   controllers: [HealthController],
   providers: [{ provide: APP_GUARD, useClass: ThrottlerGuard }],

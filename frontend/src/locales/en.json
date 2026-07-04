@@ -874,6 +874,10 @@
       "empty": "No notifications right now.",
       "upgradeCta": "Upgrade to Pro to unlock",
       "markRead": "Mark as read"
+    },
+    "businessPulse": {
+      "title": "Business Pulse",
+      "allClear": "Nothing urgent today — everything's on track."
     }
   },
   "onboarding": {
