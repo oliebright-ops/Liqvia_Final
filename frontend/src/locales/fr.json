@@ -804,6 +804,21 @@
     "businessPulse": {
       "title": "Pouls de l'entreprise",
       "allClear": "Rien d'urgent aujourd'hui — tout va bien."
+    },
+    "decisionCentre": {
+      "title": "Puis-je...?",
+      "button_hire": "Embaucher",
+      "button_buy_equipment": "Acheter du matériel",
+      "button_withdraw_funds": "Retirer des fonds",
+      "button_repay_debt": "Rembourser une dette",
+      "button_expand": "Me développer",
+      "button_custom": "Question personnalisée",
+      "fieldPercent": "Pourcentage",
+      "fieldAmount": "Montant",
+      "check": "Vérifier",
+      "checking": "Vérification…",
+      "customPlaceholder": "Posez une question précise sur votre entreprise…",
+      "error": "Impossible d'obtenir une réponse — veuillez réessayer."
     }
   },
   "onboarding": {

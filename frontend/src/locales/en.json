@@ -878,6 +878,21 @@
     "businessPulse": {
       "title": "Business Pulse",
       "allClear": "Nothing urgent today — everything's on track."
+    },
+    "decisionCentre": {
+      "title": "Can I...?",
+      "button_hire": "Hire",
+      "button_buy_equipment": "Buy Equipment",
+      "button_withdraw_funds": "Withdraw Funds",
+      "button_repay_debt": "Repay Debt",
+      "button_expand": "Expand",
+      "button_custom": "Custom Question",
+      "fieldPercent": "Percent",
+      "fieldAmount": "Amount",
+      "check": "Check",
+      "checking": "Checking…",
+      "customPlaceholder": "Ask a specific business question…",
+      "error": "Couldn't get an answer — please try again."
     }
   },
   "onboarding": {

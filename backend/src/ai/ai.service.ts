@@ -5,6 +5,7 @@ import { AiDataService } from './ai-data.service';
 import {
   buildSystemPrompt,
   BUSINESS_PULSE_SYSTEM_PROMPT,
+  DECISION_CENTRE_SYSTEM_PROMPT,
   formatPayrollOutlook,
   TreasuryAiContext,
   extractHorizonMonths,
@@ -36,6 +37,20 @@ export interface AiChatResponse {
 }
 
 export interface BusinessPulseBriefing {
+  text: string;
+  model: string;
+  source: 'openai' | 'rule_based';
+}
+
+/** Minimal shape needed from a scenario comparison — kept local so AiService doesn't
+ * depend on the scenarios module's types (avoids a cross-module type coupling). */
+export interface DecisionScenarioSummary {
+  baseline: { week13ClosingCash: number | null; runwayWeeks: number | null };
+  scenario: { week13ClosingCash: number | null; runwayWeeks: number | null };
+  delta: { week13ClosingCash: number | null; runwayWeeks: number | null };
+}
+
+export interface DecisionCentreResult {
   text: string;
   model: string;
   source: 'openai' | 'rule_based';
@@ -297,6 +312,127 @@ export class AiService {
       .join(' ');
 
     return `${healthLine} Needs attention: ${attention}. Can wait: ${wait}. ${actionsText}`.trim();
+  }
+
+  /** Phase 2 "Decision Centre" — answers a specific "Can I...?" question using the
+   * scenario comparison already computed by the existing scenario engine (or, for a
+   * freeform custom question with no scenario, live context alone). */
+  async generateDecision(
+    companyId: string = DEFAULT_DEMO_COMPANY_ID,
+    question: string,
+    scenario: DecisionScenarioSummary | null,
+    locale?: string,
+  ): Promise<DecisionCentreResult> {
+    const start = Date.now();
+    const context = await this.aiData.buildContext(companyId, question);
+
+    const apiKey = process.env.OPENAI_API_KEY;
+    let text: string;
+    let model: string;
+    let source: DecisionCentreResult['source'];
+
+    if (apiKey) {
+      try {
+        const result = await this.callOpenAiDecision(apiKey, context, question, scenario, locale);
+        text = result.text;
+        model = result.model;
+        source = 'openai';
+      } catch (err) {
+        this.logger.error(`Decision Centre failed, using rule-based fallback: ${String(err)}`);
+        text = this.ruleBasedDecision(context, scenario);
+        model = 'rule-based-fallback:api-error';
+        source = 'rule_based';
+      }
+    } else {
+      this.warnMissingApiKey(companyId);
+      text = this.ruleBasedDecision(context, scenario);
+      model = 'rule-based-fallback:no-api-key';
+      source = 'rule_based';
+    }
+
+    await this.audit(companyId, model, Date.now() - start);
+    await this.prisma.aiInsight.create({
+      data: {
+        companyId,
+        insightType: 'decision_centre',
+        content: text,
+        context: { ...context, question, scenario } as unknown as object,
+      },
+    });
+
+    return { text, model, source };
+  }
+
+  private async callOpenAiDecision(
+    apiKey: string,
+    context: TreasuryAiContext,
+    question: string,
+    scenario: DecisionScenarioSummary | null,
+    locale?: string,
+  ): Promise<{ text: string; model: string }> {
+    const model = process.env.OPENAI_MODEL ?? 'gpt-4o-mini';
+    const scenarioLine = scenario
+      ? `\n\nScenario comparison (JSON):\n${JSON.stringify(scenario, null, 2)}`
+      : '\n\nNo scenario was modeled for this question — answer using current data only.';
+    const userContent = `Business question: ${question}\n\n${this.buildContextMessage(context, locale)}${scenarioLine}`;
+
+    const res = await fetch('https://api.openai.com/v1/chat/completions', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${apiKey}`,
+      },
+      body: JSON.stringify({
+        model,
+        messages: [
+          { role: 'system', content: DECISION_CENTRE_SYSTEM_PROMPT },
+          { role: 'user', content: userContent },
+        ],
+        temperature: 0.2,
+        max_tokens: 400,
+      }),
+    });
+
+    if (!res.ok) throw new Error(`OpenAI request failed: ${res.status}`);
+    const data = (await res.json()) as {
+      choices?: Array<{ message?: { content?: string } }>;
+    };
+    const text = data.choices?.[0]?.message?.content?.trim();
+    if (!text) throw new Error('Empty AI response');
+    return { text, model };
+  }
+
+  /** Deterministic fallback matching the Decision Centre prompt's 5-section structure. */
+  private ruleBasedDecision(context: TreasuryAiContext, scenario: DecisionScenarioSummary | null): string {
+    const fmt = (n: number | null) =>
+      n === null ? 'unknown' : `${context.currency} ${Math.round(n).toLocaleString('en-US')}`;
+
+    if (!scenario) {
+      return [
+        '**Recommendation:** Unable to model this without a specific amount or percentage.',
+        '**Confidence:** Low (rule-based fallback, no AI configured).',
+        '**Reasoning:** This question needs a defined number to run against your forecast.',
+        '**Key Risks:** N/A',
+        '**Suggested Alternatives:** Try one of the preset buttons (Hire, Buy Equipment, Withdraw Funds, Repay Debt, Expand) with a specific number.',
+      ].join('\n');
+    }
+
+    const { baseline, scenario: scenarioResult, delta } = scenario;
+    const wouldGoNegative = scenarioResult.week13ClosingCash !== null && scenarioResult.week13ClosingCash < 0;
+    const runwayDropsSharply = delta.runwayWeeks !== null && delta.runwayWeeks < -4;
+    const recommendation = wouldGoNegative
+      ? 'Proceed with caution — this pushes projected cash negative.'
+      : runwayDropsSharply
+        ? 'Proceed with caution — this meaningfully shortens your cash runway.'
+        : 'This looks affordable based on your current forecast.';
+
+    return [
+      `**Recommendation:** ${recommendation}`,
+      '**Confidence:** Rule-based estimate (no AI configured) — treat as directional only.',
+      `**Reasoning:** Week-13 closing cash moves from ${fmt(baseline.week13ClosingCash)} to ${fmt(scenarioResult.week13ClosingCash)}; runway moves from ${baseline.runwayWeeks?.toFixed(1) ?? 'unknown'} to ${scenarioResult.runwayWeeks?.toFixed(1) ?? 'unknown'} weeks.`,
+      '**Key Risks:** Timing and priority assumptions may not match reality — verify against actual figures.',
+      '**Suggested Alternatives:** Consider phasing this in gradually or timing it for a stronger cash week.',
+    ].join('\n');
   }
 
   private resolveExplicitIntent(intent?: string): string | undefined {

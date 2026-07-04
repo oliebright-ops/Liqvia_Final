@@ -167,3 +167,27 @@ export interface BusinessPulseReportView {
   briefingModel: string;
   briefingSource: 'openai' | 'rule_based';
 }
+
+export type DecisionType = 'hire' | 'buy_equipment' | 'withdraw_funds' | 'repay_debt' | 'expand' | 'custom';
+
+export interface DecisionCentreRequest {
+  type: DecisionType;
+  amount?: number;
+  percent?: number;
+  customQuestion?: string;
+  locale?: string;
+}
+
+export interface DecisionScenarioSummaryView {
+  baseline: { week13ClosingCash: number | null; runwayWeeks: number | null };
+  scenario: { week13ClosingCash: number | null; runwayWeeks: number | null };
+  delta: { week13ClosingCash: number | null; runwayWeeks: number | null };
+}
+
+export interface DecisionCentreResponseView {
+  question: string;
+  scenario: DecisionScenarioSummaryView | null;
+  text: string;
+  model: string;
+  source: 'openai' | 'rule_based';
+}

@@ -804,6 +804,21 @@
     "businessPulse": {
       "title": "Pulso del negocio",
       "allClear": "Nada urgente hoy — todo va bien."
+    },
+    "decisionCentre": {
+      "title": "¿Puedo...?",
+      "button_hire": "Contratar",
+      "button_buy_equipment": "Comprar equipo",
+      "button_withdraw_funds": "Retirar fondos",
+      "button_repay_debt": "Pagar deuda",
+      "button_expand": "Expandirme",
+      "button_custom": "Pregunta personalizada",
+      "fieldPercent": "Porcentaje",
+      "fieldAmount": "Monto",
+      "check": "Consultar",
+      "checking": "Consultando…",
+      "customPlaceholder": "Haga una pregunta de negocio específica…",
+      "error": "No se pudo obtener una respuesta — inténtelo de nuevo."
     }
   },
   "onboarding": {

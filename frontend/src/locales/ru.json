@@ -878,6 +878,21 @@
     "businessPulse": {
       "title": "Пульс бизнеса",
       "allClear": "Сегодня ничего срочного — всё под контролем."
+    },
+    "decisionCentre": {
+      "title": "Могу ли я...?",
+      "button_hire": "Нанять",
+      "button_buy_equipment": "Купить оборудование",
+      "button_withdraw_funds": "Снять средства",
+      "button_repay_debt": "Погасить долг",
+      "button_expand": "Расшириться",
+      "button_custom": "Свой вопрос",
+      "fieldPercent": "Процент",
+      "fieldAmount": "Сумма",
+      "check": "Проверить",
+      "checking": "Проверка…",
+      "customPlaceholder": "Задайте конкретный вопрос о бизнесе…",
+      "error": "Не удалось получить ответ — попробуйте снова."
     }
   },
   "onboarding": {

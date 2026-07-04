@@ -10,6 +10,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { PageHeader } from '@/components/treasury/page-header';
 import { DataQualityBadge } from '@/components/dashboard/data-quality-badge';
+import { DecisionCentreCard } from './decision-centre-card';
 import { MarkdownReply } from './markdown-reply';
 
 const QUICK_PROMPT_KEYS = [
@@ -80,6 +81,8 @@ export function AiCfoPage() {
           </Button>
         ))}
       </div>
+
+      <DecisionCentreCard />
 
       <Card className="flex min-h-[480px] flex-col">
         <CardHeader>

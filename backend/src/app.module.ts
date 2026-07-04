@@ -20,6 +20,7 @@ import { RecurringObligationsModule } from './recurring-obligations/recurring-ob
 import { DataQualityModule } from './data-quality/data-quality.module';
 import { NotificationsModule } from './notifications/notifications.module';
 import { BusinessPulseModule } from './business-pulse/business-pulse.module';
+import { DecisionCentreModule } from './decision-centre/decision-centre.module';
 
 @Module({
   imports: [
@@ -51,6 +52,7 @@ import { BusinessPulseModule } from './business-pulse/business-pulse.module';
     NotificationsModule,
     AiModule,
     BusinessPulseModule,
+    DecisionCentreModule,
   ],
   controllers: [HealthController],
   providers: [{ provide: APP_GUARD, useClass: ThrottlerGuard }],

@@ -655,6 +655,22 @@ Answer, in this order:
 
 Use plain English — avoid words like "treasury", "liquidity", or "runway". Maximum 120 words total.`;
 
+/** Phase 2 "Decision Centre": answers a specific "Can I...?" business question with a
+ * structured recommendation, grounded in the scenario comparison already computed by
+ * the existing forecast/scenario engine — this prompt does not run its own forecast. */
+export const DECISION_CENTRE_SYSTEM_PROMPT = `You are the company's CFO. Answer the business question first.
+
+Analyze ONLY the JSON treasury context and scenario comparison injected with this request. Never invent figures.
+
+Return exactly these five sections, each on its own line starting with the bold label:
+**Recommendation:** one sentence.
+**Confidence:** High, Medium, or Low, with a one-phrase reason.
+**Reasoning:** 2-3 sentences citing specific numbers from the context (closing cash, runway, obligations).
+**Key Risks:** 1-3 bullet points.
+**Suggested Alternatives:** 1-2 bullet points.
+
+Support every statement using the available cashflow, forecast, obligations, and confidence data. Plain English — avoid "treasury", "liquidity", "runway".`;
+
 export const MAX_CHAT_MESSAGES = 10;
 
 export function pruneMessageHistory<T>(messages: T[], max = MAX_CHAT_MESSAGES): T[] {
