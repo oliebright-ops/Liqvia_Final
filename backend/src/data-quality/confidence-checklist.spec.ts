@@ -33,41 +33,43 @@ describe('buildConfidenceReport', () => {
     expect(report.score).toBe(100);
     expect(report.rating).toBe('high');
     expect(report.weaknesses).toHaveLength(0);
-    expect(report.recommendedNextAction).toContain('good shape');
+    expect(report.recommendedNextAction).toEqual({ key: 'allGood' });
   });
 
   it('flags missing bank accounts with a specific fix', () => {
     const report = buildConfidenceReport({ ...HEALTHY_SIGNALS, bankAccountCount: 0 });
-    expect(report.weaknesses.some((w) => w.problem.includes('No bank accounts'))).toBe(true);
-    const weakness = report.weaknesses.find((w) => w.problem.includes('No bank accounts'));
-    expect(weakness?.fix).toContain('Connect or add');
+    const weakness = report.weaknesses.find((w) => w.problem.key === 'noBankAccounts');
+    expect(weakness).toBeDefined();
+    expect(weakness?.fix.key).toBe('noBankAccountsFix');
     expect(report.score).toBeLessThan(100);
   });
 
   it('flags thin history separately from missing history', () => {
     const thin = buildConfidenceReport({ ...HEALTHY_SIGNALS, historyWeeks: 3 });
-    expect(thin.weaknesses.some((w) => w.problem.includes('3 week'))).toBe(true);
+    const thinWeakness = thin.weaknesses.find((w) => w.problem.key === 'historyWeeksLow');
+    expect(thinWeakness?.problem.params).toEqual({ weeks: '3' });
 
     const none = buildConfidenceReport({ ...HEALTHY_SIGNALS, historyWeeks: 0 });
-    expect(none.weaknesses.some((w) => w.problem.includes('0 week'))).toBe(true);
+    const noneWeakness = none.weaknesses.find((w) => w.problem.key === 'historyWeeksLow');
+    expect(noneWeakness?.problem.params).toEqual({ weeks: '0' });
   });
 
   it('flags missing payroll/tax obligations even when other obligations exist', () => {
     const report = buildConfidenceReport({ ...HEALTHY_SIGNALS, obligationCategories: ['rent', 'subscription'] });
-    const weakness = report.weaknesses.find((w) => w.problem.includes('payroll'));
+    const weakness = report.weaknesses.find((w) => w.problem.key === 'noTaxObligations');
     expect(weakness).toBeDefined();
-    expect(weakness?.businessImpact).toContain('predictable outflows');
+    expect(weakness?.businessImpact.key).toBe('noTaxObligationsImpact');
   });
 
   it('does not flag payroll/tax when at least one tax-like category is present', () => {
     const report = buildConfidenceReport({ ...HEALTHY_SIGNALS, obligationCategories: ['superannuation'] });
-    expect(report.weaknesses.some((w) => w.problem.includes('payroll, GST'))).toBe(false);
+    expect(report.weaknesses.some((w) => w.problem.key === 'noTaxObligations')).toBe(false);
   });
 
   it('flags no budget with a specific fix', () => {
     const report = buildConfidenceReport({ ...HEALTHY_SIGNALS, hasBudget: false });
-    const weakness = report.weaknesses.find((w) => w.problem.includes('No budget'));
-    expect(weakness?.fix).toContain('Upload a budget');
+    const weakness = report.weaknesses.find((w) => w.problem.key === 'noBudget');
+    expect(weakness?.fix.key).toBe('noBudgetFix');
   });
 
   it('rates low when almost every signal fails', () => {
@@ -85,6 +87,6 @@ describe('buildConfidenceReport', () => {
 
   it('recommends the first weakness fix as the next action when anything is weak', () => {
     const report = buildConfidenceReport({ ...HEALTHY_SIGNALS, bankAccountCount: 0 });
-    expect(report.recommendedNextAction).toBe(report.weaknesses[0].fix);
+    expect(report.recommendedNextAction).toEqual(report.weaknesses[0].fix);
   });
 });

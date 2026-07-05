@@ -952,7 +952,33 @@
       "hideDetails": "Masquer les détails",
       "strengthsLabel": "Points forts",
       "weaknessesLabel": "Points faibles",
-      "uploadDataCta": "Importer des données"
+      "uploadDataCta": "Importer des données",
+      "messages": {
+        "moduleFresh": "{module} est à jour.",
+        "moduleStale": "{module} n'a pas été mis à jour depuis {days} jour(s).",
+        "moduleStaleImpact": "La prévision et les réponses du CFO IA peuvent reposer sur des chiffres obsolètes.",
+        "moduleStaleFix": "Importez des données récentes pour {module}.",
+        "moduleMissing": "{module} n'a aucune donnée.",
+        "moduleMissingImpact": "Tout ce qui dépend de ce module est une estimation approximative, pas un chiffre réel.",
+        "moduleMissingFix": "Importez des données pour {module} afin d'activer cette fonctionnalité.",
+        "bankAccountsConnected": "{count} compte(s) bancaire(s) connecté(s).",
+        "noBankAccounts": "Aucun compte bancaire connecté.",
+        "noBankAccountsImpact": "La position de trésorerie repose uniquement sur une saisie manuelle, pas sur de vraies transactions.",
+        "noBankAccountsFix": "Connectez ou ajoutez au moins un compte bancaire.",
+        "historyWeeksAvailable": "{weeks} semaines d'historique de transactions disponibles.",
+        "historyWeeksLow": "Seulement {weeks} semaine(s) d'historique de transactions.",
+        "historyWeeksLowImpact": "Les prévisions et estimations de burn rate sont moins fiables avec un historique limité.",
+        "historyWeeksLowFix": "Importez davantage de transactions bancaires historiques ou de réalisés hebdomadaires.",
+        "taxObligationsModeled": "La paie et les obligations fiscales sont modélisées comme des engagements récurrents.",
+        "noTaxObligations": "Aucune obligation de paie, TVA, retenue ou charges sociales configurée.",
+        "noTaxObligationsImpact": "La prévision peut manquer de grandes sorties prévisibles avant qu'elles n'apparaissent sur le compte bancaire.",
+        "noTaxObligationsFix": "Ajoutez des obligations récurrentes pour la paie et les impôts dans Paramètres → Obligations récurrentes.",
+        "budgetInPlace": "Un budget est en place pour comparer avec le réalisé.",
+        "noBudget": "Aucun budget importé.",
+        "noBudgetImpact": "Rien ne permet de vérifier si le réalisé suit le plan.",
+        "noBudgetFix": "Importez un budget pour activer la comparaison budget/réalisé.",
+        "allGood": "Continuez à mettre à jour vos imports — cet espace de travail est en bonne santé."
+      }
     },
     "whyChanged": {
       "trigger": "Pourquoi ce changement ?",
@@ -1008,6 +1034,8 @@
       "demoTitle": "Explorer avec des données de démonstration",
       "demoHint": "Essayez Liqvia avec les données d'exemple d'Acme Construction — sans configuration.",
       "ndisDemoLink": "Ou explorez Demo — NDIS Care Services (Mode axé sur la trésorerie) →",
+      "subscriptionDemoLink": "Ou explorez Demo — Subscription Studio (Mode revenus récurrents) →",
+      "mixedDemoLink": "Ou explorez Demo — Creative Agency Co (Modèle de trésorerie mixte) →",
       "noLinks": "Aucune entreprise n'est actuellement associée à votre compte. Configurez-en une ci-dessous pour commencer."
     },
     "select": {

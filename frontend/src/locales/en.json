@@ -1026,7 +1026,33 @@
       "hideDetails": "Hide details",
       "strengthsLabel": "Strengths",
       "weaknessesLabel": "Weaknesses",
-      "uploadDataCta": "Upload data"
+      "uploadDataCta": "Upload data",
+      "messages": {
+        "moduleFresh": "{module} is up to date.",
+        "moduleStale": "{module} hasn't been updated in {days} day(s).",
+        "moduleStaleImpact": "Forecast and AI CFO answers may be based on outdated figures.",
+        "moduleStaleFix": "Upload fresh data for {module}.",
+        "moduleMissing": "{module} has no data at all.",
+        "moduleMissingImpact": "Anything relying on this module is a rough estimate, not a real figure.",
+        "moduleMissingFix": "Upload data for {module} to enable this.",
+        "bankAccountsConnected": "{count} bank account(s) connected.",
+        "noBankAccounts": "No bank accounts connected.",
+        "noBankAccountsImpact": "Cash position is based on manual entry only, not real transactions.",
+        "noBankAccountsFix": "Connect or add at least one bank account.",
+        "historyWeeksAvailable": "{weeks} weeks of transaction history available.",
+        "historyWeeksLow": "Only {weeks} week(s) of transaction history.",
+        "historyWeeksLowImpact": "Forecasts and burn-rate estimates are less reliable with limited history.",
+        "historyWeeksLowFix": "Upload more historical bank transactions or weekly actuals.",
+        "taxObligationsModeled": "Payroll and tax obligations are modeled as recurring commitments.",
+        "noTaxObligations": "No payroll, GST, PAYG, or super obligations configured.",
+        "noTaxObligationsImpact": "The forecast can miss large, predictable outflows before they hit the bank feed.",
+        "noTaxObligationsFix": "Add recurring obligations for payroll and tax in Settings → Recurring Obligations.",
+        "budgetInPlace": "A budget is in place to compare actuals against.",
+        "noBudget": "No budget uploaded.",
+        "noBudgetImpact": "There is nothing to check whether actuals are tracking to plan.",
+        "noBudgetFix": "Upload a budget to enable budget-vs-actual comparison.",
+        "allGood": "Keep uploads current — this workspace is in good shape."
+      }
     },
     "whyChanged": {
       "trigger": "Why has this changed?",
@@ -1092,6 +1118,8 @@
       "demoTitle": "Explore with demo data",
       "demoHint": "Try Liqvia with Acme Construction sample data — no setup needed.",
       "ndisDemoLink": "Or explore Demo — NDIS Care Services (Cash-Driven Mode) →",
+      "subscriptionDemoLink": "Or explore Demo — Subscription Studio (Recurring Revenue Mode) →",
+      "mixedDemoLink": "Or explore Demo — Creative Agency Co (Mixed Cash Model) →",
       "noLinks": "No companies are currently linked to your account. Set one up below to get started."
     },
     "select": {

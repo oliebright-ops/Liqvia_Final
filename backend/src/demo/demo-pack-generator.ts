@@ -349,4 +349,27 @@ export const DEMO_PACK_PROFILES: DemoPackProfile[] = [
     ],
     revenueSeasonality: [0.9, 0.92, 0.95, 0.98, 1.0, 1.02, 1.05, 1.08, 1.1, 1.12, 1.15, 1.1, 1.05, 1.08],
   },
+  {
+    // Mixed cash model (businessMode set to 'mixed' in mixed-demo-seed.ts): this profile only
+    // supplies the invoiced/project side (AR/AP). The recurring retainer income and fixed
+    // costs that make this business "mixed" are layered on afterward as RecurringObligation /
+    // ExpectedSettlement rows against the bank accounts this pack creates.
+    slug: 'demo-creative-agency',
+    currency: 'USD',
+    operatingMask: '****5577',
+    reserveMask: '****2288',
+    cash: { operating: 58000, reserve: 20000 },
+    monthly: { revenue: 85000, payroll: 52000, expenses: 26000 },
+    ar: [
+      { customer: 'Northgate Retail', invoice: 'CA-3001', invoiceDate: '2026-05-10', dueDate: '2026-06-09', amount: 32000 },
+      { customer: 'Summit Media Group', invoice: 'CA-3002', invoiceDate: '2026-05-21', dueDate: '2026-06-20', amount: 21000 },
+      { customer: 'Lakeside Ventures', invoice: 'CA-3003', invoiceDate: '2026-05-27', dueDate: '2026-06-26', amount: 14000 },
+    ],
+    ap: [
+      { supplier: 'Freelance Design Pool', bill: 'CA-AP01', billDate: '2026-05-16', dueDate: '2026-06-15', amount: 15000, priority: 'critical' },
+      { supplier: 'Payroll Services', bill: 'CA-PAY05', billDate: '2026-05-26', dueDate: '2026-06-05', amount: 26000, priority: 'payroll' },
+      { supplier: 'Creative Software Suite', bill: 'CA-AP02', billDate: '2026-05-12', dueDate: '2026-06-11', amount: 3200, priority: 'flexible' },
+    ],
+    revenueSeasonality: [1.0, 0.98, 1.02, 1.05, 0.97, 1.0, 1.03, 1.01, 0.99, 1.04, 1.02, 0.98, 1.01, 1.0],
+  },
 ];

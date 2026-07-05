@@ -952,7 +952,33 @@
       "hideDetails": "Ocultar detalles",
       "strengthsLabel": "Puntos fuertes",
       "weaknessesLabel": "Puntos débiles",
-      "uploadDataCta": "Cargar datos"
+      "uploadDataCta": "Cargar datos",
+      "messages": {
+        "moduleFresh": "{module} está actualizado.",
+        "moduleStale": "{module} no se ha actualizado en {days} día(s).",
+        "moduleStaleImpact": "La previsión y las respuestas del CFO de IA pueden basarse en cifras desactualizadas.",
+        "moduleStaleFix": "Cargue datos actualizados de {module}.",
+        "moduleMissing": "{module} no tiene ningún dato.",
+        "moduleMissingImpact": "Todo lo que dependa de este módulo es una estimación aproximada, no una cifra real.",
+        "moduleMissingFix": "Cargue datos de {module} para habilitar esto.",
+        "bankAccountsConnected": "{count} cuenta(s) bancaria(s) conectada(s).",
+        "noBankAccounts": "No hay cuentas bancarias conectadas.",
+        "noBankAccountsImpact": "La posición de caja se basa solo en entradas manuales, no en transacciones reales.",
+        "noBankAccountsFix": "Conecte o agregue al menos una cuenta bancaria.",
+        "historyWeeksAvailable": "{weeks} semanas de historial de transacciones disponibles.",
+        "historyWeeksLow": "Solo {weeks} semana(s) de historial de transacciones.",
+        "historyWeeksLowImpact": "Las previsiones y estimaciones de consumo de caja son menos fiables con historial limitado.",
+        "historyWeeksLowFix": "Cargue más transacciones bancarias históricas o datos reales semanales.",
+        "taxObligationsModeled": "La nómina y las obligaciones fiscales están modeladas como compromisos recurrentes.",
+        "noTaxObligations": "No hay obligaciones de nómina, IVA, retenciones o seguridad social configuradas.",
+        "noTaxObligationsImpact": "La previsión puede pasar por alto salidas grandes y predecibles antes de que lleguen al banco.",
+        "noTaxObligationsFix": "Agregue obligaciones recurrentes de nómina e impuestos en Configuración → Obligaciones recurrentes.",
+        "budgetInPlace": "Hay un presupuesto configurado para comparar con lo real.",
+        "noBudget": "No se ha cargado ningún presupuesto.",
+        "noBudgetImpact": "No hay forma de comprobar si lo real coincide con el plan.",
+        "noBudgetFix": "Cargue un presupuesto para habilitar la comparación presupuesto vs. real.",
+        "allGood": "Mantenga las cargas actualizadas — este espacio de trabajo está en buena forma."
+      }
     },
     "whyChanged": {
       "trigger": "¿Por qué cambió esto?",
@@ -1008,6 +1034,8 @@
       "demoTitle": "Explorar con datos de demostración",
       "demoHint": "Pruebe Liqvia con los datos de ejemplo de Acme Construction — sin configuración necesaria.",
       "ndisDemoLink": "O explore Demo — NDIS Care Services (Modo impulsado por efectivo) →",
+      "subscriptionDemoLink": "O explore Demo — Subscription Studio (Modo de ingresos recurrentes) →",
+      "mixedDemoLink": "O explore Demo — Creative Agency Co (Modelo de caja mixto) →",
       "noLinks": "No hay empresas vinculadas a su cuenta. Configure una a continuación para comenzar."
     },
     "select": {

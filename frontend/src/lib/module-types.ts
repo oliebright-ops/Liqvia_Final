@@ -255,18 +255,23 @@ export interface DecisionCentreResponseView {
 
 export type ConfidenceRating = 'high' | 'medium' | 'low';
 
+export interface ConfidenceMessageView {
+  key: string;
+  params?: Record<string, string>;
+}
+
 export interface ConfidenceWeaknessView {
-  problem: string;
-  businessImpact: string;
-  fix: string;
+  problem: ConfidenceMessageView;
+  businessImpact: ConfidenceMessageView;
+  fix: ConfidenceMessageView;
 }
 
 export interface ConfidenceReportView {
   score: number;
   rating: ConfidenceRating;
-  strengths: string[];
+  strengths: ConfidenceMessageView[];
   weaknesses: ConfidenceWeaknessView[];
-  recommendedNextAction: string;
+  recommendedNextAction: ConfidenceMessageView;
 }
 
 export interface MaterialMovementView {

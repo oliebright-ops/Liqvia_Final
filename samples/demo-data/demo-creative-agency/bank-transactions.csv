@@ -1,0 +1,27 @@
+Bank Account Name,Account Number Masked,Transaction Date,Description,Amount,Direction
+Operating Account,****5577,2026-08-30,Customer receipts 2026-W19,17186,IN
+Operating Account,****5577,2026-08-31,Payroll 2026-W19,12009,OUT
+Operating Account,****5577,2026-09-01,Vendor payments 2026-W19,4203,OUT
+Operating Account,****5577,2026-08-23,Customer receipts 2026-W20,16853,IN
+Operating Account,****5577,2026-08-24,Payroll 2026-W20,12009,OUT
+Operating Account,****5577,2026-08-25,Vendor payments 2026-W20,4203,OUT
+Operating Account,****5577,2026-08-16,Customer receipts 2026-W21,16519,IN
+Operating Account,****5577,2026-08-17,Payroll 2026-W21,12009,OUT
+Operating Account,****5577,2026-08-18,Vendor payments 2026-W21,4203,OUT
+Reserve Account,****2288,2026-08-19,Reserve sweep 2026-W21,972,IN
+Operating Account,****5577,2026-08-09,Customer receipts 2026-W22,17353,IN
+Operating Account,****5577,2026-08-10,Payroll 2026-W22,12009,OUT
+Operating Account,****5577,2026-08-11,Vendor payments 2026-W22,4203,OUT
+Operating Account,****5577,2026-08-02,Customer receipts 2026-W23,17020,IN
+Operating Account,****5577,2026-08-03,Payroll 2026-W23,12009,OUT
+Operating Account,****5577,2026-08-04,Vendor payments 2026-W23,4203,OUT
+Operating Account,****5577,2026-07-26,Customer receipts 2026-W24,16352,IN
+Operating Account,****5577,2026-07-27,Payroll 2026-W24,12009,OUT
+Operating Account,****5577,2026-07-28,Vendor payments 2026-W24,4203,OUT
+Reserve Account,****2288,2026-07-29,Reserve sweep 2026-W24,962,IN
+Operating Account,****5577,2026-07-19,Customer receipts 2026-W25,16853,IN
+Operating Account,****5577,2026-07-20,Payroll 2026-W25,12009,OUT
+Operating Account,****5577,2026-07-21,Vendor payments 2026-W25,4203,OUT
+Operating Account,****5577,2026-07-12,Customer receipts 2026-W26,16686,IN
+Operating Account,****5577,2026-07-13,Payroll 2026-W26,12009,OUT
+Operating Account,****5577,2026-07-14,Vendor payments 2026-W26,4203,OUT

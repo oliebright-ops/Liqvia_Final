@@ -3,25 +3,36 @@ import { DataQualityReport } from './data-quality.service';
 
 export type ConfidenceRating = 'high' | 'medium' | 'low';
 
+/**
+ * Structured message instead of a finished sentence — the frontend resolves `key`
+ * against modules.confidenceLayer.messages.* in the active locale and interpolates
+ * `params`, so this layer stays translatable instead of baking English text into the API.
+ */
+export interface ConfidenceMessage {
+  key: string;
+  params?: Record<string, string>;
+}
+
 export interface ConfidenceWeakness {
-  problem: string;
-  businessImpact: string;
-  fix: string;
+  problem: ConfidenceMessage;
+  businessImpact: ConfidenceMessage;
+  fix: ConfidenceMessage;
 }
 
 export interface ConfidenceReport {
   score: number;
   rating: ConfidenceRating;
-  strengths: string[];
+  strengths: ConfidenceMessage[];
   weaknesses: ConfidenceWeakness[];
-  recommendedNextAction: string;
+  recommendedNextAction: ConfidenceMessage;
 }
 
-const MODULE_LABEL: Record<keyof DataQualityReport['modules'], string> = {
-  bankTransactions: 'Bank transactions',
-  receivables: 'AR ageing',
-  payables: 'AP ageing',
-  budgetActuals: 'Budget / weekly actuals',
+// Matches the modules.dataQuality.module* locale keys so both cards use one label per module.
+const MODULE_KEY: Record<keyof DataQualityReport['modules'], string> = {
+  bankTransactions: 'bankTransactions',
+  receivables: 'receivables',
+  payables: 'payables',
+  budgetActuals: 'budgetActuals',
 };
 
 const TAX_LIKE_CATEGORIES: ObligationCategory[] = ['payroll', 'superannuation', 'payg_withholding', 'gst_bas'];
@@ -41,7 +52,7 @@ export interface ConfidenceSignals {
  * fixed, auditable logic than an LLM narrative that could vary between calls.
  */
 export function buildConfidenceReport(signals: ConfidenceSignals): ConfidenceReport {
-  const strengths: string[] = [];
+  const strengths: ConfidenceMessage[] = [];
   const weaknesses: ConfidenceWeakness[] = [];
   let passed = 0;
   let total = 0;
@@ -51,21 +62,21 @@ export function buildConfidenceReport(signals: ConfidenceSignals): ConfidenceRep
   for (const key of Object.keys(signals.dataQuality.modules) as Array<keyof DataQualityReport['modules']>) {
     total += 1;
     const module = signals.dataQuality.modules[key];
-    const label = MODULE_LABEL[key];
+    const moduleKey = MODULE_KEY[key];
     if (module.status === 'fresh') {
       passed += 1;
-      strengths.push(`${label} is up to date.`);
+      strengths.push({ key: 'moduleFresh', params: { module: moduleKey } });
     } else if (module.status === 'stale') {
       weaknesses.push({
-        problem: `${label} hasn't been updated in ${module.daysSinceUpdate} day(s).`,
-        businessImpact: 'Forecast and AI CFO answers may be based on outdated figures.',
-        fix: `Upload fresh ${label.toLowerCase()} data.`,
+        problem: { key: 'moduleStale', params: { module: moduleKey, days: String(module.daysSinceUpdate) } },
+        businessImpact: { key: 'moduleStaleImpact' },
+        fix: { key: 'moduleStaleFix', params: { module: moduleKey } },
       });
     } else {
       weaknesses.push({
-        problem: `${label} has no data at all.`,
-        businessImpact: 'Anything relying on this module is a rough estimate, not a real figure.',
-        fix: `Upload ${label.toLowerCase()} to enable this.`,
+        problem: { key: 'moduleMissing', params: { module: moduleKey } },
+        businessImpact: { key: 'moduleMissingImpact' },
+        fix: { key: 'moduleMissingFix', params: { module: moduleKey } },
       });
     }
   }
@@ -73,24 +84,24 @@ export function buildConfidenceReport(signals: ConfidenceSignals): ConfidenceRep
   total += 1;
   if (signals.bankAccountCount > 0) {
     passed += 1;
-    strengths.push(`${signals.bankAccountCount} bank account(s) connected.`);
+    strengths.push({ key: 'bankAccountsConnected', params: { count: String(signals.bankAccountCount) } });
   } else {
     weaknesses.push({
-      problem: 'No bank accounts connected.',
-      businessImpact: 'Cash position is based on manual entry only, not real transactions.',
-      fix: 'Connect or add at least one bank account.',
+      problem: { key: 'noBankAccounts' },
+      businessImpact: { key: 'noBankAccountsImpact' },
+      fix: { key: 'noBankAccountsFix' },
     });
   }
 
   total += 1;
   if (signals.historyWeeks >= 8) {
     passed += 1;
-    strengths.push(`${signals.historyWeeks} weeks of transaction history available.`);
+    strengths.push({ key: 'historyWeeksAvailable', params: { weeks: String(signals.historyWeeks) } });
   } else {
     weaknesses.push({
-      problem: `Only ${signals.historyWeeks} week(s) of transaction history.`,
-      businessImpact: 'Forecasts and burn-rate estimates are less reliable with limited history.',
-      fix: 'Upload more historical bank transactions or weekly actuals.',
+      problem: { key: 'historyWeeksLow', params: { weeks: String(signals.historyWeeks) } },
+      businessImpact: { key: 'historyWeeksLowImpact' },
+      fix: { key: 'historyWeeksLowFix' },
     });
   }
 
@@ -98,31 +109,31 @@ export function buildConfidenceReport(signals: ConfidenceSignals): ConfidenceRep
   const hasTaxLikeObligation = signals.obligationCategories.some((c) => TAX_LIKE_CATEGORIES.includes(c));
   if (hasTaxLikeObligation) {
     passed += 1;
-    strengths.push('Payroll and tax obligations are modeled as recurring commitments.');
+    strengths.push({ key: 'taxObligationsModeled' });
   } else {
     weaknesses.push({
-      problem: 'No payroll, GST, PAYG, or super obligations configured.',
-      businessImpact: 'The forecast can miss large, predictable outflows before they hit the bank feed.',
-      fix: 'Add recurring obligations for payroll and tax in Settings → Recurring Obligations.',
+      problem: { key: 'noTaxObligations' },
+      businessImpact: { key: 'noTaxObligationsImpact' },
+      fix: { key: 'noTaxObligationsFix' },
     });
   }
 
   total += 1;
   if (signals.hasBudget) {
     passed += 1;
-    strengths.push('A budget is in place to compare actuals against.');
+    strengths.push({ key: 'budgetInPlace' });
   } else {
     weaknesses.push({
-      problem: 'No budget uploaded.',
-      businessImpact: 'There is nothing to check whether actuals are tracking to plan.',
-      fix: 'Upload a budget to enable budget-vs-actual comparison.',
+      problem: { key: 'noBudget' },
+      businessImpact: { key: 'noBudgetImpact' },
+      fix: { key: 'noBudgetFix' },
     });
   }
 
   const score = Math.round((passed / total) * 100);
   const rating: ConfidenceRating = score >= 80 ? 'high' : score >= 50 ? 'medium' : 'low';
-  const recommendedNextAction =
-    weaknesses.length > 0 ? weaknesses[0].fix : 'Keep uploads current — this workspace is in good shape.';
+  const recommendedNextAction: ConfidenceMessage =
+    weaknesses.length > 0 ? weaknesses[0].fix : { key: 'allGood' };
 
   return { score, rating, strengths, weaknesses, recommendedNextAction };
 }

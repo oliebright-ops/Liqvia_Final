@@ -1,0 +1,4 @@
+Supplier Name,Bill Number,Bill Date,Due Date,Outstanding Amount,Supplier Priority,Currency
+Freelance Design Pool,CA-AP01,2026-05-16,2026-06-15,15000,critical,USD
+Payroll Services,CA-PAY05,2026-05-26,2026-06-05,26000,payroll,USD
+Creative Software Suite,CA-AP02,2026-05-12,2026-06-11,3200,flexible,USD

@@ -2,7 +2,13 @@
 
 import { useCallback, useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { NDIS_DEMO_COMPANY_ID, OnboardingPhase, sumBankAccountOpeningBalances } from '@liqvia2/shared';
+import {
+  MIXED_DEMO_COMPANY_ID,
+  NDIS_DEMO_COMPANY_ID,
+  OnboardingPhase,
+  SUBSCRIPTION_DEMO_COMPANY_ID,
+  sumBankAccountOpeningBalances,
+} from '@liqvia2/shared';
 import { apiGet, apiPost } from '@/lib/api';
 import { AuthResponse, OnboardingContext } from '@/lib/auth-types';
 import { useAuth } from '@/lib/auth-context';
@@ -168,6 +174,26 @@ export function OnboardingWizard() {
     [enterDemoMode],
   );
 
+  // Lets a tester pick the demo entity closest to their own cash model — invoice-driven
+  // (the default), cash-driven/recurring, or mixed — instead of only seeing one sample company.
+  const extraDemoLinks = [
+    {
+      key: 'ndis',
+      label: t('onboarding.welcome.ndisDemoLink'),
+      onClick: () => void handleDemoMode(NDIS_DEMO_COMPANY_ID),
+    },
+    {
+      key: 'subscription',
+      label: t('onboarding.welcome.subscriptionDemoLink'),
+      onClick: () => void handleDemoMode(SUBSCRIPTION_DEMO_COMPANY_ID),
+    },
+    {
+      key: 'mixed',
+      label: t('onboarding.welcome.mixedDemoLink'),
+      onClick: () => void handleDemoMode(MIXED_DEMO_COMPANY_ID),
+    },
+  ];
+
   if (loading || !user) {
     return (
       <div className="flex min-h-screen items-center justify-center bg-slate-950 text-slate-400">
@@ -182,7 +208,7 @@ export function OnboardingWizard() {
         <WelcomeStep
           onSetupCompany={() => goTo('company')}
           onDemoMode={() => void handleDemoMode()}
-          onNdisDemoMode={() => void handleDemoMode(NDIS_DEMO_COMPANY_ID)}
+          extraDemoLinks={extraDemoLinks}
           demoLoading={demoLoading}
         />
       )}

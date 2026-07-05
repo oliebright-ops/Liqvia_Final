@@ -1,0 +1,7 @@
+Period,Account Code,Account Name,Account Type,Debit,Credit
+2026-07,1000,Cash,asset,78000,0
+2026-07,1200,Accounts Receivable,asset,67000,0
+2026-07,2000,Accounts Payable,liability,0,44200
+2026-07,4000,Operating Revenue,revenue,0,85000
+2026-07,5000,Payroll,expense,52000,0
+2026-07,6000,Operating Expenses,expense,26000,0

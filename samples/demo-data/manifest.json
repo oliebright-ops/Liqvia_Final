@@ -42,6 +42,14 @@
       "locale": "en",
       "slug": "cloudpeak-saas",
       "profile": "High-burn startup with short runway (critical)."
+    },
+    {
+      "id": "demo-creative-agency",
+      "name": "Demo — Creative Agency Co",
+      "currency": "USD",
+      "locale": "en",
+      "slug": "demo-creative-agency",
+      "profile": "Mixed cash model: invoiced project revenue plus predictable retainer income and fixed costs."
     }
   ]
 }
