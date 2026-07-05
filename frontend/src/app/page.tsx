@@ -22,11 +22,11 @@ export default function HomePage() {
   const [demoLoading, setDemoLoading] = useState(false);
   const [demoError, setDemoError] = useState<string | null>(null);
 
-  async function onExploreDemo() {
+  async function onExploreDemo(companyId?: string) {
     setDemoLoading(true);
     setDemoError(null);
     try {
-      await exploreDemo();
+      await exploreDemo(companyId);
     } catch (err) {
       setDemoError(err instanceof Error ? err.message : t('home.landing.demoError'));
     } finally {
@@ -60,7 +60,7 @@ export default function HomePage() {
   return (
     <AppShell>
       <HeroCtaSection
-        onExploreDemo={() => void onExploreDemo()}
+        onExploreDemo={(companyId) => void onExploreDemo(companyId)}
         demoLoading={demoLoading}
         disabled={loading}
         demoError={demoError}

@@ -4,7 +4,7 @@ import { Throttle } from '@nestjs/throttler';
 import { AuthService } from './auth.service';
 import { CurrentUser } from './current-user.decorator';
 import { Public } from './decorators';
-import { ForgotPasswordDto, LoginDto, RegisterDto, ResetPasswordDto } from './dto/auth.dto';
+import { DemoGuestDto, ForgotPasswordDto, LoginDto, RegisterDto, ResetPasswordDto } from './dto/auth.dto';
 import { AuthUser } from './auth.types';
 
 @ApiTags('Auth')
@@ -54,8 +54,8 @@ export class AuthController {
   @ApiOperation({
     summary: 'Start a read-only demo session without registering',
   })
-  demoGuest() {
-    return this.auth.createDemoGuest();
+  demoGuest(@Body() body: DemoGuestDto) {
+    return this.auth.createDemoGuest(body?.companyId);
   }
 
   @Get('me')

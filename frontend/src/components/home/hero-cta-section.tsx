@@ -1,6 +1,11 @@
 'use client';
 
 import Link from 'next/link';
+import {
+  MIXED_DEMO_COMPANY_ID,
+  NDIS_DEMO_COMPANY_ID,
+  SUBSCRIPTION_DEMO_COMPANY_ID,
+} from '@liqvia2/shared';
 import { Button } from '@/components/ui/button';
 import { useTranslations } from '@/lib/i18n';
 
@@ -14,8 +19,17 @@ const PARTNER_AVATARS = [
   { id: 'd', gradient: 'from-amber-500 to-orange-600', initials: 'JP' },
 ] as const;
 
+// Lets a first-time visitor — the "no sign-up required" path most testers actually use —
+// pick the demo entity closest to their own cash model instead of always landing on the
+// default invoice-driven consulting company.
+const ALT_DEMOS = [
+  { key: 'ndis', companyId: NDIS_DEMO_COMPANY_ID, labelKey: 'home.landing.demoAlt.ndis' },
+  { key: 'subscription', companyId: SUBSCRIPTION_DEMO_COMPANY_ID, labelKey: 'home.landing.demoAlt.subscription' },
+  { key: 'mixed', companyId: MIXED_DEMO_COMPANY_ID, labelKey: 'home.landing.demoAlt.mixed' },
+] as const;
+
 interface HeroCtaSectionProps {
-  onExploreDemo: () => void;
+  onExploreDemo: (companyId?: string) => void;
   demoLoading: boolean;
   disabled: boolean;
   demoError: string | null;
@@ -47,7 +61,7 @@ export function HeroCtaSection({
           <Button
             type="button"
             disabled={disabled || demoLoading}
-            onClick={onExploreDemo}
+            onClick={() => onExploreDemo()}
             className="h-12 w-full min-w-[220px] px-8 text-base font-semibold shadow-glow-primary sm:w-auto"
           >
             {demoLoading ? t('home.landing.demoLoading') : t('home.landing.demoTitle')}
@@ -55,6 +69,29 @@ export function HeroCtaSection({
           <span className="text-[11px] font-medium uppercase tracking-wide text-muted-foreground">
             {t('home.landing.demoNoSignup')}
           </span>
+        </div>
+
+        <div className="flex flex-col items-center gap-1">
+          <p className="text-xs text-muted-foreground">{t('home.landing.demoAltLabel')}</p>
+          <div className="flex flex-wrap items-center justify-center gap-x-3 gap-y-1">
+            {ALT_DEMOS.map(({ key, companyId, labelKey }, i) => (
+              <span key={key} className="flex items-center gap-3">
+                {i > 0 && (
+                  <span className="text-muted-foreground/50" aria-hidden>
+                    ·
+                  </span>
+                )}
+                <button
+                  type="button"
+                  disabled={disabled || demoLoading}
+                  onClick={() => onExploreDemo(companyId)}
+                  className="text-xs font-medium text-foreground/80 underline-offset-4 transition-colors hover:text-foreground hover:underline disabled:opacity-50"
+                >
+                  {t(labelKey)}
+                </button>
+              </span>
+            ))}
+          </div>
         </div>
 
         <p className="text-sm text-muted-foreground">

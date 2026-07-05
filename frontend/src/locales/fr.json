@@ -48,6 +48,12 @@
       "demoTitle": "Explorer avec des données de démonstration",
       "demoHint": "Essayez Liqvia avec les données d'exemple d'Acme Construction — sans connexion.",
       "demoNoSignup": "Sans inscription",
+      "demoAltLabel": "Ou essayez une entreprise type plus proche de la vôtre :",
+      "demoAlt": {
+        "ndis": "NDIS Care Services (axé sur la trésorerie)",
+        "subscription": "Subscription Studio (revenus récurrents)",
+        "mixed": "Creative Agency Co (modèle mixte)"
+      },
       "demoLoading": "Démarrage de la démo…",
       "partnerAvatarsCaption": "Des équipes finance en bêta privée",
       "demoError": "Impossible de démarrer la démo. Vérifiez que les données de démonstration sont initialisées.",

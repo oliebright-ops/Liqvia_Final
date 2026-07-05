@@ -15,7 +15,7 @@ interface AuthContextValue {
   register: (input: { name: string; email: string; password: string }) => Promise<void>;
   selectCompany: (companyId: string) => Promise<void>;
   enterDemoMode: (companyId?: string) => Promise<void>;
-  exploreDemo: () => Promise<void>;
+  exploreDemo: (companyId?: string) => Promise<void>;
   logout: () => void;
   refreshUser: () => Promise<void>;
   applyAuthResponse: (res: AuthResponse) => Promise<void>;
@@ -114,15 +114,18 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     [router, applyAuthResponse],
   );
 
-  const exploreDemo = useCallback(async () => {
-    if (user) {
-      await enterDemoMode();
-      return;
-    }
-    const res = await apiPost<AuthResponse>('/auth/demo-guest', {});
-    await applyAuthResponse(res);
-    router.push('/dashboard');
-  }, [user, enterDemoMode, applyAuthResponse, router]);
+  const exploreDemo = useCallback(
+    async (companyId?: string) => {
+      if (user) {
+        await enterDemoMode(companyId);
+        return;
+      }
+      const res = await apiPost<AuthResponse>('/auth/demo-guest', companyId ? { companyId } : {});
+      await applyAuthResponse(res);
+      router.push('/dashboard');
+    },
+    [user, enterDemoMode, applyAuthResponse, router],
+  );
 
   const logout = useCallback(() => {
     clearAuthSession();

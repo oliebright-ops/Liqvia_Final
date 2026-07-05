@@ -48,6 +48,12 @@
       "demoTitle": "Изучить на демо-данных",
       "demoHint": "Попробуйте Liqvia на примере Acme Construction — вход не требуется.",
       "demoNoSignup": "Без регистрации",
+      "demoAltLabel": "Или попробуйте пример бизнеса, похожий на ваш:",
+      "demoAlt": {
+        "ndis": "NDIS Care Services (на основе денежных потоков)",
+        "subscription": "Subscription Studio (регулярная выручка)",
+        "mixed": "Creative Agency Co (смешанная модель)"
+      },
       "demoLoading": "Запуск демо…",
       "partnerAvatarsCaption": "Финансовые команды в закрытой бете",
       "demoError": "Не удалось запустить демо. Убедитесь, что демо-данные загружены.",

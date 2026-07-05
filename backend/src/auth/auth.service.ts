@@ -9,7 +9,7 @@ import {
 } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import { UserRole } from '@prisma/client';
-import { DEFAULT_DEMO_COMPANY_ID } from '@liqvia2/shared';
+import { DEFAULT_DEMO_COMPANY_ID, DEMO_COMPANY_IDS } from '@liqvia2/shared';
 import * as bcrypt from 'bcryptjs';
 import { isDemoGuestEnabled } from '../demo/demo-access';
 import { PrismaService } from '../prisma/prisma.service';
@@ -82,13 +82,18 @@ export class AuthService {
     return this.buildAuthResponse(user);
   }
 
-  async createDemoGuest(): Promise<AuthResponse> {
+  async createDemoGuest(requestedCompanyId?: string): Promise<AuthResponse> {
     if (!isDemoGuestEnabled()) {
       throw new ForbiddenException('Demo access is currently unavailable');
     }
 
+    const companyId =
+      requestedCompanyId && (DEMO_COMPANY_IDS as readonly string[]).includes(requestedCompanyId)
+        ? requestedCompanyId
+        : DEFAULT_DEMO_COMPANY_ID;
+
     const demo = await this.prisma.company.findUnique({
-      where: { id: DEFAULT_DEMO_COMPANY_ID },
+      where: { id: companyId },
     });
     if (!demo) {
       throw new NotFoundException('Demo company not found. Run prisma:seed:demo first.');
@@ -103,7 +108,7 @@ export class AuthService {
         passwordHash,
         name: 'Demo Explorer',
         isDemoMode: true,
-        companyId: DEFAULT_DEMO_COMPANY_ID,
+        companyId,
         role: UserRole.viewer,
       },
       include: { company: true },

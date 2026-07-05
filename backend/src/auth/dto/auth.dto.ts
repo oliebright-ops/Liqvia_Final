@@ -34,3 +34,11 @@ export class ResetPasswordDto {
   @ApiProperty({ example: 'NewSecurePass123!' })
   password!: string;
 }
+
+export class DemoGuestDto {
+  @ApiPropertyOptional({
+    description: 'Which demo company to explore. Defaults to the invoice-driven consulting demo.',
+    example: 'demo-subscription-studio',
+  })
+  companyId?: string;
+}
