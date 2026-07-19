@@ -12,8 +12,81 @@
   },
   "home": {
     "landing": {
-      "title": "Conozca su posición de caja, autonomía y riesgos — cada día",
-      "subtitle": "Diseñado para pymes que superaron las hojas de cálculo pero no pueden pagar software de tesorería empresarial.",
+      "title": "Previsión de Caja en la que Puede Confiar",
+      "titleSecondary": "Conozca su posición de caja, autonomía y riesgos — cada día.",
+      "subtitle": "A diferencia de las herramientas de IA que generan previsiones sin explicación, Liqvia muestra exactamente de dónde viene cada previsión.",
+      "hero": {
+        "eyebrow": "El sistema operativo de caja para pymes",
+        "headlineLine1": "Conoce tu caja.",
+        "headlineLine2": "Entiende el porqué.",
+        "headlineLine3": "Decide qué sigue.",
+        "supporting": "Liqvia reúne tu posición de caja, tu previsión a 13 semanas, tus obligaciones, información de IA y tus decisiones financieras en un solo espacio de trabajo explicable, para que actúes antes de que la caja se convierta en un problema.",
+        "trustLine1": "Cada previsión.",
+        "trustLine2": "Cada recomendación.",
+        "trustLine3": "Cada alerta.",
+        "trustLine4": "Totalmente transparente.",
+        "trustLine5": "Totalmente explicable.",
+        "trustLine6": "Nunca una caja negra.",
+        "ctaPrimary": "Explorar demo interactiva",
+        "ctaSecondary": "Ver resumen de 2 minutos",
+        "belowCta": "No se requiere tarjeta de crédito. Empresas de demostración incluidas.",
+        "pills": {
+          "cashPosition": "Posición de caja en vivo",
+          "cashForecast": "Previsión de caja",
+          "obligations": "Próximas obligaciones",
+          "aiInsights": "Información financiera con IA",
+          "scenarioPlanning": "Planificación de escenarios",
+          "explainableForecasts": "Previsiones explicables"
+        },
+        "preview": {
+          "kpi": {
+            "currentCash": "Caja actual",
+            "cashRunway": "Autonomía de caja",
+            "cashRunwayValue": "18 semanas",
+            "cashRunwaySubtitle": "Al ritmo de consumo actual",
+            "liquidityHealth": "Salud de liquidez",
+            "liquidityHealthy": "Saludable",
+            "liquidityOnTrack": "En buen camino",
+            "weeklyBurn": "Consumo semanal"
+          },
+          "chart": {
+            "title": "Previsión de caja a 13 semanas",
+            "today": "Hoy",
+            "week13": "Semana 13",
+            "weekPrefix": "S",
+            "closingCash": "Caja de cierre",
+            "confidenceRange": "Rango de confianza"
+          },
+          "scenario": {
+            "expected": "Esperado",
+            "optimistic": "Optimista",
+            "conservative": "Conservador"
+          },
+          "obligations": {
+            "title": "Próximas obligaciones",
+            "due": "Vence",
+            "prioritySuffix": "prioridad",
+            "names": {
+              "payroll": "Nómina",
+              "gst": "IVA",
+              "rent": "Alquiler",
+              "suppliers": "Proveedores",
+              "loan": "Préstamo"
+            },
+            "status": {
+              "dueSoon": "Vence pronto",
+              "scheduled": "Programado",
+              "funded": "Fondos listos"
+            }
+          }
+        }
+      },
+      "proofBadge": {
+        "label": "Previsión basada en",
+        "item1": "3 facturas vencidas",
+        "item2": "Nómina vence el 25 jul.",
+        "item3": "Consumo semanal prom. $12,000"
+      },
       "benefitForecast": "Previsión de caja rolling a 13 semanas, actualizada desde sus cuentas bancarias",
       "benefitRunway": "Conozca su autonomía de caja en semanas, no en meses",
       "benefitAlerts": "Alertas de liquidez cuando su posición se deteriora",
@@ -147,7 +220,14 @@
     "settings": "Configuración",
     "dashboard": "Panel",
     "collapse": "Contraer",
-    "expand": "Expandir"
+    "expand": "Expandir",
+    "marketing": {
+      "badge": "Sistema operativo de caja para pymes",
+      "product": "Producto",
+      "solutions": "Soluciones",
+      "resources": "Recursos",
+      "requestDemo": "Solicitar demo"
+    }
   },
   "forecast": {
     "pageSubtitle": "Proyección semanal de entradas y salidas con bloqueo de versiones.",

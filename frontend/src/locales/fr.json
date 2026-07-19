@@ -12,8 +12,81 @@
   },
   "home": {
     "landing": {
-      "title": "Connaissez votre trésorerie, autonomie et risques — chaque jour",
-      "subtitle": "Conçu pour les PME qui ont dépassé les tableurs mais ne peuvent pas se payer un logiciel de trésorerie enterprise.",
+      "title": "Des Prévisions de Trésorerie Vraiment Fiables",
+      "titleSecondary": "Connaissez votre trésorerie, autonomie et risques — chaque jour.",
+      "subtitle": "Contrairement aux outils d'IA qui produisent des prévisions inexpliquées, Liqvia montre exactement d'où vient chaque prévision.",
+      "hero": {
+        "eyebrow": "Le système d'exploitation de trésorerie pour PME",
+        "headlineLine1": "Connaissez votre trésorerie.",
+        "headlineLine2": "Comprenez pourquoi.",
+        "headlineLine3": "Décidez de la suite.",
+        "supporting": "Liqvia réunit votre position de trésorerie, votre prévision à 13 semaines, vos engagements, des analyses IA et vos décisions financières dans un espace de travail unique et explicable, pour agir avant que la trésorerie ne devienne un problème.",
+        "trustLine1": "Chaque prévision.",
+        "trustLine2": "Chaque recommandation.",
+        "trustLine3": "Chaque alerte.",
+        "trustLine4": "Entièrement transparente.",
+        "trustLine5": "Entièrement explicable.",
+        "trustLine6": "Jamais une boîte noire.",
+        "ctaPrimary": "Explorer la démo interactive",
+        "ctaSecondary": "Voir l'aperçu de 2 minutes",
+        "belowCta": "Aucune carte bancaire requise. Entreprises de démonstration incluses.",
+        "pills": {
+          "cashPosition": "Position de trésorerie en direct",
+          "cashForecast": "Prévision de trésorerie",
+          "obligations": "Engagements à venir",
+          "aiInsights": "Analyses financières IA",
+          "scenarioPlanning": "Planification de scénarios",
+          "explainableForecasts": "Prévisions explicables"
+        },
+        "preview": {
+          "kpi": {
+            "currentCash": "Trésorerie actuelle",
+            "cashRunway": "Autonomie de trésorerie",
+            "cashRunwayValue": "18 semaines",
+            "cashRunwaySubtitle": "Au rythme de consommation actuel",
+            "liquidityHealth": "Santé de liquidité",
+            "liquidityHealthy": "Saine",
+            "liquidityOnTrack": "Sur la bonne voie",
+            "weeklyBurn": "Consommation hebdomadaire"
+          },
+          "chart": {
+            "title": "Prévision de trésorerie à 13 semaines",
+            "today": "Aujourd'hui",
+            "week13": "Semaine 13",
+            "weekPrefix": "S",
+            "closingCash": "Trésorerie de clôture",
+            "confidenceRange": "Plage de confiance"
+          },
+          "scenario": {
+            "expected": "Attendu",
+            "optimistic": "Optimiste",
+            "conservative": "Conservateur"
+          },
+          "obligations": {
+            "title": "Engagements à venir",
+            "due": "Échéance",
+            "prioritySuffix": "priorité",
+            "names": {
+              "payroll": "Paie",
+              "gst": "TVA",
+              "rent": "Loyer",
+              "suppliers": "Fournisseurs",
+              "loan": "Prêt"
+            },
+            "status": {
+              "dueSoon": "Échéance proche",
+              "scheduled": "Planifié",
+              "funded": "Financé"
+            }
+          }
+        }
+      },
+      "proofBadge": {
+        "label": "Prévision basée sur",
+        "item1": "3 factures en retard",
+        "item2": "Paie due le 25 juil.",
+        "item3": "Conso. hebdo. moy. 12 000 $"
+      },
       "benefitForecast": "Prévision de trésorerie glissante sur 13 semaines, mise à jour depuis vos comptes bancaires",
       "benefitRunway": "Connaissez votre autonomie de trésorerie en semaines — pas en mois",
       "benefitAlerts": "Alertes de liquidité lorsque votre position se dégrade",
@@ -147,7 +220,14 @@
     "settings": "Paramètres",
     "dashboard": "Tableau de bord",
     "collapse": "Réduire",
-    "expand": "Développer"
+    "expand": "Développer",
+    "marketing": {
+      "badge": "Système d'exploitation de trésorerie pour PME",
+      "product": "Produit",
+      "solutions": "Solutions",
+      "resources": "Ressources",
+      "requestDemo": "Demander une démo"
+    }
   },
   "forecast": {
     "pageSubtitle": "Projection hebdomadaire des entrées et sorties avec verrouillage de version.",

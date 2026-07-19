@@ -12,8 +12,81 @@
   },
   "home": {
     "landing": {
-      "title": "Know Your Cash Position, Runway and Risks — Every Day",
-      "subtitle": "Built for SMEs who outgrew spreadsheets but can't afford enterprise treasury software.",
+      "title": "Cash Forecasting You Can Actually Trust",
+      "titleSecondary": "Know your cash position, runway and risks — every day.",
+      "subtitle": "Unlike AI tools that produce unexplained forecasts, Liqvia shows exactly where every forecast comes from.",
+      "hero": {
+        "eyebrow": "The Cash Operating System for SMEs",
+        "headlineLine1": "Know Your Cash.",
+        "headlineLine2": "Understand Why.",
+        "headlineLine3": "Decide What's Next.",
+        "supporting": "Liqvia brings together your cash position, 13-week forecast, obligations, AI insights and financial decisions into one explainable workspace—so you can act before cash becomes a problem.",
+        "trustLine1": "Every forecast.",
+        "trustLine2": "Every recommendation.",
+        "trustLine3": "Every alert.",
+        "trustLine4": "Fully transparent.",
+        "trustLine5": "Fully explainable.",
+        "trustLine6": "Never a black box.",
+        "ctaPrimary": "Explore Interactive Demo",
+        "ctaSecondary": "Watch 2-Minute Overview",
+        "belowCta": "No credit card required. Demo companies included.",
+        "pills": {
+          "cashPosition": "Live Cash Position",
+          "cashForecast": "Cash Forecast",
+          "obligations": "Upcoming Obligations",
+          "aiInsights": "AI Financial Insights",
+          "scenarioPlanning": "Scenario Planning",
+          "explainableForecasts": "Explainable Forecasts"
+        },
+        "preview": {
+          "kpi": {
+            "currentCash": "Current Cash",
+            "cashRunway": "Cash Runway",
+            "cashRunwayValue": "18 weeks",
+            "cashRunwaySubtitle": "At current burn rate",
+            "liquidityHealth": "Liquidity Health",
+            "liquidityHealthy": "Healthy",
+            "liquidityOnTrack": "On track",
+            "weeklyBurn": "Weekly Burn"
+          },
+          "chart": {
+            "title": "13-Week Cash Forecast",
+            "today": "Today",
+            "week13": "Week 13",
+            "weekPrefix": "W",
+            "closingCash": "Closing cash",
+            "confidenceRange": "Confidence range"
+          },
+          "scenario": {
+            "expected": "Expected",
+            "optimistic": "Optimistic",
+            "conservative": "Conservative"
+          },
+          "obligations": {
+            "title": "Upcoming Obligations",
+            "due": "Due",
+            "prioritySuffix": "priority",
+            "names": {
+              "payroll": "Payroll",
+              "gst": "GST",
+              "rent": "Rent",
+              "suppliers": "Suppliers",
+              "loan": "Loan"
+            },
+            "status": {
+              "dueSoon": "Due soon",
+              "scheduled": "Scheduled",
+              "funded": "Funded"
+            }
+          }
+        }
+      },
+      "proofBadge": {
+        "label": "Forecast based on",
+        "item1": "3 overdue invoices",
+        "item2": "Payroll due Jul 25",
+        "item3": "Avg. weekly burn $12,000"
+      },
       "benefitForecast": "13-week rolling cash forecast, updated from your bank accounts",
       "benefitRunway": "Know your cash runway in weeks — not months",
       "benefitAlerts": "Liquidity alerts when your position moves against you",
@@ -148,7 +221,14 @@
     "settings": "Settings",
     "dashboard": "Dashboard",
     "collapse": "Collapse",
-    "expand": "Expand"
+    "expand": "Expand",
+    "marketing": {
+      "badge": "Cash Operating System for SMEs",
+      "product": "Product",
+      "solutions": "Solutions",
+      "resources": "Resources",
+      "requestDemo": "Request Demo"
+    }
   },
   "forecast": {
     "pageSubtitle": "Weekly inflow/outflow projection with version locking.",

@@ -8,7 +8,8 @@ import { Button } from '@/components/ui/button';
 import { CredibilityBannerSection } from '@/components/home/credibility-banner-section';
 import { DashboardPreviewSection } from '@/components/home/dashboard-preview-section';
 import { ForecastMethodologySection } from '@/components/home/forecast-methodology-section';
-import { HeroCtaSection } from '@/components/home/hero-cta-section';
+import { HeroSection } from '@/components/home/hero-section';
+import { LandingHeader } from '@/components/home/landing-header';
 import { ScenarioExamplesSection } from '@/components/home/scenario-examples-section';
 import { SecurityTrustSection } from '@/components/home/security-trust-section';
 import { useAuth } from '@/lib/auth-context';
@@ -58,43 +59,61 @@ export default function HomePage() {
   }
 
   return (
-    <AppShell>
-      <HeroCtaSection
+    <AppShell
+      header={
+        <LandingHeader
+          onRequestDemo={() => void onExploreDemo()}
+          demoLoading={demoLoading}
+          disabled={loading}
+        />
+      }
+      mainClassName="max-w-none px-0 py-0"
+    >
+      <HeroSection
         onExploreDemo={(companyId) => void onExploreDemo(companyId)}
         demoLoading={demoLoading}
         disabled={loading}
         demoError={demoError}
       />
 
-      <div className="relative mt-10 overflow-hidden rounded-3xl border border-slate-800/50 bg-[#0B0D12] px-4 pb-16 pt-10 sm:mt-12 sm:px-8 sm:pt-12">
+      <div className="mx-auto max-w-6xl px-6 pb-8">
         <div
-          className="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_at_50%_-20%,rgba(59,130,246,0.12),transparent_55%)]"
-          aria-hidden
-        />
-        <DashboardPreviewSection />
-        <SecurityTrustSection />
-        <CredibilityBannerSection />
+          id="product"
+          className="relative mt-2 scroll-mt-20 overflow-hidden rounded-3xl border border-slate-800/50 bg-[#0B0D12] px-4 pb-16 pt-10 sm:px-8 sm:pt-12"
+        >
+          <div
+            className="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_at_50%_-20%,rgba(59,130,246,0.12),transparent_55%)]"
+            aria-hidden
+          />
+          <DashboardPreviewSection />
+          <SecurityTrustSection />
+          <CredibilityBannerSection />
+        </div>
+
+        <div id="resources" className="scroll-mt-20">
+          <ForecastMethodologySection />
+        </div>
+        <div id="solutions" className="scroll-mt-20">
+          <ScenarioExamplesSection />
+        </div>
+
+        <ul className="mx-auto mt-8 max-w-lg space-y-2 text-sm text-muted-foreground sm:mt-10">
+          {(
+            [
+              'home.landing.benefitForecast',
+              'home.landing.benefitRunway',
+              'home.landing.benefitAlerts',
+            ] as const
+          ).map((key) => (
+            <li key={key} className="flex items-start gap-2">
+              <span className="shrink-0 text-cash-positive" aria-hidden>
+                ✓
+              </span>
+              <span>{t(key)}</span>
+            </li>
+          ))}
+        </ul>
       </div>
-
-      <ForecastMethodologySection />
-      <ScenarioExamplesSection />
-
-      <ul className="mx-auto mt-8 max-w-lg space-y-2 text-sm text-muted-foreground sm:mt-10">
-        {(
-          [
-            'home.landing.benefitForecast',
-            'home.landing.benefitRunway',
-            'home.landing.benefitAlerts',
-          ] as const
-        ).map((key) => (
-          <li key={key} className="flex items-start gap-2">
-            <span className="shrink-0 text-cash-positive" aria-hidden>
-              ✓
-            </span>
-            <span>{t(key)}</span>
-          </li>
-        ))}
-      </ul>
     </AppShell>
   );
 }
