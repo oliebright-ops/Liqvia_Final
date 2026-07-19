@@ -79,6 +79,36 @@
               "funded": "Financé"
             }
           }
+        },
+        "overview": {
+          "title": "Aperçu du produit",
+          "close": "Fermer",
+          "play": "Lecture",
+          "pause": "Pause",
+          "scenes": {
+            "cash": {
+              "title": "Connaissez votre trésorerie, aujourd'hui",
+              "caption": "Voyez votre position de trésorerie réelle dès l'ouverture de Liqvia, pas celle du tableur du mois dernier."
+            },
+            "forecast": {
+              "title": "Une prévision à 13 semaines fiable",
+              "caption": "Une prévision glissante à 13 semaines avec une plage de confiance, pas un chiffre unique trop confiant."
+            },
+            "obligations": {
+              "title": "Sachez ce qui est dû, et quand",
+              "caption": "Paie, TVA, loyer et fournisseurs, hiérarchisés, pour toujours savoir ce qui doit être payé en premier."
+            },
+            "insight": {
+              "title": "Comprenez pourquoi ça a changé",
+              "badge": "Analyse IA —",
+              "snippet": "L'autonomie s'étend à 19 semaines si la facture n° 4471 est encaissée à temps.",
+              "caption": "Chaque variation de la prévision remonte à une facture, une dépense ou une transaction bancaire réelle — jamais une boîte noire."
+            },
+            "decide": {
+              "title": "Décidez de la suite",
+              "caption": "Testez la paie, une embauche ou un client qui paie en retard avec des scénarios, puis agissez en toute confiance."
+            }
+          }
         }
       },
       "proofBadge": {

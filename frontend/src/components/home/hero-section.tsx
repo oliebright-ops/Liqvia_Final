@@ -1,6 +1,7 @@
 'use client';
 
 import Link from 'next/link';
+import { useState } from 'react';
 import {
   MIXED_DEMO_COMPANY_ID,
   NDIS_DEMO_COMPANY_ID,
@@ -8,6 +9,7 @@ import {
 } from '@liqvia2/shared';
 import { Button } from '@/components/ui/button';
 import { useTranslations } from '@/lib/i18n';
+import { OverviewModal } from './overview-modal';
 import { ProductPreview } from './product-preview';
 
 const PARTNER_AVATARS = [
@@ -42,12 +44,9 @@ interface HeroSectionProps {
   demoError: string | null;
 }
 
-function scrollToOverview() {
-  document.getElementById('product')?.scrollIntoView({ behavior: 'smooth' });
-}
-
 export function HeroSection({ onExploreDemo, demoLoading, disabled, demoError }: HeroSectionProps) {
   const t = useTranslations();
+  const [overviewOpen, setOverviewOpen] = useState(false);
 
   return (
     <section className="mx-auto flex min-h-[90vh] w-full max-w-[1400px] flex-col items-center justify-center px-6 py-16 lg:flex-row lg:items-start lg:justify-center lg:gap-12 lg:py-12 xl:gap-20">
@@ -90,7 +89,7 @@ export function HeroSection({ onExploreDemo, demoLoading, disabled, demoError }:
           <Button
             type="button"
             variant="outline"
-            onClick={scrollToOverview}
+            onClick={() => setOverviewOpen(true)}
             className="h-12 w-full px-7 text-base font-semibold sm:w-auto"
           >
             {t('home.landing.hero.ctaSecondary')}
@@ -172,6 +171,12 @@ export function HeroSection({ onExploreDemo, demoLoading, disabled, demoError }:
       <div className="mt-12 w-full min-w-0 lg:sticky lg:top-24 lg:mt-0 lg:w-[58%]">
         <ProductPreview />
       </div>
+
+      <OverviewModal
+        open={overviewOpen}
+        onClose={() => setOverviewOpen(false)}
+        onExploreDemo={() => onExploreDemo()}
+      />
     </section>
   );
 }

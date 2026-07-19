@@ -79,6 +79,36 @@
               "funded": "Fondos listos"
             }
           }
+        },
+        "overview": {
+          "title": "Resumen del producto",
+          "close": "Cerrar",
+          "play": "Reproducir",
+          "pause": "Pausar",
+          "scenes": {
+            "cash": {
+              "title": "Conoce tu caja, hoy",
+              "caption": "Ve tu posición de caja real en el momento en que abres Liqvia, no la de la hoja de cálculo del mes pasado."
+            },
+            "forecast": {
+              "title": "Una previsión a 13 semanas en la que puedes confiar",
+              "caption": "Una previsión continua a 13 semanas con un rango de confianza, no un único número con exceso de confianza."
+            },
+            "obligations": {
+              "title": "Sabe qué vence, y cuándo",
+              "caption": "Nómina, IVA, alquiler y proveedores, priorizados, para que siempre sepas qué hay que pagar primero."
+            },
+            "insight": {
+              "title": "Entiende por qué cambió",
+              "badge": "Insight de IA —",
+              "snippet": "La autonomía se extiende a 19 semanas si la factura n.º 4471 se cobra a tiempo.",
+              "caption": "Cada cambio en la previsión se remonta a una factura, un gasto o una transacción bancaria real: nunca una caja negra."
+            },
+            "decide": {
+              "title": "Decide qué sigue",
+              "caption": "Pon a prueba la nómina, una contratación o un cliente que paga tarde con escenarios, y luego actúa con confianza."
+            }
+          }
         }
       },
       "proofBadge": {

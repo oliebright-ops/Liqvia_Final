@@ -79,6 +79,36 @@
               "funded": "Funded"
             }
           }
+        },
+        "overview": {
+          "title": "Product overview",
+          "close": "Close",
+          "play": "Play",
+          "pause": "Pause",
+          "scenes": {
+            "cash": {
+              "title": "Know your cash, today",
+              "caption": "See your real cash position the moment you open Liqvia — not last month's spreadsheet."
+            },
+            "forecast": {
+              "title": "A 13-week forecast you can trust",
+              "caption": "A rolling 13-week forecast with a confidence range — not a single overconfident number."
+            },
+            "obligations": {
+              "title": "Know what's due, and when",
+              "caption": "Payroll, GST, rent and suppliers — prioritized, so you always know what has to be paid first."
+            },
+            "insight": {
+              "title": "Understand why it changed",
+              "badge": "AI Insight —",
+              "snippet": "Runway extends to 19 weeks if Invoice #4471 collects on time.",
+              "caption": "Every forecast move traces back to a real invoice, bill or bank transaction — never a black box."
+            },
+            "decide": {
+              "title": "Decide what's next",
+              "caption": "Stress-test payroll, hiring or a slow-paying customer with scenarios, then act with confidence."
+            }
+          }
         }
       },
       "proofBadge": {

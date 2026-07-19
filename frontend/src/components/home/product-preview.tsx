@@ -21,7 +21,7 @@ import { KpiCard } from '@/components/dashboard/kpi-card';
 import { useTranslations } from '@/lib/i18n';
 import { cn } from '@/lib/utils';
 
-const CURRENCY = 'USD';
+export const CURRENCY = 'USD';
 const CHART_HEIGHT = 220;
 
 /**
@@ -30,7 +30,7 @@ const CHART_HEIGHT = 220;
  * where requestAnimationFrame never fires because the tab stays hidden, which
  * would otherwise leave the chart stuck on its placeholder indefinitely.
  */
-function useMountReady() {
+export function useMountReady() {
   const [ready, setReady] = useState(false);
   useEffect(() => {
     let settled = false;
@@ -53,12 +53,12 @@ const WEEK_COUNT = 13;
 
 // Decorative demo curve — starts at the KPI row's "Current Cash" figure and
 // drifts down toward the 18-week runway, with the usual payroll/AR noise.
-const EXPECTED = [
+export const EXPECTED = [
   247800, 241000, 252000, 238000, 226000, 233000, 214000, 205000, 217000, 201000, 190000, 199000,
   182000, 171000,
 ];
 
-type Scenario = 'expected' | 'optimistic' | 'conservative';
+export type Scenario = 'expected' | 'optimistic' | 'conservative';
 
 const SCENARIOS: Scenario[] = ['expected', 'optimistic', 'conservative'];
 
@@ -76,7 +76,7 @@ const STATUS_BADGE: Record<(typeof OBLIGATIONS)[number]['status'], 'warning' | '
   funded: 'success',
 };
 
-function buildChartData(scenario: Scenario, weekLabel: (i: number) => string) {
+export function buildChartData(scenario: Scenario, weekLabel: (i: number) => string) {
   return EXPECTED.map((expected, i) => {
     const t = i / (EXPECTED.length - 1);
     const optimistic = expected * (1 + t * 0.18);
