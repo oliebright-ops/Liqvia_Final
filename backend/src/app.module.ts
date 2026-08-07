@@ -24,6 +24,7 @@ import { NotificationsModule } from './notifications/notifications.module';
 import { BusinessPulseModule } from './business-pulse/business-pulse.module';
 import { DecisionCentreModule } from './decision-centre/decision-centre.module';
 import { WhyChangedModule } from './why-changed/why-changed.module';
+import { CashOsLeadsModule } from './cash-os-leads/cash-os-leads.module';
 
 @Module({
   imports: [
@@ -36,6 +37,7 @@ import { WhyChangedModule } from './why-changed/why-changed.module';
       { name: 'default', ttl: 60_000, limit: 200 },
       { name: 'auth', ttl: 60_000, limit: 10 },
       { name: 'demo', ttl: 60_000, limit: 3 },
+      { name: 'leads', ttl: 60_000, limit: 5 },
     ]),
     PrismaModule,
     AuthModule,
@@ -59,6 +61,7 @@ import { WhyChangedModule } from './why-changed/why-changed.module';
     BusinessPulseModule,
     DecisionCentreModule,
     WhyChangedModule,
+    CashOsLeadsModule,
   ],
   controllers: [HealthController],
   providers: [{ provide: APP_GUARD, useClass: ThrottlerGuard }],
