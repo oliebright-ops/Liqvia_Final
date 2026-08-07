@@ -1,7 +1,7 @@
 'use client';
 
 import Link from 'next/link';
-import type { ForecastDiagnostics, SummaryReport } from '@liqvia2/shared';
+import type { ForecastDiagnostics } from '@liqvia2/shared';
 import { AP_PAYMENT_PRIORITY_ORDER } from '@liqvia2/shared';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';

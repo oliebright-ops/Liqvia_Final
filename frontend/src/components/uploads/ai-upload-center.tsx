@@ -215,7 +215,7 @@ export function AiUploadCenter() {
       const summary = await apiPost<{ rowCount: number; batchId: string }>('/uploads/ai/import', {
         templateType: result.templateType ?? templateType,
         canonicalCsv: result.canonicalCsv,
-        fileName: `ai-${importFileLabel.replace(/[^\w.\-]+/g, '-')}`,
+        fileName: `ai-${importFileLabel.replace(/[^\w.-]+/g, '-')}`,
         companyCurrency: currency,
       });
       setImportMessage(t('upload.ai.importSuccess', { count: String(summary.rowCount) }));
