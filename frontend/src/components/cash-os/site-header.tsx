@@ -76,7 +76,7 @@ export function SiteHeader() {
               </li>
             ))}
           </ul>
-          <PrimaryCta href="#apply" className="mt-3 w-full">
+          <PrimaryCta href="/#apply" className="mt-3 w-full">
             Обсудить ситуацию
           </PrimaryCta>
         </nav>

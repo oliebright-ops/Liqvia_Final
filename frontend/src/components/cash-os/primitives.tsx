@@ -81,7 +81,7 @@ export function SectionHeading({
 }
 
 export function PrimaryCta({
-  href = '#apply',
+  href = '/#apply',
   children,
   className,
 }: {
@@ -104,7 +104,7 @@ export function PrimaryCta({
 }
 
 export function SecondaryCta({
-  href = '#apply',
+  href = '/#apply',
   children,
   sub,
   className,
