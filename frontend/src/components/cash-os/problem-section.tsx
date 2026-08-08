@@ -1,6 +1,6 @@
 import { Container, Section, SectionHeading } from './primitives';
 
-const PAIN_POINTS = [
+const DEFAULT_PAIN_POINTS = [
   '«Прибыль есть, но денег постоянно не хватает.»',
   '«Мы не можем точно сказать, сколько денег останется через месяц.»',
   '«У нас десятки файлов Excel, и у каждого — свои цифры.»',
@@ -9,13 +9,23 @@ const PAIN_POINTS = [
   '«Не успеваем решать, кому из поставщиков платить в первую очередь.»',
 ];
 
-export function ProblemSection() {
+interface ProblemSectionProps {
+  industryPain?: string;
+}
+
+export function ProblemSection({ industryPain }: ProblemSectionProps) {
+  const painPoints = industryPain ? [industryPain, ...DEFAULT_PAIN_POINTS.slice(1)] : DEFAULT_PAIN_POINTS;
+
   return (
     <Section id="problem" tone="slate">
       <Container>
-        <SectionHeading center title="Знакомая ситуация?" />
+        <SectionHeading
+          center
+          title="Вам знакомы эти ситуации?"
+          lede="Если хотя бы один пункт кажется знакомым, проблема может быть не в прибыли — а в том, что у руководителя нет единой картины будущего движения денег."
+        />
         <div className="mx-auto mt-10 grid max-w-4xl gap-4 sm:grid-cols-2">
-          {PAIN_POINTS.map((point) => (
+          {painPoints.map((point) => (
             <div
               key={point}
               className="rounded-xl border border-slate-200 bg-white px-5 py-4 text-slate-700 shadow-sm"
@@ -24,21 +34,21 @@ export function ProblemSection() {
             </div>
           ))}
         </div>
-        <p className="mx-auto mt-8 max-w-2xl text-center text-lg leading-relaxed text-slate-600">
-          Если хотя бы две из этих фраз про вас — дело не в бухгалтерии. Дело в том, что решения
-          о деньгах принимаются без системы, которая показывает последствия заранее.
-        </p>
 
-        <div className="mx-auto mt-14 grid max-w-5xl items-center gap-10 lg:grid-cols-2">
+        <div className="mx-auto mt-16 grid max-w-5xl items-center gap-10 lg:grid-cols-2">
           <div>
-            <p className="leading-relaxed text-slate-600">
-              Большинство компаний хорошо ведут бухгалтерский учёт — это база, которая нужна по
-              закону. Но бухгалтерия отвечает на вопрос «что произошло», а не «что произойдёт».
-              Когда бизнес растёт, платежей и контрагентов становится больше, чем способен
-              удержать ручной Excel-файл — и решения начинают приниматься по ощущению, а не по
-              расчёту.
+            <h3 className="text-2xl font-semibold tracking-tight text-slate-900">
+              Три источника. Три разные цифры. Какой верить?
+            </h3>
+            <p className="mt-4 leading-relaxed text-slate-600">Банк показывает остаток сегодня.</p>
+            <p className="mt-2 leading-relaxed text-slate-600">Бухгалтерия показывает то, что уже произошло.</p>
+            <p className="mt-2 leading-relaxed text-slate-600">
+              Excel показывает прогноз — если его успели обновить.
             </p>
-            <p className="mt-4 font-medium text-slate-900">Это не ошибка людей. Это предел инструмента.</p>
+            <p className="mt-4 leading-relaxed text-slate-600">
+              Руководителю нужна единая картина: что происходит с деньгами сейчас и что может
+              произойти дальше.
+            </p>
           </div>
 
           <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">

@@ -84,11 +84,12 @@ export function PrimaryCta({
   href = '/#apply',
   children,
   className,
+  ...rest
 }: {
   href?: string;
   children: ReactNode;
   className?: string;
-}) {
+} & Record<`data-${string}`, string | undefined>) {
   return (
     <a
       href={href}
@@ -97,6 +98,7 @@ export function PrimaryCta({
         FOCUS_RING,
         className,
       )}
+      {...rest}
     >
       {children}
     </a>
@@ -107,24 +109,31 @@ export function SecondaryCta({
   href = '/#apply',
   children,
   sub,
+  invert = false,
   className,
+  ...rest
 }: {
   href?: string;
   children: ReactNode;
   sub?: ReactNode;
+  invert?: boolean;
   className?: string;
-}) {
+} & Record<`data-${string}`, string | undefined>) {
   return (
     <a
       href={href}
       className={cn(
-        'inline-flex min-h-[44px] flex-col items-center justify-center gap-0.5 rounded-[12px] border border-slate-300 bg-white px-7 py-2.5 text-center leading-snug text-slate-800 transition-colors hover:bg-slate-50',
+        'inline-flex min-h-[44px] flex-col items-center justify-center gap-0.5 rounded-[12px] border px-7 py-2.5 text-center leading-snug transition-colors',
+        invert
+          ? 'border-white/25 bg-transparent text-white hover:bg-white/10'
+          : 'border-slate-300 bg-white text-slate-800 hover:bg-slate-50',
         FOCUS_RING,
         className,
       )}
+      {...rest}
     >
       <span className="text-base font-semibold">{children}</span>
-      {sub && <span className="text-xs font-medium text-slate-500">{sub}</span>}
+      {sub && <span className={cn('text-xs font-medium', invert ? 'text-slate-300' : 'text-slate-500')}>{sub}</span>}
     </a>
   );
 }

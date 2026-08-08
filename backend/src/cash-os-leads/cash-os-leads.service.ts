@@ -11,7 +11,6 @@ export class CashOsLeadsService {
   async create(dto: CreateCashOsLeadDto) {
     const name = dto.name?.trim();
     const companyName = dto.companyName?.trim();
-    const phone = dto.phone?.trim();
     const email = dto.email?.trim();
 
     if (!name) {
@@ -19,9 +18,6 @@ export class CashOsLeadsService {
     }
     if (!companyName) {
       throw new BadRequestException('Company name is required');
-    }
-    if (!phone) {
-      throw new BadRequestException('Phone is required');
     }
     if (!email || !EMAIL_PATTERN.test(email)) {
       throw new BadRequestException('A valid email is required');
@@ -32,8 +28,10 @@ export class CashOsLeadsService {
         name,
         role: dto.role?.trim() || null,
         companyName,
-        phone,
+        phone: dto.phone?.trim() || null,
         email,
+        employeeCount: dto.employeeCount?.trim() || null,
+        industry: dto.industry?.trim() || null,
         comment: dto.comment?.trim() || null,
         source: dto.source?.trim() || null,
       },

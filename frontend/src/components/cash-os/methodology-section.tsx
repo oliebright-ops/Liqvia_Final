@@ -12,21 +12,34 @@ const INCLUDED_ITEMS = [
   'Единая картина по деньгам для собственника, директора и команды',
 ];
 
+const NOT_STATEMENTS = [
+  'Это не бухгалтерская программа.',
+  'Не ERP-система.',
+  'Не ещё один шаблон БДДС.',
+  'И не таблица, которую нужно каждый раз собирать заново.',
+];
+
 export function WhatIsCosSection() {
   return (
     <Section id="cash-operating-system">
       <Container className="grid gap-12 lg:grid-cols-2 lg:items-start">
         <div>
-          <SectionHeading title="Что такое Cash Operating System" />
+          <SectionHeading title="Что такое Cash Operating System — и почему это не ещё одна таблица Excel" />
           <p className="mt-5 leading-relaxed text-slate-600">
-            Cash Operating System — это не ещё одна таблица для бюджета, не ERP-система и не
-            шаблон прогноза. Это методология, которая объединяет прогноз денежных потоков,
-            контроль платёжеспособности, работу с задолженностью, сценарии и регулярный ритм
-            принятия решений — в единый процесс на платформе Liqvia.
+            Cash Operating System — это система управления денежными потоками компании, которая
+            объединяет прогноз, обязательства, сценарии и план-факт в одном процессе принятия
+            решений.
           </p>
+          <div className="mt-4 space-y-1.5">
+            {NOT_STATEMENTS.map((line) => (
+              <p key={line} className="leading-relaxed text-slate-600">
+                {line}
+              </p>
+            ))}
+          </div>
           <p className="mt-4 leading-relaxed text-slate-600">
-            Я внедряю её лично — это не разовая установка программы, а выстроенный процесс,
-            которым команда продолжает пользоваться самостоятельно и после завершения программы.
+            Liqvia помогает создать единый процесс, в котором руководство видит ожидаемое движение
+            денег и может оценить последствия решений заранее.
           </p>
         </div>
 
@@ -50,11 +63,19 @@ export function WhyExcelStopsSection() {
   return (
     <Section id="why-excel-stops" tone="slate">
       <Container>
-        <SectionHeading
-          center
-          title="Почему Excel рано или поздно перестаёт справляться"
-          lede="Excel — хороший инструмент на старте. Проблема появляется по мере роста бизнеса."
-        />
+        <SectionHeading center title="Почему Excel перестаёт справляться по мере роста бизнеса" />
+        <div className="mx-auto mt-6 max-w-2xl space-y-2 text-center">
+          <p className="leading-relaxed text-slate-600">Пока бизнес небольшой, Excel может работать отлично.</p>
+          <p className="leading-relaxed text-slate-600">
+            Но с ростом компании появляются новые счета, проекты, юридические лица, контрагенты и
+            версии файлов.
+          </p>
+          <p className="leading-relaxed text-slate-600">В какой-то момент проблема уже не в самой таблице.</p>
+          <p className="leading-relaxed text-slate-600">
+            Проблема в том, сколько времени нужно, чтобы собрать актуальную картину и понять,
+            какой цифре можно доверять.
+          </p>
+        </div>
         <div className="mx-auto mt-10 grid max-w-3xl gap-4 sm:grid-cols-3">
           {[
             'Файл обновляет один человек — и его отпуск становится риском для всей компании.',

@@ -10,11 +10,17 @@ export class CreateCashOsLeadDto {
   @ApiProperty({ example: 'ООО «Пример»' })
   companyName!: string;
 
-  @ApiProperty({ example: '+7 900 000-00-00' })
-  phone!: string;
+  @ApiPropertyOptional({ example: '+7 900 000-00-00 или @username в Telegram' })
+  phone?: string;
 
   @ApiProperty({ example: 'ivan@example.com' })
   email!: string;
+
+  @ApiPropertyOptional({ example: '20-50' })
+  employeeCount?: string;
+
+  @ApiPropertyOptional({ example: 'Строительство' })
+  industry?: string;
 
   @ApiPropertyOptional({ example: 'Хотим обсудить прогноз ДДС на 13 недель' })
   comment?: string;

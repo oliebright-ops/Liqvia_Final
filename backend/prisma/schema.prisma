@@ -763,15 +763,17 @@ model AuditLog {
 // --- Cash Operating System landing page (standalone — no relation to Company/auth) ---
 
 model CashOsLead {
-  id          String   @id @default(cuid())
-  name        String
-  role        String?
-  companyName String
-  phone       String
-  email       String
-  comment     String?
-  source      String?
-  createdAt   DateTime @default(now())
+  id             String   @id @default(cuid())
+  name           String
+  role           String?
+  companyName    String
+  phone          String?
+  email          String
+  employeeCount  String?
+  industry       String?
+  comment        String?
+  source         String?
+  createdAt      DateTime @default(now())
 
   @@index([createdAt])
 }

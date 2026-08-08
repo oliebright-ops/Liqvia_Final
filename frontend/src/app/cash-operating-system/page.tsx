@@ -6,10 +6,12 @@ import { FaqSection } from '@/components/cash-os/faq';
 import { CashOsFooter } from '@/components/cash-os/footer';
 import { Hero } from '@/components/cash-os/hero';
 import { LeadFormSection } from '@/components/cash-os/lead-form';
+import { resolveIndustryVariant } from '@/components/cash-os/message-match';
 import { WhatIsCosSection, WhyExcelStopsSection } from '@/components/cash-os/methodology-section';
 import { IndustriesSection } from '@/components/cash-os/outcomes-industries';
 import { PilotProgramSection } from '@/components/cash-os/pilot-program';
 import { PlatformWalkthroughSection } from '@/components/cash-os/platform-walkthrough';
+import { Container, PrimaryCta } from '@/components/cash-os/primitives';
 import { ProblemSection } from '@/components/cash-os/problem-section';
 import { RoadmapSection } from '@/components/cash-os/roadmap';
 import { SiteHeader } from '@/components/cash-os/site-header';
@@ -18,35 +20,46 @@ import { TrustStrip } from '@/components/cash-os/trust-strip';
 
 const FAQ_ITEMS_FOR_SCHEMA: Array<[string, string]> = [
   [
-    'Cash Operating System заменяет бухгалтера?',
-    'Нет. Методология не заменяет бухгалтерский учёт и не является бухгалтерской, налоговой, инвестиционной или юридической консультацией. Она дополняет работу бухгалтера, добавляя управленческую картину движения денег.',
+    'Сколько стоит участие?',
+    'Стоимость зависит от сложности бизнеса, количества юридических лиц, источников данных и объёма внедрения. После первичной диагностики мы определим необходимый объём работы и обсудим стоимость до начала проекта.',
   ],
   [
-    'Нужно ли отказываться от нашей ERP или учётной системы?',
-    'Нет. Система работает поверх существующего учёта, а не вместо него.',
+    'Сколько занимает внедрение?',
+    'Текущий пилот рассчитан примерно на 4 месяца. Конкретный объём и последовательность работ зависят от структуры бизнеса и исходных данных.',
   ],
   [
-    'Насколько точен прогноз?',
-    'Прогноз строится на данных, предоставленных компанией, и явно показывает, на каких допущениях он основан. Точность зависит от полноты и регулярности обновления данных и не гарантируется.',
+    'Liqvia заменяет бухгалтерию?',
+    'Нет. Бухгалтерский учёт отвечает прежде всего за фиксацию и отражение уже произошедших операций. Liqvia используется для управленческого взгляда вперёд: ожидаемых поступлений, выплат, обязательств, сценариев и будущей ликвидности.',
+  ],
+  [
+    'Liqvia заменяет финансового директора?',
+    'Нет. Liqvia помогает руководителю и финансовой команде работать с единой картиной денежных потоков и быстрее оценивать последствия решений.',
+  ],
+  [
+    'Нужно ли отказываться от Excel?',
+    'Не обязательно. На этапе внедрения существующие таблицы могут оставаться источником данных. Задача — постепенно убрать зависимость от множества разрозненных файлов и создать единый управленческий процесс.',
   ],
   [
     'Что именно закрывает взаимное соглашение о неразглашении (Mutual NDA)?',
     'С моей стороны — строгая конфиденциальность финансовой отчётности, прогнозов и операционных данных компании, безопасное хранение и использование информации только для внедрения системы, без передачи третьим лицам без письменного согласия (кроме случаев, предусмотренных законом). С вашей стороны — уважение конфиденциальности методологии внедрения.',
   ],
-  [
-    'Сколько стоит участие в пилотной программе?',
-    'Стоимость зависит от масштаба компании и объёма внедрения и обсуждается индивидуально на консультации. Пилотная программа имеет отдельные условия для первых пяти компаний.',
-  ],
 ];
 
 export const metadata: Metadata = {
-  title: 'Cash Operating System — управление денежными потоками',
+  title: 'Прибыль есть, а денег не хватает? — Cash Operating System',
   description:
-    'Внедрение системы управления денежными потоками для бизнеса 20–500 сотрудников. Консультант ACCA. Пилотная программа — 5 компаний.',
+    'Видите движение денег на 13–26 недель вперёд и находите кассовые разрывы заранее. Личное внедрение под руководством ACCA-специалиста. Пилотная программа — до 5 компаний.',
   alternates: { canonical: '/cash-operating-system' },
 };
 
-export default function CashOperatingSystemPage() {
+interface CashOperatingSystemPageProps {
+  searchParams: Promise<{ industry?: string; intent?: string }>;
+}
+
+export default async function CashOperatingSystemPage({ searchParams }: CashOperatingSystemPageProps) {
+  const params = await searchParams;
+  const industryVariant = resolveIndustryVariant(params.industry);
+
   const jsonLd = [
     {
       '@context': 'https://schema.org',
@@ -74,13 +87,25 @@ export default function CashOperatingSystemPage() {
       <SiteHeader />
 
       <main>
-        <Hero />
+        <Hero industry={params.industry} intent={params.intent} />
         <TrustStrip />
-        <ProblemSection />
+        <ProblemSection industryPain={industryVariant?.pain} />
         <WhatIsCosSection />
         <WhyExcelStopsSection />
         <PlatformWalkthroughSection />
         <BeforeAfterSection />
+
+        <div className="border-y border-slate-200 bg-slate-50 py-10">
+          <Container className="flex flex-col items-center gap-3 text-center">
+            <p className="text-base text-slate-700">
+              Хотите понять, подойдёт ли это вашей компании?
+            </p>
+            <PrimaryCta data-cta-event="middle_primary_cta">
+              Записаться на диагностику денежных потоков
+            </PrimaryCta>
+          </Container>
+        </div>
+
         <IndustriesSection />
         <RoadmapSection />
         <AboutSection />

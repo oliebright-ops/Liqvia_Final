@@ -18,15 +18,23 @@ const INCLUDED = [
   'Постоянная донастройка процесса',
 ];
 
-export function PilotProgramSection() {
+interface PilotProgramSectionProps {
+  /** Only render a concrete count if there's a genuinely maintained source for it. */
+  remainingSlots?: number;
+}
+
+export function PilotProgramSection({ remainingSlots }: PilotProgramSectionProps) {
+  const availabilityLine =
+    typeof remainingSlots === 'number' ? `Осталось мест: ${remainingSlots} из 5` : 'До 5 компаний в текущем пилоте';
+
   return (
     <Section id="pilot-program">
       <Container>
         <SectionHeading
           center
-          eyebrow="5 мест · 4 месяца"
-          title="Пилотная программа"
-          lede="Я лично участвую в каждом внедрении и адаптирую его под финансовые процессы конкретной компании. Поэтому пилотная программа рассчитана всего на пять компаний."
+          eyebrow="До 5 компаний • 4 месяца • Персональное внедрение"
+          title="Пилотная программа Liqvia"
+          lede="Количество компаний ограничено, потому что каждое внедрение сопровождается лично."
         />
 
         <div className="mx-auto mt-10 max-w-4xl rounded-2xl border border-slate-200 bg-slate-50 p-6 sm:p-10">
@@ -50,9 +58,16 @@ export function PilotProgramSection() {
             </p>
           </div>
 
-          <div className="mt-8 flex justify-center">
-            <PrimaryCta>Подать заявку на пилотную программу</PrimaryCta>
+          <p className="mt-8 text-center text-sm font-medium text-slate-700">{availabilityLine}</p>
+
+          <div className="mt-3 flex justify-center">
+            <PrimaryCta data-cta-event="pilot_apply_cta">Подать заявку на участие</PrimaryCta>
           </div>
+
+          <p className="mx-auto mt-4 max-w-md text-center text-sm text-slate-500">
+            Сначала мы уточним несколько деталей о компании и определим, подходит ли вам текущий
+            формат пилота.
+          </p>
 
           <p className="mt-4 text-center text-xs text-slate-500">
             Конкретные коммерческие условия участия обсуждаются индивидуально на консультации.

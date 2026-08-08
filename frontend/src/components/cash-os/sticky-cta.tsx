@@ -22,9 +22,10 @@ export function StickyCta() {
     >
       <a
         href="/#apply"
+        data-cta-event="hero_primary_cta"
         className="flex min-h-[44px] w-full items-center justify-center rounded-[12px] bg-blue-600 px-4 text-sm font-semibold text-white shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2"
       >
-        Обсудить ситуацию
+        Записаться на диагностику
       </a>
     </div>
   );

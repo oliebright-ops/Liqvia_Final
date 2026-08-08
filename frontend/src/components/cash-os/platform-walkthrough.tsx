@@ -8,10 +8,10 @@ function ForecastPanel() {
     <div className={`rounded-2xl border ${NAVY_BORDER} ${NAVY_CARD} p-6 sm:p-8`}>
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div>
-          <h3 className="text-lg font-semibold text-white">Прогноз денежных средств</h3>
+          <h3 className="text-lg font-semibold text-white">Видеть деньги на 13–26 недель вперёд</h3>
           <p className="mt-2 max-w-md text-sm leading-relaxed text-slate-400">
-            Видно, как сегодняшние решения повлияют на денежную позицию компании через несколько
-            недель и где может возникнуть дефицит.
+            Прогнозируйте ожидаемые поступления и выплаты и замечайте потенциальные кассовые
+            разрывы заранее.
           </p>
         </div>
         <StatusBadge variant="negative">Риск дефицита · нед. 6</StatusBadge>
@@ -78,22 +78,22 @@ const OBLIGATIONS = [
 function ObligationsPanel() {
   return (
     <div className={`flex flex-col rounded-2xl border ${NAVY_BORDER} ${NAVY_CARD} p-6`}>
-      <h3 className="text-base font-semibold text-white">Обязательства и очерёдность платежей</h3>
+      <h3 className="text-base font-semibold text-white">Понимать, кому и когда нужно платить</h3>
       <p className="mt-2 text-sm leading-relaxed text-slate-400">
-        Команда заранее видит предстоящие выплаты и понимает, какие обязательства требуют
-        первоочередного внимания.
+        Соберите обязательства в одной картине и оценивайте приоритеты платежей с учётом будущей
+        ликвидности.
       </p>
       <ul className="mt-4 space-y-2">
         {OBLIGATIONS.map((item) => (
           <li
             key={item.label}
-            className={`flex items-center justify-between rounded-lg border ${NAVY_BORDER} bg-white/[0.02] px-3.5 py-2.5`}
+            className={`flex flex-wrap items-center justify-between gap-x-3 gap-y-1 rounded-lg border ${NAVY_BORDER} bg-white/[0.02] px-3.5 py-2.5`}
           >
             <span className="flex items-center gap-2.5">
               <StatusBadge variant={item.variant}>{item.order}</StatusBadge>
               <span className="text-sm text-slate-200">{item.label}</span>
             </span>
-            <span className="flex items-center gap-2">
+            <span className="ml-auto flex items-center gap-2">
               <span className="text-xs text-slate-500">{item.due}</span>
               <MonoStat className="text-sm font-medium text-white">{item.amount}</MonoStat>
             </span>
@@ -113,10 +113,10 @@ const SCENARIOS = [
 function ScenariosPanel() {
   return (
     <div className={`flex flex-col rounded-2xl border ${NAVY_BORDER} ${NAVY_CARD} p-6`}>
-      <h3 className="text-base font-semibold text-white">Сценарное моделирование</h3>
+      <h3 className="text-base font-semibold text-white">Проверять решения до того, как потратить деньги</h3>
       <p className="mt-2 text-sm leading-relaxed text-slate-400">
-        Проверьте последствия снижения продаж, задержки платежа, найма сотрудников или инвестиции
-        до принятия решения.
+        Сравнивайте сценарии: новый сотрудник, закупка, инвестиция, изменение продаж или перенос
+        платежа.
       </p>
       <ul className="mt-5 space-y-4">
         {SCENARIOS.map((s) => (
@@ -144,10 +144,9 @@ const PLAN_ACTUAL = [
 function PlanActualPanel() {
   return (
     <div className={`flex flex-col rounded-2xl border ${NAVY_BORDER} ${NAVY_CARD} p-6`}>
-      <h3 className="text-base font-semibold text-white">План-факт</h3>
+      <h3 className="text-base font-semibold text-white">Понимать, где прогноз расходится с реальностью</h3>
       <p className="mt-2 text-sm leading-relaxed text-slate-400">
-        Каждую неделю видно, чем результат отличается от прогноза и какие предположения нужно
-        скорректировать.
+        Сравнивайте план с фактом и постепенно улучшайте качество прогнозирования.
       </p>
       <ul className="mt-4 space-y-2">
         {PLAN_ACTUAL.map((row) => (
@@ -177,8 +176,8 @@ export function PlatformWalkthroughSection() {
         <SectionHeading
           invert
           center
-          title="Как выглядит работа в Liqvia"
-          lede="Liqvia — платформа, на которой работает система. Ниже — то, что видит команда каждую неделю."
+          title="Что вы сможете делать с Liqvia"
+          lede="Ниже — экраны платформы Liqvia, которые показывают эти возможности на практике."
         />
 
         <div className="mt-12 space-y-6">

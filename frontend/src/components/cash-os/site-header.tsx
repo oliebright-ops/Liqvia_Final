@@ -42,7 +42,7 @@ export function SiteHeader() {
         </nav>
 
         <div className="hidden lg:block">
-          <PrimaryCta className="h-10 px-5 text-sm">Обсудить ситуацию</PrimaryCta>
+          <PrimaryCta className="h-10 px-5 text-sm">Записаться на диагностику</PrimaryCta>
         </div>
 
         <button
@@ -77,7 +77,7 @@ export function SiteHeader() {
             ))}
           </ul>
           <PrimaryCta href="/#apply" className="mt-3 w-full">
-            Обсудить ситуацию
+            Записаться на диагностику
           </PrimaryCta>
         </nav>
       )}
