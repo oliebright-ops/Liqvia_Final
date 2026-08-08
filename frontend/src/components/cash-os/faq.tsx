@@ -66,7 +66,7 @@ export function FaqSection() {
 
   function toggle(i: number, willOpen: boolean) {
     setOpenIndex(willOpen ? i : null);
-    if (willOpen) trackCtaEvent('faq_open');
+    if (willOpen) trackCtaEvent('faq_click');
   }
 
   return (
@@ -83,7 +83,7 @@ export function FaqSection() {
                   type="button"
                   onClick={() => toggle(i, !open)}
                   aria-expanded={open}
-                  data-cta-event="faq_open"
+                  data-cta-event="faq_click"
                   className="flex w-full items-center justify-between gap-4 px-6 py-5 text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-inset"
                 >
                   <span className="font-medium text-slate-900">{item.q}</span>

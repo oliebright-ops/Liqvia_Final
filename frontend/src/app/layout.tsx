@@ -3,6 +3,7 @@ import { Inter, JetBrains_Mono } from 'next/font/google';
 import { QueryProvider } from '@/components/providers/query-provider';
 import { AuthProvider } from '@/lib/auth-context';
 import { LocaleProvider } from '@/lib/i18n';
+import { YandexMetrica } from '@/components/analytics/yandex-metrica';
 import './globals.css';
 
 const inter = Inter({
@@ -26,6 +27,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
   return (
     <html lang="en" className={`${inter.variable} ${jetbrainsMono.variable}`}>
       <body className="min-h-screen bg-background font-sans antialiased">
+        <YandexMetrica />
         <LocaleProvider>
           <QueryProvider>
             <AuthProvider>{children}</AuthProvider>

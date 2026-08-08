@@ -6,9 +6,8 @@
  * tracking (Metrica click-map, future GTM); `trackCtaEvent` additionally fires
  * a Metrica goal from client components where a real click handler exists.
  *
- * No Metrica counter is installed yet, so this is a safe no-op until
- * NEXT_PUBLIC_YANDEX_METRICA_ID is set and the Metrica snippet is added —
- * intentionally not inventing a tracking ID here.
+ * The production counter defaults to Liqvia's Metrica counter. The environment
+ * variable remains available for preview or staging deployments.
  */
 export type CtaEvent =
   | 'hero_primary_cta'
@@ -18,7 +17,8 @@ export type CtaEvent =
   | 'form_start'
   | 'form_submit'
   | 'product_walkthrough_open'
-  | 'faq_open'
+  | 'faq_click'
+  | 'deep_scroll_90'
   | 'linkedin_click';
 
 declare global {
@@ -29,7 +29,7 @@ declare global {
 
 export function trackCtaEvent(event: CtaEvent): void {
   if (typeof window === 'undefined') return;
-  const counterId = process.env.NEXT_PUBLIC_YANDEX_METRICA_ID;
-  if (!counterId || typeof window.ym !== 'function') return;
+  const counterId = process.env.NEXT_PUBLIC_YANDEX_METRICA_ID ?? '111417446';
+  if (typeof window.ym !== 'function') return;
   window.ym(Number(counterId), 'reachGoal', event);
 }
