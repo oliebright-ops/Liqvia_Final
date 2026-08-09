@@ -3,6 +3,7 @@ import { execSync } from 'node:child_process';
 import { existsSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { applyDatabaseUrlDefaults } from './database-url';
+import { isRuDataPlane } from './residency/data-plane';
 
 const nodeRequire = createRequire(__filename);
 
@@ -31,8 +32,27 @@ function resolvePrismaCli(): string {
 /**
  * Applies pending SQL migrations via `prisma migrate deploy`.
  * Skipped when SKIP_DB_MIGRATE=true (e.g. certain test harnesses).
+ *
+ * NEVER runs on the RU data plane. This function deploys the **global** schema —
+ * all thirty tables of the authenticated application, including companies, users,
+ * bank accounts and uploads. Running it against the Russian database would
+ * recreate the entire global application inside Russian infrastructure, on
+ * startup, silently, and the deployment would look completely healthy.
+ *
+ * The RU plane has its own two-table schema and its own guarded command
+ * (`scripts/ru-migrate.ts`). The check below is deliberately not an env flag
+ * someone has to remember to set — `SKIP_DB_MIGRATE` already exists and would
+ * have been forgotten exactly once.
  */
 export function runMigrations(): void {
+  if (isRuDataPlane()) {
+    console.log(
+      '[migrate] LIQVIA_DATA_PLANE=ru — refusing to apply the global schema. ' +
+        'The RU plane migrates via prisma:ru:deploy (two tables only).',
+    );
+    return;
+  }
+
   if (process.env.SKIP_DB_MIGRATE === 'true') {
     return;
   }
