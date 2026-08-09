@@ -1,7 +1,28 @@
 # Yandex Cloud — resources and estimated monthly cost
 
 **Date:** 2026-08-10 · **Required by owner decision #10, before any resource is created.**
-**Status: NOTHING PROVISIONED.**
+**Status: PARTIALLY PROVISIONED — see §0.**
+
+## 0. What was actually provisioned (2026-08-09)
+
+The owner selected **MINIMUM SAFE**, not RECOMMENDED PILOT. Created so far:
+
+| Resource | Actual | Billable |
+|---|---|---|
+| `liqvia-ru-app-sg` (`enpstavb3fb7ri48q6u3`) | Security group | **₽0** — free |
+| `liqvia-ru-db-sg` (`enpfqu7oggatejl2havl`) | Security group | **₽0** — free |
+| `liqvia-ru-leads` (`c9q985emaom0p6128t5r`) | Managed PostgreSQL 18.4, **`b2.medium`** (2 vCPU burstable / 4 GB), **1 host**, 10 GB network-ssd, `ru-central1-a` | **Yes** |
+| `liqvia-ru-db` (`e6q55rq0rvnbgh3kpu6d`) | Lockbox secret, 1 version | Negligible |
+
+**Correction to this document:** the preset `b3-c1-m4` named below **does not exist** in this
+account. The only burstable presets offered are `b1.medium` and `b2.medium`, both 2 vCPU / 4 GB.
+`b2.medium` was used. Both MINIMUM SAFE and RECOMMENDED PILOT figures below were built on the
+non-existent preset and are therefore **estimates against the wrong SKU** — treat the tables as
+order-of-magnitude only until a real invoice or the console's billing page is read.
+
+**Not yet created:** Compute instance (app runtime), Cloud Logging, Audit Trails.
+
+---
 
 > **Prices are indicative, not quoted.** They are list-price estimates for `ru-central1` and have
 > **not** been read from a live Yandex Cloud console — I have no credentials for the account.
@@ -9,17 +30,19 @@
 
 ---
 
-## 1. Recommendation
+## 1. Recommendation, and what was chosen
 
-**RECOMMENDED PILOT — ≈ ₽5,000–6,500 / month (≈ ₽6,000–7,800 incl. VAT).**
+My recommendation was **RECOMMENDED PILOT**: the ~₽1,700/month difference buys a database that
+survives a host failure, which is not usually the place to save money when the store holds real
+people's personal data.
 
-The difference from the bare minimum is roughly **₽1,700/month**, and it buys the two things whose
-absence is expensive rather than inconvenient: a database that survives a host failure, and backups
-that are actually retained. For a funnel that will hold real people's personal data under Russian
-law, that is not the place to save ₽1,700.
+**The owner selected MINIMUM SAFE** (2026-08-10) and that is what was built. The recommendation is
+left here unedited so the decision and its reasoning both remain on the record.
 
-There is no material cost gap to surface — both options are small. **Proceeding with RECOMMENDED
-PILOT**, per your instruction.
+The single-host consequence is bounded, and worth stating precisely: a host failure is an outage
+recovered from backup, not a failover. Because the residency guard fails closed, an unreachable RU
+database returns `503` and writes nothing to Oregon — so the exposure is **lost enquiries**, never
+Russian personal data in the wrong jurisdiction. Adding a second host later is an online operation.
 
 ---
 
@@ -86,6 +109,11 @@ decision), and domain/Cloudflare costs (unchanged).
 2. Confirm the billing account and **which entity contracts with Yandex Cloud** — an open item in
    `RU_YANDEX_CLOUD_ARCHITECTURE.md` §7 and **not** an engineering question.
 3. Set a **billing alert** at ~₽10,000/month so a misconfiguration surfaces as an email rather than
-   as an invoice.
+   as an invoice. **Still outstanding — recommended now that billable resources exist.**
 
-**No resource will be created until you confirm.**
+## 7. Outstanding cost actions
+
+- [ ] Read the **actual** daily spend from the console billing page and compare against §3
+- [ ] Confirm the **grant amount and expiry**, so burn can be tracked against it
+- [ ] Set the billing alert
+- [ ] Delete the cluster if the RU plane is abandoned — it bills whether or not it is used
