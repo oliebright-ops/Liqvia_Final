@@ -272,16 +272,31 @@ marker. While any remains, `isLegalPublicationReady()` is `false`, both pages re
 
 ### Still blocking publication
 
-Exactly the three facts `publicationBlockers()` returns today. All three describe where the RU
-infrastructure actually is, and all three became answerable when the Yandex cutover was executed
-(commit `bafb68b`) — they are open because nobody has written the answers down, not because the
-answers are unknown.
+Exactly the fact `publicationBlockers()` returns today — **one**, after the 2026-08-10 verification
+round closed U1 and U2 and narrowed U3.
 
-| # | Unresolved fact | Needed for | Who can answer |
+| # | Unresolved fact | Needed for | How it closes |
 | --- | --- | --- | --- |
-| 1 | Web-service hosting region (U1) | Storage location | Yandex Cloud console |
-| 2 | Database region, confirmed in console (U2) | Storage location, ст. 18 localisation | Yandex Cloud console |
-| 3 | Backups: existence, cadence, retention, region (U3) | Storage location | Yandex Cloud console |
+| 1 | Physical region of backup objects and WAL (U3, narrowed) | Storage location, ст. 18 localisation | **Not closable by API** — Yandex exposes no storage-region field on the cluster or on backups. Needs written vendor confirmation covering backup *and WAL* residency for `ru-central1` |
+
+**U1 is verified** and struck: VM `liqvia-ru-app` (`fhmd7dqno1g3u84n8jad`), zone `ru-central1-a`,
+`RUNNING`, public IPv4 `158.160.44.137` — the address `liqvia.info` resolves to, inside Yandex's
+Russian-registered `158.160.0.0/16`. DNS, address registration and the resource's own zone agree.
+Evidence: `docs/RU_YANDEX_CLOUD_ARCHITECTURE.md` §4.1.
+
+**U2 is verified** and struck: cluster `c9q985emaom0p6128t5r` (`liqvia-ru-leads`), master host in
+`ru-central1-a`, `PRODUCTION`, `ALIVE`. Evidence and commands:
+`docs/RU_DATABASE_CONFIGURATION.md` §4.2.
+
+**U3 is partially verified.** Automatic backups are configured, retention is 7 days, the window is
+22:15:30 UTC, and both an automated and a manual backup were observed `DONE`. What remains is the
+one part a reader of the policy actually needs — where those objects physically live — so the
+narrowed entry is what still renders as «НЕ УСТАНОВЛЕНО».
+
+Two further items are tracked in `RU_DATABASE_CONFIGURATION.md` §4 rather than here, because they
+are operational controls rather than facts a privacy policy states: **no restore has ever been
+tested**, and **no customer-managed KMS key is in use** (backup encryption is vendor-documented GPG,
+recorded as a vendor claim, never as a field read from this cluster).
 
 ### Open, but deliberately not blocking
 

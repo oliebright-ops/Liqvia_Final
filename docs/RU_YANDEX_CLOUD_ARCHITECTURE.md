@@ -163,6 +163,32 @@ Rules:
 
 ---
 
+## 4.1 Verification evidence — U1 (web-service region)
+
+**Verification date:** 2026-08-10 · **Method:** authenticated, read-only Yandex Cloud API query.
+No token or credential is recorded here, and none may be added to this repository.
+
+| Fact | Value |
+|---|---|
+| Instance | `liqvia-ru-app` (`fhmd7dqno1g3u84n8jad`) |
+| **Zone** | **`ru-central1-a`** |
+| Status | `RUNNING` at verification time |
+| Public IPv4 | `158.160.44.137` |
+
+Three independent observations agree, which is what makes this evidence rather than an assertion:
+
+1. `liqvia.info` resolves to `158.160.44.137` (checked from outside the cloud).
+2. That address falls in `158.160.0.0/16` — RIPE `inetnum` netname **`RU-YANDEXCLOUD`**, country
+   **RU**.
+3. The instance holding that address reports its own `zone_id` as `ru-central1-a`.
+
+Observation 2 alone would not have been enough: RIPE country is registration data for an entire
+`/16`, not a property of the resource. It is the third that closes U1, and the first that ties the
+resource to the domain a visitor actually types.
+
+Database-side evidence (U2) and backup evidence (U3) are in
+[`RU_DATABASE_CONFIGURATION.md`](RU_DATABASE_CONFIGURATION.md) §4.2.
+
 ## 5. What stays in the global deployment
 
 Unchanged and untouched by this work:

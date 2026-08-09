@@ -28,13 +28,29 @@ import {
  */
 export const UNVERIFIED_PROCESSING_FACTS: readonly string[] = Object.freeze([
   // Resolved only when the RU infrastructure exists and its console has been read.
-  'регион размещения веб-сервиса — U1',
-  'регион размещения базы данных, подтверждённый в консоли — U2',
-  'наличие, периодичность, срок и место хранения резервных копий — U3',
+  //
+  // U3, narrowed 2026-08-10. Existence, schedule and retention are now verified
+  // (see the comment block below); what remains unverified is the only part a
+  // reader of the policy actually needs — where the backup objects and WAL
+  // physically live. Yandex exposes no storage-region field on either the cluster
+  // or the backup list, so this needs written vendor confirmation, not another
+  // API call. Do not publish an unconditional "backups are held in Russia".
+  'регион физического хранения резервных копий и журналов WAL — U3',
   // ── Resolved 2026-08-10 by docs/RU_CURRENT_LEAD_DATA_FLOW.md and
   //    docs/RU_METRICA_VERIFICATION.md; struck from this list rather than left
   //    outstanding, because a document that says "not established" about a fact
   //    that has been established is as untrue as one that invents a fact:
+  //      U1  web-service region — read directly from the API on 2026-08-10:
+  //          VM liqvia-ru-app (fhmd7dqno1g3u84n8jad), zone ru-central1-a,
+  //          RUNNING, public IPv4 158.160.44.137. That address is the one
+  //          liqvia.info resolves to, and it sits in Yandex's Russian-registered
+  //          158.160.0.0/16 (RIPE RU-YANDEXCLOUD, country RU) — so DNS, address
+  //          registration and the resource's own zone all agree.
+  //      U2  database region — read directly from the API on 2026-08-10:
+  //          cluster c9q985emaom0p6128t5r (liqvia-ru-leads), master host
+  //          rc1a-9lnpkf5j4gimf0hm.mdb.yandexcloud.net, zone_id ru-central1-a,
+  //          environment PRODUCTION, health ALIVE. Evidence and the exact
+  //          commands: docs/RU_DATABASE_CONFIGURATION.md §4.2.
   //      U6  SMTP — no lead email path exists at all
   //      U7  OpenAI — no lead data reaches any AI provider, so the terms do not apply
   //      U8/U9 Metrica — Webvisor verified off live; no form-content recording

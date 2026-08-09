@@ -200,15 +200,18 @@ provenance is the thing this whole exercise is about.
 
 ## 4. Backup and recovery
 
+Re-verified against the API on **2026-08-10**. Evidence and exact commands: §4.2.
+
 | Setting | Intended | **Verified** | Why |
 |---|---|---|---|
-| Automated backups | Enabled | ✅ Enabled | |
-| Backup region | **Same RU region as the cluster** | ⏳ **Not independently confirmed** — Managed PostgreSQL keeps backups within the cluster's region, but this has not been read back from an API field. **Confirm before cutover** | A backup outside Russia defeats residency as completely as the primary being outside it |
-| Retention | To be decided with the lead retention period | ✅ **7 days** | See §4.1 — this is *shorter* than the lead retention ceiling, which is the correct direction |
-| Backup window | Low-traffic hours, MSK | ✅ **22:15 UTC** (01:15 MSK) | |
-| PITR | Confirm availability and window | ⏳ Within the 7-day backup retention; window not yet exercised | |
-| **Restore test** | **Performed before cutover** | ❌ **NOT PERFORMED** | An untested backup is a belief, not a backup |
-| Backup encryption | Platform default | ❌ **NOT VERIFIED** — see §2.2 | Verify and record |
+| Automated backups | Enabled | ✅ **Configured, and observed to complete** — an `AUTOMATED`/`BASE` backup finished `DONE` at 2026-08-09T19:01:54Z | A schedule that has never produced a backup is a setting, not a backup |
+| Retention | To be decided with the lead retention period | ✅ **7 days** | See §4.1 — *shorter* than the lead retention ceiling, which is the correct direction |
+| Backup window | Low-traffic hours, MSK | ✅ **22:15:30 UTC** (01:15:30 MSK next day) | |
+| **Backup / WAL storage region** | **Same RU region as the cluster** | ❌ **UNVERIFIED — and not verifiable by API.** Neither the cluster object nor the backup list exposes a storage-region field. Needs written vendor confirmation | A backup outside Russia defeats residency as completely as the primary being outside it. **Do not publish an unconditional "backups are held in Russia"** |
+| Backup encryption | Platform default | ⚠️ **Vendor-documented only** — Yandex documents that Managed PostgreSQL backups are stored in Object Storage as binary files, GPG-encrypted, with separate keys per cluster ([docs](https://yandex.cloud/en/docs/managed-postgresql/concepts/backup)). Recorded as a vendor-documented control, **not** as a field read from this cluster | See §2.2 |
+| Customer-managed KMS key | Optional hardening | ❌ **Not in use** — no `disk_encryption_key_id` on the cluster. **Do not state that a customer-managed key is enabled** | Would turn encryption from a vendor claim into an observable property |
+| PITR | Confirm availability and window | ⏳ Within the 7-day retention; window not yet exercised | |
+| **Restore test** | **Performed before cutover** | ❌ **NOT PERFORMED** | An untested backup is a belief, not a backup. Requires a controlled restore into a temporary private `ru-central1` cluster — an action, not a lookup |
 
 ### 4.1 Retention interaction — the one number to keep consistent
 
@@ -228,6 +231,73 @@ the lead ceiling whenever either is changed.
 > Backups are where residency quietly fails. The cluster is in Russia and everyone relaxes; the
 > backup destination is a separate setting, defaults are not guaranteed to match, and nobody looks at
 > it again. **Read this setting in the console and write down what it actually says.**
+
+The console was read on 2026-08-10, and the outcome is worth stating precisely, because it is not
+the one the warning above anticipated: **there is no setting to read.** Yandex exposes no
+backup-storage-region field on the cluster or on individual backups. That does not make the risk go
+away — it changes how it must be closed, from an API call to written vendor confirmation.
+
+### 4.2 Verification evidence — U2 and U3
+
+**Verification date:** 2026-08-10
+**Folder:** `b1gi2v3fopp7mu2p0d2a` **Cluster:** `c9q985emaom0p6128t5r` (`liqvia-ru-leads`)
+**Method:** authenticated read-only Yandex Cloud CLI, version `1.24.0 darwin/arm64`
+
+No token, refresh token or credential is recorded here or anywhere else in this repository, and
+none may be added. Only command names and their non-secret output belong in this file.
+
+> The CLI emitted a warning that it could not reach its version-check service. Authenticated API
+> queries succeeded regardless; the warning does not qualify the evidence below.
+
+**Commands executed**
+
+```
+yc managed-postgresql cluster get c9q985emaom0p6128t5r --format json
+yc managed-postgresql host list --cluster-name liqvia-ru-leads --format json
+yc managed-postgresql cluster list-backups c9q985emaom0p6128t5r --format json
+```
+
+**U2 — database location: VERIFIED**
+
+| Fact | Value |
+|---|---|
+| Master host | `rc1a-9lnpkf5j4gimf0hm.mdb.yandexcloud.net` |
+| **Zone** | **`ru-central1-a`** |
+| Role / health | `MASTER`, host `ALIVE`, PostgreSQL `ALIVE`, pooler `ALIVE` |
+| Environment / status | `PRODUCTION` / `RUNNING`, health `ALIVE` |
+| PostgreSQL version | `18.4` |
+| Storage | `network-ssd`, 10,737,418,240 bytes |
+| Network / subnet | `enpr97snu8brr3210h7r` / `e9b3fq4l4m1mbps9vp2p` |
+| Security group | `enpfqu7oggatejl2havl` |
+| Deletion protection | Enabled |
+| Automatic failover | Enabled |
+| Password encryption | `SCRAM-SHA-256` |
+
+The host output carries no affirmative `assign_public_ip: true`, and the hostname does not resolve
+publicly. Both are consistent with a private host — but **network isolation must not be described in
+the privacy policy on the strength of an absent JSON field.** An omitted key is not an assertion.
+Cite the security group and subnet, which are positively present, or verify explicitly.
+
+**U3 — backups: PARTIALLY VERIFIED**
+
+Two completed backups, both belonging to `c9q985emaom0p6128t5r`:
+
+| Type | ID | Started | Created | Size |
+|---|---|---|---|---|
+| `AUTOMATED` / `BASE` | `…:mdbhh6laurtmcfu1b2d8` | 2026-08-09T18:49:46Z | 2026-08-09T19:01:54Z | 3,994,577 B |
+| `MANUAL` / `BASE` | `…:mdbgckkakje9f77a6c71` | 2026-08-09T20:24:40Z | 2026-08-09T20:25:03Z | 4,015,571 B |
+
+Both `DONE`. Verified directly: automatic backups are configured, retention is 7 days, at least one
+automated and one manual backup completed successfully.
+
+**Still unverified, and each blocks a different claim:**
+
+| Open item | What it blocks | How to close it |
+|---|---|---|
+| Physical region of backup objects and WAL | Any statement that backups stay in Russia | Written Yandex confirmation covering backup **and WAL** residency for `ru-central1` |
+| Whether every backup component stays within the RF | The ст. 18 localisation claim in full | As above |
+| Successful restoration | Any recoverability claim | Controlled restore into a temporary private `ru-central1` cluster |
+| Disk encryption via customer-managed KMS | Any customer-managed-key claim | Create and attach a KMS key (§2.2), or state plainly that none is in use |
 
 ## 5. Network exposure
 
