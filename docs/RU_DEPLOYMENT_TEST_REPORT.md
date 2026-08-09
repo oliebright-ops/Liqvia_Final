@@ -120,9 +120,11 @@ Re-run correctly via `DOCKER-USER`:
 > visitor who has just filled in a form sees a blank gateway error rather than «попробуйте ещё раз»,
 > and is unlikely to resend. That loses exactly the enquiry the campaign paid for.
 >
-> **Fix (not yet applied):** make `PrismaService.onModuleInit` tolerate a failed initial connection
-> and let requests fail individually, or add a Caddy `handle_errors` block returning the Russian
-> message. The first is better — it keeps the health endpoint honest.
+> **Fix applied.** `PrismaService.onModuleInit` now tolerates a failed initial connection **on the RU
+> plane only**, so the process starts and the lead endpoint returns its own `503` with the Russian
+> retry message. The global plane still rethrows — there, a database down at boot really is a
+> deployment failure and failing fast is correct. Residency is untouched: no query succeeds, nothing
+> is written, no fallback. Re-tested after redeployment — see §10.
 
 ---
 
@@ -153,10 +155,10 @@ The second failure is loud. The first would have been silent, and is the more da
 | Backup location / region | **NOT VERIFIED** | No backup-region field exists in the API |
 | Restore test (§19) | **PASS** — see §6 | |
 | Billing alerts (§20) | **NOT CONFIGURED** | No `yc billing` command exists; console only |
-| Lead notification / operator access (§23) | **NOT BUILT** | |
+| Lead notification (§23) | **BUILT** — reference-only body, see §9. Operator lead *view* not built | Notification needs `LEAD_NOTIFY_*` config to send |
 | Metrica re-verification on the RU origin (§24) | **PASS** — see §7 | |
 | Cutover (§30–33) | **NOT DONE** | Requires Cloudflare access |
-| Global regression (§29) | **NOT RUN** | |
+| Global regression (§29) | **PASS** — 329 backend pass, same 4 pre-existing DB-integration failures as on a clean tree; frontend 36/36 | |
 
 ## 5. Break-glass record
 
@@ -218,3 +220,34 @@ Consistent with the live measurement taken against the Render site earlier.
 `liqvia-ru-audit` (`cnpg1ab8v12r60aburtm`), folder-scoped, delivering to Cloud Logging group
 `liqvia-ru-logs` via a dedicated service account. Control-plane events only — application personal
 data is deliberately not routed here.
+
+
+## 9. §23 Lead notification — built, not yet enabled
+
+`buildNotificationBody` produces a reference-only message:
+
+```
+Новая заявка Liqvia (Россия).
+Идентификатор: RU-MBQYMY
+Получена: 2026-08-14 09:22 UTC
+Кампания: ru_cash_visibility_01
+
+Контактные данные не включены в это письмо намеренно.
+Открыть заявку: https://liqvia.info/leads/RU-MBQYMY
+```
+
+It is never *given* the name, email, phone, company or comment, so it cannot leak them. The test
+asserts the body equals this **exact seven-line template** rather than pattern-matching for contact
+details — so the thirty-second "just add the name so I can see it" change fails a test instead of
+quietly exporting every Russian lead to a foreign mailbox.
+
+`notify()` never throws: a lead that was stored must not be reported as failed because a mail server
+was unreachable. The database row is the evidence, not the email.
+
+**Not yet enabled** — requires `LEAD_NOTIFY_TO` and `LEAD_NOTIFY_SMTP_*`. Until then the reference is
+written to the log, which contains no personal data either.
+
+**Still missing: the operator lead view.** The notification links to `/leads/<ref>`, which does not
+exist yet. Until it does, retrieving a lead's contact details means a break-glass database query —
+workable for the first few leads, not a workflow. This is the single largest gap between "the funnel
+works" and "the funnel is operable".
