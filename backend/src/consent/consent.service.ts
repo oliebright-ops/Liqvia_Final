@@ -18,6 +18,8 @@ export interface RecordConsentInput {
   method?: string;
   /** ISO timestamp reported by the client; only used if it is sane. */
   acknowledgedAt?: string;
+  /** Which form produced the acknowledgement. Stored on the record itself. */
+  source?: string;
   cashOsLeadId?: string;
 }
 
@@ -81,6 +83,7 @@ export class ConsentService {
         consentTextSha256: sha256Hex(consentText),
         textVerified,
         method: input.method?.slice(0, 32) || 'checkbox',
+        source: input.source?.trim().slice(0, 128) || null,
         acknowledgedAt: this.resolveAcknowledgedAt(input.acknowledgedAt),
         cashOsLeadId: input.cashOsLeadId ?? null,
       },

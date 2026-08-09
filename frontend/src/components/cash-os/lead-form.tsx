@@ -4,24 +4,19 @@ import { FormEvent, ReactNode, useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
 import { apiPost } from '@/lib/api';
 import {
-  ACTIVE_CONSENT_VERSION,
   CASH_OS_LEAD_FORM_CONSENT_TEXT,
   CASH_OS_LEAD_MARKETING_CONSENT_TEXT,
   CONSENT_DOCUMENT_PATH,
   CONSENT_LINK_PHRASES,
   CONSENT_REQUIRED_MESSAGE_RU,
   MARKETING_CONSENT_ENABLED,
-  MARKETING_LEAD_CONSENT_SUBJECT,
   PRIVACY_POLICY_PATH,
-  REQUIRED_LEAD_CONSENT_SUBJECT,
   segmentConsentText,
   type ConsentTextSegment,
 } from '@/lib/consent';
+import { buildLeadSubmission } from '@/lib/lead-submission';
 import { trackCtaEvent } from './analytics';
 import { Container, Section, SectionHeading } from './primitives';
-
-const CONSENT_VERSION = ACTIVE_CONSENT_VERSION[REQUIRED_LEAD_CONSENT_SUBJECT];
-const MARKETING_CONSENT_VERSION = ACTIVE_CONSENT_VERSION[MARKETING_LEAD_CONSENT_SUBJECT];
 
 /**
  * The required notice, split so that «Согласием на обработку персональных данных»
@@ -104,8 +99,17 @@ export function LeadFormSection() {
     e.preventDefault();
 
     // Second layer behind native validation: a submit can still be triggered
-    // programmatically, and the consent must block it in every path.
-    if (!consentGiven) {
+    // programmatically, and the consent must block it in every path. The rule
+    // itself lives in buildLeadSubmission, which returns no payload to send while
+    // the box is unticked — so there is no path here that can send one.
+    const submission = buildLeadSubmission(form, {
+      consentGiven,
+      consentAcknowledgedAt: consentAt.current,
+      marketingGiven,
+      marketingAcknowledgedAt: marketingAt.current,
+    });
+
+    if (submission.blocked) {
       setConsentError(true);
       consentInput.current?.focus();
       return;
@@ -115,38 +119,7 @@ export function LeadFormSection() {
     setStatus('submitting');
     setErrorMessage(null);
     try {
-      await apiPost('/cash-os-leads', {
-        name: form.name,
-        companyName: form.companyName,
-        email: form.email,
-        phone: form.phone || undefined,
-        employeeCount: form.employeeCount || undefined,
-        industry: form.industry || undefined,
-        comment: form.comment || undefined,
-        source: 'cash-operating-system-landing',
-        consent: {
-          subjectId: REQUIRED_LEAD_CONSENT_SUBJECT,
-          version: CONSENT_VERSION,
-          consentText: CASH_OS_LEAD_FORM_CONSENT_TEXT,
-          locale: 'ru',
-          accepted: true,
-          acknowledgedAt: consentAt.current ?? new Date().toISOString(),
-        },
-        // Present only when the optional box exists and was ticked. Its absence
-        // is what records "no marketing consent" — never a false flag on the
-        // required consent above.
-        marketingConsent:
-          MARKETING_CONSENT_ENABLED && marketingGiven && CASH_OS_LEAD_MARKETING_CONSENT_TEXT
-            ? {
-                subjectId: MARKETING_LEAD_CONSENT_SUBJECT,
-                version: MARKETING_CONSENT_VERSION,
-                consentText: CASH_OS_LEAD_MARKETING_CONSENT_TEXT,
-                locale: 'ru',
-                accepted: true,
-                acknowledgedAt: marketingAt.current ?? new Date().toISOString(),
-              }
-            : undefined,
-      });
+      await apiPost('/cash-os-leads', submission.payload);
       trackCtaEvent('form_submit');
       setStatus('success');
       setForm(EMPTY_FORM);

@@ -14,12 +14,12 @@ export class LeadConsentDto {
   @ApiPropertyOptional({ example: 'ru' })
   locale?: string;
 
-  @ApiPropertyOptional({
+  @ApiProperty({
     description:
-      'Whether the box was ticked. A required consent submitted with `false` is rejected; an optional consent submitted with `false` is simply not recorded.',
+      'Whether the box was actually ticked. Must be exactly `true`: anything else — `false`, or the field omitted — is not an acknowledgement. A required consent without it is rejected; an optional one without it is simply not recorded.',
     example: true,
   })
-  accepted?: boolean;
+  accepted!: boolean;
 
   @ApiPropertyOptional({ description: 'ISO timestamp when the box was ticked', example: '2026-08-10T10:15:00.000Z' })
   acknowledgedAt?: string;

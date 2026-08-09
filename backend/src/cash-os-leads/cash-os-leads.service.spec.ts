@@ -114,6 +114,37 @@ describe('CashOsLeadsService — required consent', () => {
     expect(written.leads).toHaveLength(0);
   });
 
+  it('rejects a consent whose `accepted` flag is missing rather than affirmative', async () => {
+    // An omitted flag is not a refusal, but it is not a conscious acknowledgement
+    // either. Silence must not be stored as evidence that someone agreed.
+    const { service, written } = build();
+    const { accepted: _omitted, ...withoutFlag } = validDto().consent;
+
+    await expect(
+      service.create(validDto({ consent: withoutFlag as CreateCashOsLeadDto['consent'] })),
+    ).rejects.toBeInstanceOf(BadRequestException);
+    expect(written.leads).toHaveLength(0);
+    expect(written.consents).toHaveLength(0);
+  });
+
+  it('records which form the acknowledgement came from', async () => {
+    // The consent link is SetNull, so a hard-deleted lead must not take the
+    // answer to "obtained on which form?" with it.
+    const { service, written } = build();
+
+    await service.create(validDto({ source: 'cash-operating-system-landing' }));
+
+    expect(written.consents[0]).toMatchObject({ source: 'cash-operating-system-landing' });
+  });
+
+  it('stores no form source when the submission carries none, rather than inventing one', async () => {
+    const { service, written } = build();
+
+    await service.create(validDto({ source: undefined }));
+
+    expect(written.consents[0]).toMatchObject({ source: null });
+  });
+
   it('rejects a consent version this server does not know', async () => {
     const { service } = build();
 
@@ -180,6 +211,26 @@ describe('CashOsLeadsService — optional marketing consent', () => {
     expect(written.consents[0].subjectId).toBe(REQUIRED_LEAD_CONSENT_SUBJECT);
   });
 
+  it('does not record a marketing consent whose `accepted` flag was omitted', async () => {
+    // Dropped silently rather than rejected: the marketing box never gates the lead.
+    const { service, written } = build();
+
+    await service.create(
+      validDto({
+        marketingConsent: {
+          subjectId: MARKETING_LEAD_CONSENT_SUBJECT,
+          version: ACTIVE_CONSENT_VERSION[MARKETING_LEAD_CONSENT_SUBJECT],
+          consentText: 'что угодно',
+          locale: 'ru',
+        } as CreateCashOsLeadDto['consent'],
+      }),
+    );
+
+    expect(written.leads).toHaveLength(1);
+    expect(written.consents).toHaveLength(1);
+    expect(written.consents[0].subjectId).toBe(REQUIRED_LEAD_CONSENT_SUBJECT);
+  });
+
   it('never infers marketing consent from the required consent', async () => {
     const { service, written } = build();
 
@@ -188,5 +239,99 @@ describe('CashOsLeadsService — optional marketing consent', () => {
     expect(
       written.consents.some((c) => c.subjectId === MARKETING_LEAD_CONSENT_SUBJECT),
     ).toBe(false);
+  });
+});
+
+/**
+ * Field length ceilings.
+ *
+ * The endpoint is unauthenticated and every text column is unbounded, so the
+ * rate limit alone only caps how often a caller submits — not how much each
+ * submission stores. These tests fix the boundary in place: a realistic Russian
+ * enquiry must pass, and an oversized one must be refused before any write.
+ */
+describe('CashOsLeadsService — input length limits', () => {
+  it('accepts a long but realistic Russian enquiry', async () => {
+    const { service, written } = build();
+
+    await expect(
+      service.create(
+        validDto({
+          name: 'Александр Константинопольский-Мирославский',
+          companyName: 'Общество с ограниченной ответственностью «Стройтехмонтаж-Инжиниринг»',
+          role: 'Заместитель генерального директора по финансам и экономике',
+          comment: 'Хотим обсудить прогноз ДДС на 13 недель. '.repeat(50),
+          industry: 'Строительство и проектирование',
+          phone: '+7 900 000-00-00',
+        }),
+      ),
+    ).resolves.toEqual({ status: 'ok' });
+
+    expect(written.leads).toHaveLength(1);
+  });
+
+  it.each([
+    ['name', 201],
+    ['companyName', 201],
+    ['role', 201],
+    ['phone', 65],
+    ['employeeCount', 33],
+    ['industry', 121],
+    ['comment', 5_001],
+    ['source', 121],
+  ])('rejects an oversized %s and writes nothing', async (field, length) => {
+    const { service, written } = build();
+
+    await expect(
+      service.create(validDto({ [field]: 'я'.repeat(length) })),
+    ).rejects.toBeInstanceOf(BadRequestException);
+
+    expect(written.leads).toHaveLength(0);
+    expect(written.consents).toHaveLength(0);
+  });
+
+  it('rejects an oversized email', async () => {
+    const { service, written } = build();
+    const oversized = `${'a'.repeat(310)}@example.com`;
+
+    await expect(
+      service.create(validDto({ email: oversized })),
+    ).rejects.toBeInstanceOf(BadRequestException);
+
+    expect(written.leads).toHaveLength(0);
+  });
+
+  it('rejects oversized consent evidence before writing the lead', async () => {
+    const { service, written } = build();
+
+    await expect(
+      service.create(
+        validDto({
+          consent: {
+            subjectId: REQUIRED_LEAD_CONSENT_SUBJECT,
+            version: ACTIVE_VERSION,
+            consentText: 'x'.repeat(5_001),
+            locale: 'ru',
+            accepted: true,
+          },
+        }),
+      ),
+    ).rejects.toBeInstanceOf(BadRequestException);
+
+    expect(written.leads).toHaveLength(0);
+    expect(written.consents).toHaveLength(0);
+  });
+
+  it('never echoes the submitted value back in the error message', async () => {
+    const { service } = build();
+    const marker = 'СЕКРЕТНОЕ-ЗНАЧЕНИЕ';
+
+    await expect(
+      service.create(validDto({ comment: `${marker}${'я'.repeat(5_001)}` })),
+    ).rejects.toThrow(
+      expect.objectContaining({
+        message: expect.not.stringContaining(marker),
+      }),
+    );
   });
 });

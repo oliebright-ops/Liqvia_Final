@@ -22,8 +22,8 @@ drift between documents.
 | Canonical line | «Оператор персональных данных: Оли Брайт Бабатунде, физическое лицо» |
 | Dative (consent wording) | Оли Брайту Бабатунде |
 | Genitive (marketing wording) | Оли Брайта Бабатунде |
-| Contact email | **`null` — not supplied** |
-| Postal address for requests | **`null` — not supplied** |
+| Contact email | `olie.bright@gmail.com` — supplied and verified by the operator 2026-08-10 (commit `9a1d99e`). Used for subject requests and consent withdrawal only, never for marketing |
+| Postal address for requests | **`null` — not supplied.** Open owner input; does **not** gate publication — see §7 |
 
 **Confirm the name against the source document before deployment.** It was taken from the
 instruction and has not been verified against anything else.
@@ -140,6 +140,26 @@ paraphrased.
 | `backend/src/cash-os-leads/cash-os-leads.service.ts` | `assertRequiredConsent`, `resolveMarketingConsent`, second consent row in the same transaction |
 | `frontend/src/middleware.test.ts` | `/consent` reachability on all three landing hosts, both host headers |
 
+### Amendments of 2026-08-10 (post-audit)
+
+An audit of this implementation against the live site raised three gaps. All three are
+addressed below; none changes the wording, so no new consent version was needed.
+
+| # | Gap | Change |
+| --- | --- | --- |
+| B | The checkbox's behaviour was verified only by manual DOM inspection — no automated test would have caught it silently becoming pre-ticked, optional, or detached from its wording | New `frontend/src/lib/lead-submission.ts` extracts the "no tick, no payload" rule out of the event handler so it is testable as an ordinary function. New `lead-submission.test.ts` (10 tests) and `lead-form.test.ts` (10 tests, rendered via `react-dom/server`). New `tsconfig.test.json` supplies the automatic JSX runtime that Next's `jsx: "preserve"` withholds from the test runner. |
+| C | `ConsentRecord` had no form source; it was reachable only through a `SetNull` link, so a hard-deleted lead left evidence that no longer said which form obtained it | New `source` column on `ConsentRecord` in both schemas, migrations `20260810140000_consent_source` (global and RU), populated from `dto.source`. Nullable, no backfill: NULL means "not captured", which is the truth for earlier rows. |
+| D | `accepted` was optional, so a client that omitted it still produced a stored consent — silence recorded as an acknowledgement | `assertRequiredConsent` now requires `accepted === true`; `resolveMarketingConsent` applies the same rule and drops rather than rejects. `accepted` is now a required DTO property. |
+
+Also added: `backend/src/cash-os-leads/lead-consent-persistence.integration.spec.ts` — the first
+test in this area to touch a real database, proving the lead and consent rows link, that the
+`source` column was actually migrated, and that consent evidence survives a hard delete of its
+lead. It is **skipped unless `CONSENT_TEST_DATABASE_URL` is set** and refuses any URL equal to
+`DATABASE_URL` or not on localhost / marked `test`, because of §F1 below.
+
+Unchanged by the amendments: the wording, its version, the policy version, the operator identity,
+and the GO/NO-GO position in §8 — which remains **NO-GO** for the reasons in §7.
+
 ---
 
 ## 4. Behaviour of the required checkbox
@@ -168,8 +188,9 @@ unchanged — `ym-hide-content` and `ym-disable-keys` affect only Webvisor sessi
 | Suite | Command | Result |
 | --- | --- | --- |
 | Consent registry + operator designation (16 tests) | `cd backend && npx jest src/consent` | **pass** |
-| Lead enforcement (9 tests) | `cd backend && npx jest src/cash-os-leads` | **pass** |
-| Frontend middleware + publication gate (33 tests) | `pnpm --filter @liqvia2/frontend test` | **pass** |
+| Lead enforcement + RU boundary + notification (32 tests) | `cd backend && npx jest src/cash-os-leads` | **pass** — 48 total with `src/consent`, 3 skipped |
+| Lead + consent persistence, real database (3 tests) | `CONSENT_TEST_DATABASE_URL=… npx jest lead-consent-persistence` | **not run** — skipped by default; see §F1 |
+| Frontend middleware, publication gate, form markup, submission guard (55 tests) | `pnpm --filter @liqvia2/frontend test` | **pass** |
 | Frontend type-check | `cd frontend && npx tsc --noEmit` | **clean** |
 | Backend type-check | `cd backend && npx tsc --noEmit` | **clean** |
 | ESLint over changed paths | `npx eslint …` | **clean** |
@@ -241,28 +262,52 @@ down-migration and none should be written.
 
 ## 7. Unresolved facts — deployment blockers
 
-Every item below is rendered on the pages as a visible «НЕ УСТАНОВЛЕНО» marker and is listed in
-`UNVERIFIED_PROCESSING_FACTS` / `missingOperatorContactFacts()`. While any remains,
-`isLegalPublicationReady()` is `false`, both pages render a "проект документа — не опубликован"
-banner and are `noindex`.
+**Restated 2026-08-10 to match the code, which had moved on from the table below.** The authority
+is `publicationBlockers()` / `openOwnerInputs()`; this section is a description of them and must be
+re-derived, not edited from memory, whenever either changes.
+
+Anything still in `UNVERIFIED_PROCESSING_FACTS` renders on the pages as a visible «НЕ УСТАНОВЛЕНО»
+marker. While any remains, `isLegalPublicationReady()` is `false`, both pages render the
+"проект документа — не опубликован" banner and are `noindex`.
+
+### Still blocking publication
+
+Exactly the three facts `publicationBlockers()` returns today. All three describe where the RU
+infrastructure actually is, and all three became answerable when the Yandex cutover was executed
+(commit `bafb68b`) — they are open because nobody has written the answers down, not because the
+answers are unknown.
 
 | # | Unresolved fact | Needed for | Who can answer |
 | --- | --- | --- | --- |
-| 1 | **Verified contact email for personal-data requests** | Operator identification, withdrawal channel, marketing wording | Operator |
-| 2 | **Postal address for legally significant requests** | Operator identification, withdrawal channel | Operator |
-| 3 | Render web-service region (U1) | Storage location | Render console |
-| 4 | Render database region, confirmed in console (U2) | Storage location, localisation | Render console |
-| 5 | Backups: existence, cadence, retention, region (U3) | Storage location | Render console |
-| 6 | SMTP provider identity (U6) | Processor list | Render console → Environment |
-| 7 | OpenAI data-processing terms in force (U7) | AI section, cross-border basis | platform.openai.com |
-| 8 | Metrica Webvisor / form-content recording / data sharing (U8, U9) | Metrica section, "no PII to Yandex" claim | metrika.yandex.ru |
-| 9 | Retention period per data category (Y10) | Retention section | Operator decision |
-| 10 | Cross-border transfer countries and basis | Cross-border section | Follows from 3–8 |
-| 11 | Analytics cookies are set before any consent (Y6) | Lawful basis for analytics | Operator decision — no cookie banner exists |
-| 12 | Counsel sign-off on the published wording | `COUNSEL_SIGN_OFF_COMPLETE` | Qualified lawyer |
+| 1 | Web-service hosting region (U1) | Storage location | Yandex Cloud console |
+| 2 | Database region, confirmed in console (U2) | Storage location, ст. 18 localisation | Yandex Cloud console |
+| 3 | Backups: existence, cadence, retention, region (U3) | Storage location | Yandex Cloud console |
 
-Items 1 and 2 also block the **marketing** checkbox specifically: it cannot be rendered without an
-opt-out address.
+### Open, but deliberately not blocking
+
+| Item | Status |
+| --- | --- |
+| Postal address for legally significant requests | `null`. Returned by `openOwnerInputs()`, not by `publicationBlockers()`: every right the documents promise — access, correction, deletion, withdrawal — is exercisable by email, so the documents are not untrue without it. Whether they can stand indefinitely without one is a legal question. **LEGAL REVIEW REQUIRED.** |
+| External legal review | `EXTERNAL_LEGAL_REVIEW_COMPLETE = false`. Tracked separately and does not gate publication; that is the owner's recorded decision (`OWNER_APPROVED_FOR_PUBLICATION = true`). Never conflate the two constants. |
+| Analytics cookies set before any consent (Y6) | Unchanged and unresolved. No cookie banner exists. Owner decision, and not in this change's scope. |
+| Cross-border transfer countries and basis | Follows from U1–U3 above; write it once those are answered. |
+
+### Resolved since this document was first written
+
+| Item | Resolution |
+| --- | --- |
+| Verified contact email | Supplied by the operator: `olie.bright@gmail.com` (commit `9a1d99e`). `isOperatorContactVerified()` is now `true`. |
+| SMTP provider identity (U6) | No lead email path exists at all — `docs/RU_CURRENT_LEAD_DATA_FLOW.md` |
+| OpenAI terms in force (U7) | No lead data reaches any AI provider, so they do not apply |
+| Metrica Webvisor / form recording (U8, U9) | Verified off against the live counter — `docs/RU_METRICA_VERIFICATION.md`; the form additionally carries `ym-hide-content` / `ym-disable-keys` |
+| Retention per category (Y10) | Owner decision: leads 1 month; consent evidence retained separately |
+| `COUNSEL_SIGN_OFF_COMPLETE` | Renamed `EXTERNAL_LEGAL_REVIEW_COMPLETE` and demoted out of the publication gate |
+
+The **marketing** checkbox is no longer blocked by a missing opt-out address — the email supplies
+one — but it remains deliberately disabled: `PROMOTIONAL_MESSAGES_ARE_SENT = false`, so
+`MARKETING_CONSENT_ENABLED` is `false`, the notice is not registered, the box is not rendered, and
+the server rejects any marketing consent a client posts. Asking for consent to something that never
+happens is its own defect. Enabling it is a separate, deliberate decision.
 
 ---
 
@@ -272,30 +317,50 @@ opt-out address.
 
 The implementation is complete and tested; the *facts* are not. Against the stated blockers:
 
+**Restated 2026-08-10, measured rather than remembered.** Marker counts come from the built
+static pages in `.next/server/app`, not from an earlier draft of this table.
+
 | Blocker | Status |
 | --- | --- |
-| Operator's contact email or required address missing | **HIT** — both are `null` |
-| Policy or consent contains placeholders | **HIT** — 18 «НЕ УСТАНОВЛЕНО» markers rendered live (11 on `/privacy`, 7 on `/consent`) |
-| Data recipients or processing purposes unknown | **HIT** — SMTP provider unidentified (U6); purposes are established |
-| Production storage / localisation unresolved | **HIT** — U1, U2, U3 open; no data-region concept exists (R8) |
-| Server-side consent enforcement absent | **CLEAR** — implemented and tested |
-| Migration / rollback plan not reviewed | **OPEN** — §6 above is written but has not been reviewed by you |
-| Testing reveals a regression in lead delivery or attribution | **CLEAR** — no regression; superseded-version delivery is covered by test, campaign parameters covered by test, Metrica goals unchanged |
+| Operator's contact email or required address missing | **CLEAR** — email supplied and verified (`9a1d99e`); `isOperatorContactVerified()` is `true`. The postal address is still `null` but is an open owner input, not a blocker — see §7 |
+| Policy or consent contains placeholders | **HIT** — 24 «НЕ УСТАНОВЛЕНО» markers still render (16 on `/privacy`, 8 on `/consent`). Both pages carry «не опубликован и не вступил в силу» and `noindex, nofollow` |
+| Data recipients or processing purposes unknown | **CLEAR** — U6/U7/U8/U9 resolved; purposes established |
+| Production storage / localisation unresolved | **HIT** — U1, U2, U3 remain the only entries in `UNVERIFIED_PROCESSING_FACTS`, and they are what keeps `isLegalPublicationReady()` `false` |
+| Server-side consent enforcement absent | **CLEAR** — implemented and tested; `accepted === true` now required |
+| Migration / rollback plan not reviewed | **OPEN** — §6 has still not been reviewed, and two migrations now ship (`20260809120000_consent_records`, `20260810140000_consent_source`) |
+| Testing reveals a regression in lead delivery or attribution | **CLEAR** — no regression; superseded-version delivery, campaign parameters and Metrica goals all covered by test |
 
-Two of the seven are cleared by this work. The rest are facts only you or a console can supply.
+Five of the seven are now clear. The two that remain are both real:
+
+1. **The pages would go live declaring themselves not in force.** Deploying the checkbox now ships
+   a consent that links to two documents which say, in their own banner, that they are not
+   published and have not taken effect, and which show 24 unfilled facts. A consent notice pointing
+   at a document marked "not in force" is weaker evidence than no notice at all, because it is
+   evidence that the operator knew the document was incomplete.
+2. **The migrations have not been reviewed against the live database.** See §6.
+
+Both are cleared by answering U1–U3 from the Yandex console and reviewing §6 — neither needs new code.
 
 ### What a GO requires
 
-1. Supply the verified contact email and postal address → set them in
-   `packages/shared/src/operator.ts`.
-2. Answer U1, U2, U3, U6, U7, U8/U9 from the consoles → write the answers into the two pages and
-   delete the corresponding entries from `UNVERIFIED_PROCESSING_FACTS`.
-3. Decide retention periods per category.
-4. Decide how analytics consent is obtained, or accept the current position knowingly.
-5. Obtain counsel sign-off → set `COUNSEL_SIGN_OFF_COMPLETE = true`.
-6. Re-run the three test suites; `isLegalPublicationReady()` then returns `true`, the draft banner
-   disappears and both pages become indexable.
-7. Separately from this change, address §F1 (production credentials in `backend/.env`) and §F3
+Restated 2026-08-10. Items 1, 3 and 5 of the original list are done or superseded; what is left is
+short and none of it is code.
+
+1. **Answer U1, U2, U3 from the Yandex Cloud console** — web-service region, database region,
+   and backup existence/cadence/retention/region. Write the answers into `/privacy` and delete the
+   three entries from `UNVERIFIED_PROCESSING_FACTS`. This is the only thing keeping
+   `isLegalPublicationReady()` `false`, and therefore the only thing keeping 24 «НЕ УСТАНОВЛЕНО»
+   markers, the draft banner and `noindex` on the two documents the checkbox links to.
+2. **Review §6 against the live database** before the migrations run: confirm `ConsentRecord` does
+   not already exist there (the migration would fail), and confirm the instance being migrated is
+   the one actually serving `liqvia.info` after the Yandex cutover.
+3. **Decide how analytics consent is obtained**, or accept the current position knowingly. No
+   cookie banner exists.
+4. **Decide on the postal address** — supply one, or record the decision that email alone is the
+   channel. Non-blocking either way; it stays in `openOwnerInputs()` until answered.
+5. Re-run the suites; `isLegalPublicationReady()` then returns `true`, the banner disappears and
+   both pages become indexable.
+6. Separately from this change, address §F1 (production credentials in `backend/.env`) and §F3
    (`qa/` not gitignored) from `docs/FINAL_OUTSTANDING_ISSUES.md` before any Russian lead is
    collected.
 

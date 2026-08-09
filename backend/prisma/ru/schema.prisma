@@ -90,6 +90,11 @@ model ConsentRecord {
 
   method String @default("checkbox")
 
+  /// Which form produced the acknowledgement. Denormalised from
+  /// `CashOsLead.source` so the evidence survives a hard delete of the lead,
+  /// which the `SetNull` link below permits.
+  source String?
+
   acknowledgedAt DateTime @default(now())
   createdAt      DateTime @default(now())
 

@@ -824,6 +824,14 @@ model ConsentRecord {
   /// How the acknowledgement was given, e.g. "checkbox".
   method String @default("checkbox")
 
+  /// Which form produced the acknowledgement, e.g. "cash-operating-system-landing".
+  ///
+  /// Denormalised from `CashOsLead.source` on purpose. The link below is
+  /// `SetNull`, so a genuine hard delete of a lead would otherwise leave evidence
+  /// that no longer says which form the person was looking at — and "consent
+  /// obtained on which form?" is part of the answer this record exists to give.
+  source String?
+
   /// When the user acknowledged, as recorded by the server.
   acknowledgedAt DateTime @default(now())
   createdAt      DateTime @default(now())

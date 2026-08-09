@@ -1,0 +1,9 @@
+{
+  // Next requires `jsx: "preserve"` in the main config so that its own compiler
+  // handles JSX. The test runner has no such compiler, so tests that render a
+  // component need the automatic runtime instead. This overrides only that.
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    "jsx": "react-jsx"
+  }
+}

@@ -21,6 +21,35 @@ import { CreateCashOsLeadDto, LeadConsentDto } from './dto/create-cash-os-lead.d
 const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
 /**
+ * Upper bounds for every free-text field the public form accepts.
+ *
+ * The endpoint is unauthenticated and the columns are unbounded `text`, so
+ * without a ceiling a single caller can store megabytes per submission — the
+ * rate limit caps how *often* that happens, not how large each one is. The
+ * limits are generous enough that no genuine Russian business name, job title
+ * or enquiry reaches them; `comment` is the only field a real person writes at
+ * length, hence its much larger allowance.
+ *
+ * `email` follows the RFC 5321 practical maximum of 320 characters.
+ */
+const MAX_FIELD_LENGTHS = {
+  name: 200,
+  role: 200,
+  companyName: 200,
+  phone: 64,
+  email: 320,
+  employeeCount: 32,
+  industry: 120,
+  comment: 5_000,
+  source: 120,
+} as const satisfies Record<string, number>;
+
+/** Longest consent wording the registry will ever legitimately hold. */
+const MAX_CONSENT_TEXT_LENGTH = 5_000;
+/** Bounds on the short identifying fields carried with a consent record. */
+const MAX_CONSENT_FIELD_LENGTH = 200;
+
+/**
  * Shown when the lead cannot be stored.
  *
  * Deliberately says "try again later" rather than "we've received your request": a person who
@@ -55,6 +84,7 @@ export class CashOsLeadsService {
       throw new BadRequestException('A valid email is required');
     }
 
+    this.assertWithinLengthLimits(dto);
     this.assertRequiredConsent(dto.consent);
     const marketingConsent = this.resolveMarketingConsent(dto.marketingConsent);
 
@@ -111,6 +141,7 @@ export class CashOsLeadsService {
         locale: dto.consent.locale,
         acknowledgedAt: dto.consent.acknowledgedAt,
         method: 'checkbox',
+        source: dto.source,
         cashOsLeadId: lead.id,
       });
 
@@ -124,10 +155,45 @@ export class CashOsLeadsService {
           locale: marketingConsent.locale,
           acknowledgedAt: marketingConsent.acknowledgedAt,
           method: 'checkbox-optional',
+          source: dto.source,
           cashOsLeadId: lead.id,
         });
       }
     });
+  }
+
+  /**
+   * Rejects oversized input before anything is written.
+   *
+   * Trimmed length is what counts, matching what `writeLead` actually stores.
+   * The message names the field and its limit rather than saying "too long", so
+   * a person who genuinely wrote a long enquiry can see what to shorten — but it
+   * never echoes the submitted value back.
+   */
+  private assertWithinLengthLimits(dto: CreateCashOsLeadDto): void {
+    for (const [field, limit] of Object.entries(MAX_FIELD_LENGTHS)) {
+      const value = dto[field as keyof typeof MAX_FIELD_LENGTHS]?.trim();
+      if (value && value.length > limit) {
+        throw new BadRequestException(
+          `${field} must be ${limit} characters or fewer`,
+        );
+      }
+    }
+
+    // The consent payload is attacker-controlled too, and `consentText` is stored
+    // verbatim as evidence. An unbounded one would be the largest field on the
+    // request.
+    for (const consent of [dto.consent, dto.marketingConsent]) {
+      if (!consent) continue;
+      if ((consent.consentText?.length ?? 0) > MAX_CONSENT_TEXT_LENGTH) {
+        throw new BadRequestException('Consent text exceeds the permitted length');
+      }
+      for (const field of ['subjectId', 'version', 'locale', 'acknowledgedAt'] as const) {
+        if ((consent[field]?.length ?? 0) > MAX_CONSENT_FIELD_LENGTH) {
+          throw new BadRequestException('Consent metadata exceeds the permitted length');
+        }
+      }
+    }
   }
 
   /**
@@ -150,9 +216,12 @@ export class CashOsLeadsService {
     if (consent.subjectId !== REQUIRED_LEAD_CONSENT_SUBJECT) {
       throw new BadRequestException(CONSENT_REQUIRED_MESSAGE_RU);
     }
-    // `accepted` is optional for compatibility with clients that omit it, but an
-    // explicit `false` is a refusal and must never be stored as a consent.
-    if (consent.accepted === false) {
+    // Only an affirmative `true` is consent. An omitted flag is not a refusal,
+    // but it is not an acknowledgement either, and 152-FZ ч. 1 ст. 9 requires a
+    // conscious act — so silence must not become evidence of one. Every shipped
+    // client sends `accepted: true` explicitly (see lead-submission.ts), so this
+    // rejects only hand-rolled or stale callers.
+    if (consent.accepted !== true) {
       throw new BadRequestException(CONSENT_REQUIRED_MESSAGE_RU);
     }
 
@@ -177,7 +246,9 @@ export class CashOsLeadsService {
    */
   private resolveMarketingConsent(consent: LeadConsentDto | undefined): LeadConsentDto | null {
     if (!consent) return null;
-    if (consent.accepted === false) return null;
+    // Same rule as the required consent: only an explicit tick counts. Dropping
+    // it silently is correct here — the marketing box never gates the lead.
+    if (consent.accepted !== true) return null;
 
     if (!MARKETING_CONSENT_ENABLED) {
       this.logger.warn(
