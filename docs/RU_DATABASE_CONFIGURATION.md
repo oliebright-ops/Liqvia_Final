@@ -79,22 +79,62 @@ selected as the newer generation with wider zone coverage. The estimate has been
 
 | Setting | Intended | **Verified** | Why |
 |---|---|---|---|
-| TLS | **Required**, `sslmode=verify-full` | ⏳ Enforced by Managed PostgreSQL; **`verify-full` still to be set in the app's connection string** | Encryption alone is not enough — the CA must be verified, or the connection is spoofable |
-| CA certificate | Yandex CA bundled into the app image | ⏳ Pending app deployment | `verify-full` needs it present at runtime |
-| Encryption at rest | Platform default | ⏳ **Not yet read back** — record before cutover | Do not assume |
-| Database users | `liqvia_app` (app), `liqvia_migrate` (migrations) | ⚠️ **`liqvia_app` only** — `liqvia_migrate` not yet created | Separate roles: the runtime must not own DDL |
-| `liqvia_app` grants | `SELECT, INSERT`; **no `DELETE`** | ⚠️ **Owner of `liqvia_ru`** — broader than intended, see §2.1 | Erasure and retention must be a deliberate, audited operation |
-| Database | `liqvia_ru` | ✅ `liqvia_ru`, owner `liqvia_app` | |
+| TLS | **Required**, `sslmode=verify-full` | ✅ App connects with `sslmode=verify-full&sslrootcert=/certs/root.crt` | Encryption alone is not enough — the CA must be verified, or the connection is spoofable |
+| CA certificate | Yandex CA bundled into the app image | ✅ Mounted read-only at `/certs/root.crt` from the host | `verify-full` needs it present at runtime |
+| Encryption at rest | Platform default | ❌ **NOT VERIFIED** — see §2.2 | Do not assume |
+| Database users | app + migrator | ✅ **`liqvia_app`** (runtime) and **`ru_migrator`** (schema owner) | Separate roles: the runtime must not own DDL |
+| `liqvia_app` grants | `SELECT, INSERT, UPDATE`; **no `DELETE`** | ✅ **Verified by execution** — DELETE/TRUNCATE/CREATE/ALTER/DROP all denied. See `RU_PRIVILEGE_EVIDENCE.md` | Erasure and retention must be a deliberate, audited operation |
+| Database | `liqvia_ru` | ✅ `liqvia_ru`, **owner `ru_migrator`** | The runtime owns nothing |
 | Superuser | Not used by the application | ✅ Not used | |
 | Password source | **Yandex Lockbox** | ✅ Secret **`liqvia-ru-db`** (`e6q55rq0rvnbgh3kpu6d`), keys `password`/`username`/`database` | Phase R. Generated at 32 chars from `/dev/urandom`, never printed, never written to Git |
 | Connection pooling | Managed pooler | ✅ Port `6432` (pooler) is the only ingress permitted | |
 
-### 2.1 Open — privilege separation not yet applied
+### 2.2 Encryption at rest — NOT VERIFIED, conclusively
 
-The cluster was created with a single user, `liqvia_app`, which **owns** the `liqvia_ru` database and
-therefore holds `DELETE` and DDL. That is broader than §2 specifies.
+§17 requires actual evidence and forbids inference. The complete API surface of all three resources
+was enumerated on 2026-08-09:
 
-**To do before cutover** (all online, no rebuild):
+```
+disk    : block_size, created_at, disk_placement_policy, folder_id, hardware_generation, id,
+          instance_ids, product_ids, size, source_image_id, status, type_id, zone_id
+cluster : config, created_at, deletion_protection, description, environment, folder_id, health,
+          id, maintenance_window, monitoring, name, network_id, security_group_ids, status
+lockbox : created_at, current_version, description, folder_id, id, name, status
+```
+
+**Not one encryption, KMS or key field exists on any of them.** `yc kms symmetric-key list` returns
+empty — no customer-managed key is in use anywhere in the folder.
+
+| Item | Status |
+|---|---|
+| PostgreSQL storage encryption | **NOT VERIFIED** |
+| Backup encryption | **NOT VERIFIED** |
+| Compute disk encryption | **NOT VERIFIED** |
+| Lockbox payload protection | **NOT VERIFIED** (Lockbox is a secrets service and encrypts payloads by design, but the API exposes no field asserting it) |
+
+Yandex documents platform-level encryption at rest, and it is likely present. **That is not
+evidence, and this document will not record it as one.** Two ways to convert this into a verifiable
+fact, either of which would be an improvement:
+
+1. Create a **customer-managed KMS key** and attach it to the cluster and disk. Encryption then
+   becomes an observable property (`kms_key_id` present) rather than a vendor claim, and key access
+   becomes auditable.
+2. Obtain written confirmation from Yandex for the specific services and record it here with a date
+   and a reference.
+
+Until one of those happens, any statement that Russian personal data is encrypted at rest is
+**unsupported by evidence available to this project**.
+
+### 2.1 Privilege separation — APPLIED and verified
+
+The cluster was originally created with `liqvia_app` owning `liqvia_ru`. That has been corrected:
+`ru_migrator` now owns the database and every table; `liqvia_app` holds `USAGE` on the schema and
+`SELECT, INSERT, UPDATE` on tables and sequences, with matching `ALTER DEFAULT PRIVILEGES`.
+
+Verified by executing each statement rather than by inspecting grants — 10/10 as expected. Full
+evidence in `RU_PRIVILEGE_EVIDENCE.md`.
+
+*Historical note — the steps that were performed:*
 
 1. Create `liqvia_migrate`; transfer schema ownership to it.
 2. Reduce `liqvia_app` to `SELECT, INSERT, UPDATE` on `CashOsLead` and `ConsentRecord`.
@@ -168,7 +208,7 @@ provenance is the thing this whole exercise is about.
 | Backup window | Low-traffic hours, MSK | ✅ **22:15 UTC** (01:15 MSK) | |
 | PITR | Confirm availability and window | ⏳ Within the 7-day backup retention; window not yet exercised | |
 | **Restore test** | **Performed before cutover** | ❌ **NOT PERFORMED** | An untested backup is a belief, not a backup |
-| Backup encryption | Platform default | ⏳ Not yet read back | Verify and record |
+| Backup encryption | Platform default | ❌ **NOT VERIFIED** — see §2.2 | Verify and record |
 
 ### 4.1 Retention interaction — the one number to keep consistent
 
