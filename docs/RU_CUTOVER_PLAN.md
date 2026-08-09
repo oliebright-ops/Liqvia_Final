@@ -7,88 +7,51 @@ Every step that provisions a paid resource, deploys to production or changes DNS
 
 ---
 
-## 0. Cutover mechanism — decided before anything else
+## 0. Cutover mechanism
 
 Phase Y says: *do not change DNS blindly if routing can be achieved more safely at application or
-domain level.* Here is the comparison, and the recommendation.
+domain level.* An earlier draft of this document concluded that a Cloudflare origin switch was that
+safer route. **That was wrong, and the error is worth stating rather than quietly deleting.**
 
-| Mechanism | How | Reversal | Risk | Verdict |
-|---|---|---|---|---|
-| **A. DNS repoint** — `liqvia.info` → RU app | Change the CNAME at IONOS | TTL-bound; **minutes to hours** during which some visitors still hit the old target | Split-brain: two live app instances writing to two different databases. A lead lands wherever DNS resolved for that visitor | ❌ Not first |
-| **B. Cloudflare origin switch** | Repoint the Cloudflare proxy origin to the RU app | **Seconds**, both directions | Cloudflare (NON-RU) stays in the path — it already is | ✅ **Recommended** |
-| **C. Application-level** — global app proxies RU submissions | Global Render app forwards `POST /api/cash-os-leads` to RU | Instant, a flag | **Sends every Russian lead through a US host in transit.** Defeats the purpose | ❌ Reject |
-| **D. Staged** — B, then A once stable | Origin switch first; DNS later as tidy-up | — | Lowest | ✅ **Recommended** |
+### The facts, verified 2026-08-09
 
-> ## CORRECTION (2026-08-09) — there is no Cloudflare account to switch
->
-> This document previously recommended a "Cloudflare origin switch" as the reversible cutover
-> mechanism. **That option does not exist.** Verified:
->
-> ```
-> liqvia.info NS      : ns1016.ui-dns.org, ns1020.ui-dns.com, ns1025.ui-dns.de, ns1118.ui-dns.biz
->                       → IONOS.  NOT Cloudflare.
-> liqvia-landing.onrender.com → gcp-us-west1-1.origin.onrender.com.cdn.cloudflare.net
-> ```
->
-> The `server: cloudflare` and `cf-ray` headers on `liqvia.info` come from **Render's own CDN**, which
-> Render puts in front of its services. It is Render's Cloudflare, not the operator's. There is no
-> zone to log into and no origin setting to change.
->
-> **The real cutover is a DNS change at IONOS**, and it is therefore *not* reversible in seconds —
-> it is reversible within a TTL. That materially changes the risk profile described below, and the
-> mechanism table has been rewritten accordingly.
->
-> This is exactly the kind of assumption that should be checked before a cutover window rather than
-> during one.
+```
+liqvia.info NS  : ns1016.ui-dns.org, ns1020.ui-dns.com,
+                  ns1025.ui-dns.de, ns1118.ui-dns.biz     → IONOS.  NOT Cloudflare.
+liqvia.info A   : 216.24.57.1
+liqvia-landing.onrender.com → gcp-us-west1-1.origin.onrender.com.cdn.cloudflare.net
+```
 
-### Concrete values (§30)
+The `server: cloudflare` and `cf-ray` headers on `liqvia.info` come from **Render's own CDN**. That
+Cloudflare account belongs to Render, not to the operator. There is no zone to log into and no
+origin setting to change. The "reversible in seconds" property the earlier recommendation was built
+on **does not exist**.
 
-| | Current | Target |
-|---|---|---|
-| `liqvia.info` DNS | CNAME → `liqvia-landing.onrender.com` (Render, **US Oregon**) | unchanged at DNS level |
-| DNS record at **IONOS** | `liqvia.info` → CNAME `liqvia-landing.onrender.com` | `liqvia.info` → **A `158.160.44.137`** (Yandex `liqvia-ru-app`) |
-| Origin port | 443 | 443 |
-| TLS | Render-managed certificate | **Caddy + Let's Encrypt** — once DNS points at the origin, Caddy can issue a publicly-trusted certificate automatically. Change `tls internal` to the real hostname block at that point |
-| Health check | `/api/health` | `/api/health` on the Yandex origin |
-| Expected downtime | — | **TTL-bound.** Lower the record TTL to 300s at least 24h beforehand |
-| Rollback | — | restore the CNAME at IONOS. **Also TTL-bound — not instant** |
+### Options, corrected
 
-**TLS ordering.** Caddy currently serves `tls internal` (self-signed), which was correct while the
-origin had no public hostname. The moment `liqvia.info` resolves to `158.160.44.137`, Caddy can
-obtain a real Let's Encrypt certificate automatically — it needs inbound `:80` for the HTTP-01
-challenge, so **add TCP 80 to `liqvia-ru-app-sg` as part of the cutover** (or use a DNS-01 challenge
-and keep 80 closed).
+| Mechanism | How | Reversal | Verdict |
+|---|---|---|---|
+| **A. DNS repoint at IONOS** | `liqvia.info` → A `158.160.44.137` | **TTL-bound**, not instant | ✅ **The only real option** |
+| B. Cloudflare origin switch | — | — | ❌ **Not available.** No operator-controlled Cloudflare zone exists |
+| C. Application-level proxy | Render app forwards `POST /api/cash-os-leads` to RU | Instant | ❌ **Reject.** Sends every Russian lead through a US host in transit — defeats the objective while looking like success |
 
-Until a real certificate is issued, visitors would see a certificate warning, because there is no
-longer a CDN in front terminating TLS on a valid certificate. **Do not cut DNS over before the
-certificate path is settled** — that is now the sequencing constraint, and it did not exist under the
-mistaken Cloudflare assumption.
+### What follows from A being the only option
 
-**Losing Render's CDN is a real consequence, not a footnote.** Today `liqvia.info` sits behind
-Render's Cloudflare: caching, TLS termination and a measure of DDoS absorption. Pointing DNS
-straight at a single 2-vCPU Yandex instance removes all three. For a small Russian lead funnel that
-is acceptable, but it should be a decision rather than a surprise — and it is another argument for
-the 100%-guaranteed CPU tier already chosen.
+1. **Rollback is TTL-bound.** Lower the record TTL to **300s at least 24 hours** before the change.
+   During the window, leads land wherever each resolver happened to point — and afterwards you
+   cannot tell which. Keeping the window short is the mitigation; there is no way to remove it.
+2. **TLS must be settled first.** Caddy currently serves `tls internal` (self-signed), which was
+   fine while no public hostname pointed here. Once DNS moves there is no CDN terminating TLS on a
+   valid certificate, so visitors would see a warning. Caddy can issue a real Let's Encrypt
+   certificate automatically, but needs inbound **TCP 80** for the HTTP-01 challenge — so open 80 on
+   `liqvia-ru-app-sg` as part of the cutover, or use DNS-01 and keep 80 closed.
+   **Do not move DNS before this is done.** This sequencing constraint did not exist under the
+   mistaken assumption.
+3. **Render's CDN is lost.** Caching, TLS termination and DDoS absorption all disappear when DNS
+   points straight at a single 2-vCPU instance. Acceptable for a small lead funnel, but a decision
+   rather than a surprise — and a further argument for the 100%-guaranteed CPU tier already chosen.
 
 **The authenticated global Liqvia domain is not touched by any of this.**
-
-> ### Recommendation: **D — Cloudflare origin switch, then DNS later**
->
-> Cloudflare already terminates TLS for `liqvia.info` (verified: `server: cloudflare`,
-> `cf-ray: …`). Switching the origin is a **single control-plane change that takes effect in
-> seconds and reverses in seconds** — which matters more than elegance, because the first real
-> Russian lead will arrive minutes after cutover and the ability to reverse instantly is the whole
-> safety property.
->
-> A DNS change cannot be reversed inside its TTL. During that window leads are written to whichever
-> database the visitor's resolver happened to return — and you cannot tell afterwards which.
->
-> **Option C is rejected outright:** proxying Russian lead submissions through a US host puts the
-> personal data on foreign infrastructure in transit, which is the exact thing being migrated away
-> from. It would look like success while defeating the objective.
-
-**Lower the Cloudflare / DNS TTL to 300s at least 24 hours beforehand**, so that if A is ever needed
-the window is short.
 
 ---
 
@@ -106,8 +69,8 @@ Repository work. No infrastructure, no cost, no deployment.
 - [ ] Global exception filter — log class + request ID, never the message *(`RU_PRODUCTION_DATA_FLOW.md` §7)*
 - [ ] Add `qa/` to `.gitignore` *(real client data, currently untracked and not ignored)*
 - [ ] Repoint local `.env` away from production; rotate Render credentials
-- [ ] Decide retention periods for `CashOsLead` and `ConsentRecord`, and the erasure-vs-expiry cascade *(`RU_MINIMUM_SCHEMA.md` §4)*
-- [ ] Create the RU-only Prisma schema + migrations directory *(`RU_DATABASE_CONFIGURATION.md` §3)*
+- [x] Lead retention decided (1 month) and implemented; `ConsentRecord` retention still **REVIEW REQUIRED**
+- [x] Create the RU-only Prisma schema + migrations directory — **applied to the RU database**
 
 ## 2. Pre-cutover — re-verify the facts
 
