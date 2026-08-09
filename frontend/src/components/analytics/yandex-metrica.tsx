@@ -4,11 +4,14 @@ import { useEffect, useRef } from 'react';
 import { trackCtaEvent } from '@/components/cash-os/analytics';
 
 const METRICA_ID = process.env.NEXT_PUBLIC_YANDEX_METRICA_ID ?? '111417446';
+const METRICA_HOSTS = new Set(['liqvia.info', 'www.liqvia.info']);
 
 export function YandexMetrica() {
   const deepScrollTracked = useRef(false);
 
   useEffect(() => {
+    if (!METRICA_HOSTS.has(window.location.hostname.toLowerCase())) return;
+
     if (typeof window.ym !== 'function') {
       const queuedYm = ((...args: unknown[]) => {
         queuedYm.a = queuedYm.a ?? [];
@@ -51,15 +54,5 @@ export function YandexMetrica() {
     return () => window.removeEventListener('scroll', trackDeepScroll);
   }, []);
 
-  return (
-    <>
-      <noscript>
-        <img
-          src={`https://mc.yandex.ru/watch/${METRICA_ID}`}
-          style={{ position: 'absolute', left: '-9999px' }}
-          alt=""
-        />
-      </noscript>
-    </>
-  );
+  return null;
 }

@@ -1,4 +1,5 @@
 import type { Metadata } from 'next';
+import { YandexMetrica } from '@/components/analytics/yandex-metrica';
 import { AboutSection } from '@/components/cash-os/about-section';
 import { BeforeAfterSection } from '@/components/cash-os/before-after-section';
 import { ConfidentialitySection } from '@/components/cash-os/confidentiality';
@@ -82,6 +83,7 @@ export default async function CashOperatingSystemPage({ searchParams }: CashOper
 
   return (
     <div className="bg-white text-slate-900">
+      <YandexMetrica />
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }} />
 
       <SiteHeader />
