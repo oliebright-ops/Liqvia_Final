@@ -62,7 +62,54 @@ const LANDING_ALLOWED_PREFIXES = [
   '/consent',
   '/_next/',
   '/favicon.ico',
+  // Search-engine plumbing. Without these three the catch-all below answers a
+  // crawler with a 307 to `/` and then an HTML page, which is not a valid reply
+  // to any of them.
+  //
+  // `/yandex_*.html` is the site-ownership proof Yandex Webmaster asks you to
+  // upload before Direct will run against the domain: it fetches that exact
+  // path and expects the file, so a redirect fails verification. Allowing the
+  // prefix only makes it *reachable* — the file itself still has to be placed in
+  // `frontend/public/` from the Webmaster console, and until it is, this path
+  // correctly 404s.
+  '/yandex_',
+  '/robots.txt',
+  '/sitemap.xml',
 ];
+
+/**
+ * Paths that are never legitimate on a public marketing origin: dotfiles and VCS
+ * metadata, dependency manifests, dumps and archives, and the usual PHP/WordPress
+ * probe set. Automated scanning for these began within minutes of the origin
+ * becoming publicly reachable.
+ *
+ * Nothing here is actually served by this application — Next.js has no route for
+ * them and the files are not in the web root — so this is defence in depth rather
+ * than a plugged leak. What it changes is the *answer*: a redirect to `/` returns
+ * `307` plus a `Location`, which tells a scanner the origin is live, handling the
+ * path, and worth further probing. `404` tells it nothing.
+ *
+ * Deliberately not a catch-all: ordinary unknown paths keep the friendly redirect
+ * to the landing page, because a person who mistypes a URL is not a scanner.
+ */
+const SENSITIVE_PATH_PATTERN =
+  /(^|\/)(\.env($|\.)|\.git($|\/)|\.svn($|\/)|\.hg($|\/)|\.aws($|\/)|\.ssh($|\/)|\.DS_Store$|\.htaccess$|\.htpasswd$|\.npmrc$|\.dockerignore$|id_rsa|id_ed25519)|\.(sql|sqlite|sqlite3|db|dump|bak|backup|old|orig|swp|pem|key|p12|pfx|keystore|log|map)$|^\/(wp-admin|wp-content|wp-includes|wp-login\.php|wp-config\.php|xmlrpc\.php|phpinfo\.php|phpmyadmin|server-status|server-info|actuator|\.well-known\/security\.txt\.bak)($|\/)|^\/(package(-lock)?\.json|pnpm-lock\.yaml|yarn\.lock|composer\.(json|lock)|Dockerfile|docker-compose\.ya?ml|Gemfile|requirements\.txt|prisma\/schema\.prisma)$/i;
+
+function isSensitivePath(pathname: string): boolean {
+  let decoded = pathname;
+  try {
+    // A scanner may percent-encode to slip past a naive string match
+    // (`/%2e%65nv`). Match on the decoded form as well as the raw one.
+    decoded = decodeURIComponent(pathname);
+  } catch {
+    // Malformed percent-encoding: treat the raw path as hostile in its own right.
+    return true;
+  }
+
+  return (
+    SENSITIVE_PATH_PATTERN.test(pathname) || SENSITIVE_PATH_PATTERN.test(decoded)
+  );
+}
 
 function getRequestHost(request: NextRequest): string {
   // Prefer the forwarded host when Render/reverse proxies provide it.
@@ -83,6 +130,16 @@ function isLandingHost(request: NextRequest): boolean {
 
 export function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
+
+  /**
+   * Before any host routing: sensitive paths get a flat 404 on every host, and
+   * never a redirect. Placed first so the answer cannot depend on the Host header.
+   */
+  if (isSensitivePath(pathname)) {
+    return applySecurityHeaders(
+      new NextResponse(null, { status: 404 })
+    );
+  }
 
   if (isLandingHost(request)) {
     /**
