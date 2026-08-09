@@ -5,6 +5,7 @@ import { UserRole } from '@prisma/client';
 import { DEFAULT_DEMO_COMPANY_ID } from '@liqvia2/shared';
 import * as bcrypt from 'bcryptjs';
 import { PrismaService } from '../prisma/prisma.service';
+import { isRuDataPlane } from '../residency/data-plane';
 import { UploadImportService } from '../uploads/upload-import.service';
 import { buildDemoPackFiles, DEMO_PACK_PROFILES } from './demo-pack-generator';
 import { isNdisDemoDataReady, seedNdisDemoCompany } from './ndis-demo-seed';
@@ -127,6 +128,20 @@ export async function seedDemoCompanies(app: INestApplication): Promise<void> {
 }
 
 export async function runDemoSeedOnStartup(app: INestApplication): Promise<void> {
+  // Never on the RU lead plane. This seeder is part of the global authenticated
+  // product: it counts WeeklyActual rows, creates demo companies and demo users,
+  // and imports sample financial packs. None of those tables exist in the RU
+  // database — by design, it has two — so the first query throws P2021 and the
+  // process dies before it can serve a single request.
+  //
+  // Same reasoning as the migration block in run-migrations.ts: SKIP_DEMO_SEED
+  // exists, but a deployment whose correctness depends on remembering two
+  // separate env vars is one forgotten variable away from an outage or, worse,
+  // from someone "fixing" it by letting the global schema be created here.
+  if (isRuDataPlane()) {
+    return;
+  }
+
   if (process.env.SKIP_DEMO_SEED === 'true' || !process.env.DATABASE_URL) {
     return;
   }

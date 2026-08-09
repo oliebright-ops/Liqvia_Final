@@ -53,3 +53,29 @@ describe('startup migrations on the RU data plane', () => {
     expect(() => runMigrations()).not.toThrow();
   });
 });
+
+describe('demo seeding on the RU data plane', () => {
+  const saved = { ...process.env };
+  afterEach(() => {
+    process.env = { ...saved };
+  });
+
+  it('is skipped entirely, without touching Prisma', async () => {
+    // The seeder counts WeeklyActual — a global table that does not exist in the
+    // RU database. If it ran, the first query would throw P2021 and the process
+    // would die before serving a request. Passing a poisoned app proves it is
+    // never resolved from the container at all.
+    const { runDemoSeedOnStartup } = await import('../demo/demo-seed.runner');
+    process.env.LIQVIA_DATA_PLANE = 'ru';
+    process.env.DATABASE_URL =
+      'postgresql://u:p@rc1a-9lnpkf5j4gimf0hm.mdb.yandexcloud.net:6432/liqvia_ru';
+
+    const poisoned = {
+      get() {
+        throw new Error('runDemoSeedOnStartup must not resolve Prisma on the RU plane');
+      },
+    } as never;
+
+    await expect(runDemoSeedOnStartup(poisoned)).resolves.toBeUndefined();
+  });
+});
