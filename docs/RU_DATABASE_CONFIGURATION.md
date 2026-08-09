@@ -34,6 +34,24 @@ Verified via `yc managed-postgresql cluster get c9q985emaom0p6128t5r` on 2026-08
 | Deletion protection | not originally specified | ✅ **enabled** | Added deliberately: this store holds personal data, and an accidental `delete` is unrecoverable |
 | Network | `default` | ✅ `enpr97snu8brr3210h7r` | Same VPC as the app |
 | Cluster name | `liqvia-ru-leads` | ✅ `liqvia-ru-leads` | Names the scope, so nobody assumes it is the global database |
+| Status | RUNNING | ✅ `RUNNING` / health `ALIVE` | |
+| Host FQDN | — | `rc1a-9lnpkf5j4gimf0hm.mdb.yandexcloud.net` | |
+| Host public IP | **false** | ✅ **`false`** (confirmed in `host list`) | |
+| Database | `liqvia_ru` | ✅ `liqvia_ru`, collate/ctype `C` | |
+| Connection limit | — | 50 (`liqvia_app`) | |
+
+### 1.3 Residency guard verified against the real host
+
+The fail-closed guard was run against the **actual provisioned hostname**, not a test fixture:
+
+| Case | Result |
+|---|---|
+| `LIQVIA_DATA_PLANE=ru` + `rc1a-9lnpkf5j4gimf0hm.mdb.yandexcloud.net` | ✅ starts |
+| `LIQVIA_DATA_PLANE=ru` + the real `…oregon-postgres.render.com` production host | ✅ **refuses to start** — "must never be written to the global database" |
+| global plane + the Render host | ✅ unaffected |
+
+This closes the gap between "the guard passes its own unit tests" and "the guard recognises the
+database that actually exists".
 
 ### 1.1 Deviation — single host, and what it costs you
 
@@ -107,13 +125,23 @@ The RU database contains **exactly two tables**: `CashOsLead` and `ConsentRecord
 > This is the single most likely way for this project to go wrong, because the command that does it
 > is the command everyone types by reflex.
 
-**Required mechanism — choose one and record which:**
+**Mechanism chosen: A — a separate RU Prisma schema. Implemented.**
 
 | Option | How | Assessment |
 |---|---|---|
-| **A. Separate RU Prisma schema** | `backend/prisma/ru/schema.prisma` with the two models and its own `migrations/` dir; deploy with `--schema` | **Recommended.** Explicit, reviewable, impossible to run the wrong one by accident |
+| **A. Separate RU Prisma schema** ✅ | `backend/prisma/ru/schema.prisma` — two models, its own `migrations/` dir, its own datasource `RU_DATABASE_URL`, its own generated client output | **Chosen.** Explicit, reviewable, impossible to run the wrong one by accident |
 | B. Baseline the RU database | Mark all non-RU migrations as applied without running them | Fragile — one forgotten migration recreates the problem |
 | C. Single schema + `@@schema` mapping | Multi-schema Prisma | Adds complexity for no gain here |
+
+Deployed with:
+
+```bash
+pnpm --filter @liqvia2/backend prisma:ru:deploy   # migrate deploy --schema prisma/ru/schema.prisma
+```
+
+The RU schema reads `RU_DATABASE_URL`, **not** `DATABASE_URL`, so pointing the two planes at each
+other requires changing a different variable — a second, independent barrier alongside the runtime
+residency guard.
 
 **Verification after applying (mandatory, part of Phase W):**
 

@@ -14,7 +14,10 @@
     "prisma:studio": "prisma studio",
     "prisma:seed": "ts-node --transpile-only prisma/seed.ts",
     "prisma:seed:demo": "ts-node --transpile-only prisma/seed-demo.ts",
-    "demo:generate-samples": "ts-node --transpile-only prisma/write-demo-samples.ts"
+    "demo:generate-samples": "ts-node --transpile-only prisma/write-demo-samples.ts",
+    "prisma:ru:deploy": "prisma migrate deploy --schema prisma/ru/schema.prisma",
+    "prisma:ru:generate": "prisma generate --schema prisma/ru/schema.prisma",
+    "prisma:ru:status": "prisma migrate status --schema prisma/ru/schema.prisma"
   },
   "main": "dist/main.js",
   "exports": {

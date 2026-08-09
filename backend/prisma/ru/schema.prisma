@@ -1,0 +1,105 @@
+// Prisma schema for the RUSSIAN LEAD DATA PLANE ONLY.
+//
+// This file exists to prevent one specific accident, which is the most likely way
+// this migration goes wrong: running `prisma migrate deploy` with the main
+// `backend/prisma/schema.prisma` against the Yandex database. That would create
+// all 30 tables of the global application — companies, users, journal entries,
+// bank accounts, uploads — inside Russian infrastructure, silently defeating the
+// entire point of the migration. The command that does it is the command everyone
+// types by reflex, so the defence has to be a separate schema, not discipline.
+//
+// Two tables. Nothing else may be added here without a row in
+// docs/RU_MINIMUM_SCHEMA.md explaining why the Russian lead funnel needs it.
+//
+//   Deploy:  pnpm --filter @liqvia2/backend prisma:ru:deploy
+//   Verify:  the check in docs/RU_DATABASE_CONFIGURATION.md §3 must return
+//            exactly CashOsLead, ConsentRecord, _prisma_migrations.
+//
+// The migration history under ./migrations is independent of the global one on
+// purpose: a shared ledger is what lets an unrelated global migration run against
+// the RU database.
+
+generator client {
+  provider = "prisma-client-js"
+  output   = "../../node_modules/.prisma/ru-client"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("RU_DATABASE_URL")
+}
+
+/// A consultation request submitted through the liqvia.info landing page.
+///
+/// Every column here except `id`, `createdAt`, `source` and the anonymisation
+/// fields is personal data. `comment` is free text and therefore unbounded: a
+/// person may type anything into it, including health, financial or third-party
+/// information. It cannot be validated into safety — only kept out of logs,
+/// analytics, email and AI, and erased on schedule.
+model CashOsLead {
+  id            String  @id @default(cuid())
+  name          String
+  role          String?
+  companyName   String
+  phone         String?
+  email         String
+  employeeCount String?
+  industry      String?
+  comment       String?
+
+  /// Non-identifying campaign tag, e.g. "ru_cash_visibility_01".
+  /// NEVER a URL, a query string or a yclid — see docs/RU_METRICA_VERIFICATION.md §5.2.
+  source    String?
+  createdAt DateTime @default(now())
+
+  /// When the personal data in this row was erased. Null means it still holds
+  /// personal data. The row survives erasure so the consent evidence pointing at
+  /// it stays meaningful; every identifying column is overwritten.
+  anonymisedAt     DateTime?
+  /// "retention-expiry" | "consent-withdrawn" | "purpose-ended" | "subject-request".
+  /// Never contains anything about the person.
+  anonymisedReason String?
+
+  consentRecords ConsentRecord[]
+
+  @@index([createdAt])
+  @@index([anonymisedAt, createdAt])
+}
+
+/// Append-only evidence of what a person agreed to, and when.
+///
+/// Answers a different question from the lead itself — "was this processing
+/// lawful when it happened?" — and that question outlives the data it authorised.
+/// Deliberately stores no name, email or phone, and no IP address: proving consent
+/// by processing more personal data is self-defeating.
+model ConsentRecord {
+  id String @id @default(cuid())
+
+  subjectId     String
+  version       String
+  policyVersion String
+  locale        String
+
+  /// The exact sentence displayed at the time of acknowledgement.
+  consentText       String
+  consentTextSha256 String
+
+  /// False when the submitted wording did not match the server-side registry.
+  /// The record is still kept, but flagged rather than silently trusted.
+  textVerified Boolean @default(true)
+
+  method String @default("checkbox")
+
+  acknowledgedAt DateTime @default(now())
+  createdAt      DateTime @default(now())
+
+  /// SetNull, not Cascade. Routine retention expiry of a lead must not destroy
+  /// the proof that collecting it was lawful. Erasing a subject's data and
+  /// destroying that proof are different acts and must not share a code path.
+  cashOsLeadId String?
+  cashOsLead   CashOsLead? @relation(fields: [cashOsLeadId], references: [id], onDelete: SetNull)
+
+  @@index([subjectId, version])
+  @@index([cashOsLeadId])
+  @@index([acknowledgedAt])
+}
