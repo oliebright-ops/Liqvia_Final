@@ -251,3 +251,90 @@ written to the log, which contains no personal data either.
 exist yet. Until it does, retrieving a lead's contact details means a break-glass database query —
 workable for the first few leads, not a workflow. This is the single largest gap between "the funnel
 works" and "the funnel is operable".
+
+---
+
+## 10. §32/§33 Cutover — EXECUTED and verified
+
+**DNS changed at IONOS on 2026-08-09.** `liqvia.info` now points at the Yandex RU application.
+
+| Record | Before | After |
+|---|---|---|
+| `A` @ | `216.24.57.1` (Render, Oregon) | **`158.160.44.137`** (Yandex, ru-central1-a) |
+| `AAAA` @ | `2405:dc00:0:3::d818:3901` (Render) | **DELETED** |
+| `CNAME` www | `liqvia-landing.onrender.com` | **`liqvia.info`** |
+| MX / SPF | IONOS | **untouched** |
+
+### The AAAA record was the trap
+
+The apex carried both an A and an AAAA record. The Yandex instance is IPv4-only. Had the AAAA been
+left in place, every dual-stack visitor — and browsers *prefer* IPv6 — would have continued reaching
+Render, writing leads to **Oregon with no consent record**, while the cutover looked entirely
+successful: site loads, form works, certificate valid. Only a database query would have revealed it.
+
+### TLS
+
+Both certificates issued by Let's Encrypt and verifying cleanly (`ssl_verify_result = 0`):
+
+```
+liqvia.info      CN=liqvia.info       issuer Let's Encrypt YE2
+www.liqvia.info  CN=www.liqvia.info   issuer Let's Encrypt YE1
+```
+
+`www` did **not** issue on the first attempt: Caddy tried while `www` still resolved to Render, so
+HTTP-01 hit the wrong host, it fell back to TLS-ALPN-01 (unsupported here) and entered a 600-second
+backoff. Restarting Caddy after DNS was correct resolved it immediately. **Worth knowing for any
+future hostname: issue certificates *after* DNS points at the origin, not before.**
+
+### Live verification through the public domain
+
+| Check | Result |
+|---|---|
+| `https://liqvia.info/` | **200**, TLS verified |
+| `https://www.liqvia.info/` | **200**, TLS verified |
+| `/privacy`, `/consent` | **200** |
+| Consent checkbox present | **PASS** |
+| New consent wording served | **PASS** |
+| Old implied-consent wording gone | **PASS** |
+| ИНН absent (landing and `/privacy`) | **PASS** |
+| Verified contact email on `/privacy` | **PASS** |
+| `/.env`, `/login` | **307** — not served on the marketing host |
+| Render / Cloudflare headers | **gone** |
+
+### Synthetic lead through the public domain
+
+`RU-CUTOVER-TEST-1786309787` → **HTTP 201**, TLS verified.
+
+```
+RU  CashOsLead for mark   : 1
+RU  ConsentRecord linked  : 1
+RU  textVerified          : t
+RU  consent version       : 2026-08-10.1
+RU  source                : ru_cutover_test
+    logs free of name, email, phone, comment : PASS
+```
+
+```
+GLOBAL (Oregon) total CashOsLead rows : 4      ← unchanged
+GLOBAL (Oregon) rows for cutover mark : 0
+GLOBAL (Oregon) any RU-* probe rows   : 0
+GLOBAL (Oregon) newest row createdAt  : 2026-08-09T06:52:12Z   ← predates the RU plane
+```
+
+**§32 PASS — Oregon received nothing.**
+
+### Propagation
+
+Public resolvers were still serving the old cached A/AAAA at the time of testing (TTL ~50 min), which
+is why verification used `--resolve` against the origin. Until the cache drains, some visitors still
+reach Render and its old form. **Do not start Yandex Direct spend until `dig liqvia.info` returns
+`158.160.44.137` and an empty AAAA from a public resolver.**
+
+### Security posture after cutover
+
+Ingress on `liqvia-ru-app-sg`: **443 and 80 only**. SSH removed and verified closed from the
+internet. Port 80 remains open for ACME renewal.
+
+**Note:** automated scanning began within minutes of exposure — the Caddy log shows a bot probing
+`/.env`. That is normal for any public IP, and the origin correctly returns 307 for it, but it is a
+reminder that Render's CDN is no longer absorbing anything.
