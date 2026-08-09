@@ -2,7 +2,8 @@ import { AiService } from './ai.service';
 import { TreasuryAiContext } from './ai-context';
 
 describe('AiService rule-based insight', () => {
-  const service = new AiService({} as never, {} as never);
+  // Rule-based replies never touch Prisma, AiDataService or the gateway.
+  const service = new AiService({} as never, {} as never, {} as never);
 
   const context: TreasuryAiContext = {
     companyName: 'Demo Consulting Ltd',

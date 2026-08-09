@@ -7,7 +7,7 @@ Prisma schema: `backend/prisma/schema.prisma`. Migration: `backend/prisma/migrat
 | Model                       | Layer    | Notes                          |
 | --------------------------- | -------- | ------------------------------ |
 | Company                     | Tenant   | Soft delete                    |
-| UserProfile                 | Auth     | Clerk ID, `UserRole` enum      |
+| UserProfile                 | Auth     | bcrypt `passwordHash`, `UserRole` enum |
 | ChartOfAccount              | Actuals  | `externalSource`, `externalId` |
 | JournalEntry / JournalLine  | Actuals  | Trial balance imports          |
 | BankAccount / CashMovement  | Actuals  | Cash position                  |

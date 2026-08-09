@@ -1,4 +1,6 @@
 export * from './constants';
+export * from './operator';
+export * from './consent';
 export * from './permissions';
 export * from './onboarding';
 export * from './treasury';

@@ -4,7 +4,7 @@ This guide covers running the Liqvia MVP locally, in CI, and in production.
 
 ## 1. Architecture recap
 
-- **frontend** — Next.js 15 (App Router), TailwindCSS, Clerk auth, i18n (en/es). Builds to a standalone server.
+- **frontend** — Next.js 15 (App Router), TailwindCSS, i18n (en/es/fr/ru). Builds to a standalone server.
 - **backend** — NestJS 11 REST API under the `/api` prefix, Prisma ORM.
 - **packages/shared** — pure TypeScript domain types + treasury/KPI/scenario logic shared by both apps.
 - **PostgreSQL** — single database, multi-tenant by `companyId`.
@@ -31,7 +31,7 @@ cp frontend/.env.example frontend/.env.local
 | `SKIP_DB_MIGRATE`  | Set `true` to skip auto-migration on startup.               |
 | `PORT`             | Defaults to `3001`.                                         |
 | `CORS_ORIGIN`      | Frontend origin allowed for CORS.                           |
-| `CLERK_SECRET_KEY` | Optional for MVP.                                           |
+| `JWT_SECRET`       | **Required in production.** Signs session tokens; min 32 random chars. |
 | `OPENAI_API_KEY`   | Optional — AI CFO falls back to rule-based output if empty. |
 | `OPENAI_MODEL`     | Defaults to `gpt-4o-mini`.                                  |
 
@@ -40,9 +40,14 @@ cp frontend/.env.example frontend/.env.local
 | Variable                            | Notes                                    |
 | ----------------------------------- | ---------------------------------------- |
 | `NEXT_PUBLIC_API_URL`               | e.g. `https://api.example.com/api`.      |
-| `NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY` | Optional — app builds & runs without it. |
 
-Never put backend secrets (`DATABASE_URL`, `OPENAI_API_KEY`, `CLERK_SECRET_KEY`) in frontend env files.
+Never put backend secrets (`DATABASE_URL`, `OPENAI_API_KEY`, `JWT_SECRET`, `SMTP_PASS`) in frontend env files.
+
+> **Authentication.** Liqvia does **not** use Clerk or any third-party identity provider.
+> Auth is implemented in-house: passwords are hashed with bcrypt and stored as
+> `UserProfile.passwordHash`; sessions are stateless JWTs signed with `JWT_SECRET`
+> (`backend/src/auth/auth.service.ts`). Any Clerk variables still present in a `.env`
+> file are dead and should be deleted.
 
 ## 3. Local development
 
@@ -109,7 +114,7 @@ after the first deploy.
 - [ ] Backend has started at least once against production (applies pending migrations automatically).
 - [ ] `CORS_ORIGIN` matches the deployed frontend origin.
 - [ ] `NEXT_PUBLIC_API_URL` points at the deployed backend `/api`.
-- [ ] Clerk keys configured (or auth intentionally disabled for the pilot).
+- [ ] `JWT_SECRET` set to a unique random value of at least 32 characters.
 - [ ] `OPENAI_API_KEY` set if live AI commentary is required.
 - [ ] CI green on `main`.
 - [ ] Demo seed verified against a staging database.

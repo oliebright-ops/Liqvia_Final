@@ -130,9 +130,7 @@
         "controlledAccessTitle": "Controlled Access",
         "controlledAccessDesc": "Role-based permissions across companies, entities and team members.",
         "auditTitle": "Complete Audit Trail",
-        "auditDesc": "Every financial action is logged, traceable and reviewable.",
-        "residencyTitle": "Data Residency Controls",
-        "residencyDesc": "Keep financial data aligned with regional compliance requirements."
+        "auditDesc": "Every financial action is logged, traceable and reviewable."
       },
       "credibility": {
         "headline": "Built by Finance Professionals Who Understand Cash Flow",

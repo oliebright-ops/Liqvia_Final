@@ -16,7 +16,7 @@
 
 ## In Scope
 
-- [ ] Clerk authentication and company-scoped data
+- [ ] Authentication (custom bcrypt + JWT) and company-scoped data
 - [ ] Upload center (trial balance, AR/AP ageing, bank balances, budget)
 - [ ] Treasury rules engine and KPI calculations
 - [ ] 13-week forecast engine

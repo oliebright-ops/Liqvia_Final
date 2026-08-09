@@ -1,18 +1,22 @@
 'use client';
 
 import type { LucideIcon } from 'lucide-react';
-import { FileText, Globe, ShieldCheck, UserCog } from 'lucide-react';
+import { FileText, ShieldCheck, UserCog } from 'lucide-react';
 import { useTranslations } from '@/lib/i18n';
 
+/** Only claims that have been verified against the running system belong here.
+ * A "Data Residency Controls" card was removed: the product has a single global
+ * database with no region routing, so the claim was not substantiated. Do not
+ * re-add any residency or jurisdiction claim until such a control exists and has
+ * been independently verified. */
 const TRUST_CARDS: Array<{
   icon: LucideIcon;
-  titleKey: 'bankGradeTitle' | 'controlledAccessTitle' | 'auditTitle' | 'residencyTitle';
-  descKey: 'bankGradeDesc' | 'controlledAccessDesc' | 'auditDesc' | 'residencyDesc';
+  titleKey: 'bankGradeTitle' | 'controlledAccessTitle' | 'auditTitle';
+  descKey: 'bankGradeDesc' | 'controlledAccessDesc' | 'auditDesc';
 }> = [
   { icon: ShieldCheck, titleKey: 'bankGradeTitle', descKey: 'bankGradeDesc' },
   { icon: UserCog, titleKey: 'controlledAccessTitle', descKey: 'controlledAccessDesc' },
   { icon: FileText, titleKey: 'auditTitle', descKey: 'auditDesc' },
-  { icon: Globe, titleKey: 'residencyTitle', descKey: 'residencyDesc' },
 ];
 
 export function SecurityTrustSection() {
@@ -32,7 +36,7 @@ export function SecurityTrustSection() {
         </p>
       </div>
 
-      <div className="mt-12 grid gap-6 sm:grid-cols-2">
+      <div className="mt-12 grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
         {TRUST_CARDS.map(({ icon: Icon, titleKey, descKey }) => (
           <article
             key={titleKey}

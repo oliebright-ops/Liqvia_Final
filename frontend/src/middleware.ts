@@ -55,6 +55,11 @@ const LANDING_ALLOWED_PREFIXES = [
   LANDING_PATH,
   '/cash-os/',
   '/api/cash-os-leads',
+  // Public legal documents. Both are linked from the landing footer and from
+  // the required consent checkbox, so they must resolve on the marketing hosts —
+  // a consent that references a document the user cannot open is not a consent.
+  '/privacy',
+  '/consent',
   '/_next/',
   '/favicon.ico',
 ];

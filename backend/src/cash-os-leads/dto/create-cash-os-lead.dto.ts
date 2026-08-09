@@ -1,5 +1,30 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 
+/** Evidence of what the user acknowledged, captured alongside the submission itself. */
+export class LeadConsentDto {
+  @ApiProperty({ example: 'cash-os-lead-form' })
+  subjectId!: string;
+
+  @ApiProperty({ description: 'Version of the consent wording that was displayed', example: '2026-08-10.1' })
+  version!: string;
+
+  @ApiProperty({ description: 'The exact wording displayed to the user' })
+  consentText!: string;
+
+  @ApiPropertyOptional({ example: 'ru' })
+  locale?: string;
+
+  @ApiPropertyOptional({
+    description:
+      'Whether the box was ticked. A required consent submitted with `false` is rejected; an optional consent submitted with `false` is simply not recorded.',
+    example: true,
+  })
+  accepted?: boolean;
+
+  @ApiPropertyOptional({ description: 'ISO timestamp when the box was ticked', example: '2026-08-10T10:15:00.000Z' })
+  acknowledgedAt?: string;
+}
+
 export class CreateCashOsLeadDto {
   @ApiProperty({ example: 'Иван Петров' })
   name!: string;
@@ -27,4 +52,18 @@ export class CreateCashOsLeadDto {
 
   @ApiPropertyOptional({ description: 'Campaign/CTA tag the lead came from', example: 'pilot-programme' })
   source?: string;
+
+  @ApiProperty({
+    description:
+      'Evidence of the required personal-data consent the user ticked. Required — the submission is rejected without it.',
+    type: () => LeadConsentDto,
+  })
+  consent!: LeadConsentDto;
+
+  @ApiPropertyOptional({
+    description:
+      'Evidence of the separate, optional marketing consent. Present only when that box was ticked; its absence is what records "not given". Never conflated with the required consent above.',
+    type: () => LeadConsentDto,
+  })
+  marketingConsent?: LeadConsentDto;
 }

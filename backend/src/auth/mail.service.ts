@@ -1,5 +1,6 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { createTransport, type Transporter } from 'nodemailer';
+import { describeErrorForLog, maskEmail } from '../security/log-redaction';
 
 @Injectable()
 export class MailService {
@@ -35,7 +36,9 @@ export class MailService {
     const transporter = this.getTransporter();
 
     if (!transporter) {
-      this.logger.warn(`SMTP not configured. Password reset requested for ${to} (link omitted from logs).`);
+      this.logger.warn(
+        `SMTP not configured. A password reset was requested for ${maskEmail(to)} (address masked, link omitted from logs).`,
+      );
       return false;
     }
 
@@ -60,7 +63,11 @@ export class MailService {
       });
       return true;
     } catch (err) {
-      this.logger.error(`Failed to send password reset email to ${to}`, err);
+      // `err` is not passed through: an SMTP driver's error can embed the envelope
+      // (recipient address, headers) and would land verbatim in the log sink.
+      this.logger.error(
+        `Failed to send password reset email to ${maskEmail(to)}: ${describeErrorForLog(err)}`,
+      );
       return false;
     }
   }

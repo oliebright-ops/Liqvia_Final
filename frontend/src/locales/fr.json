@@ -130,9 +130,7 @@
         "controlledAccessTitle": "Accès contrôlé",
         "controlledAccessDesc": "Permissions basées sur les rôles entre sociétés, entités et membres de l'équipe.",
         "auditTitle": "Piste d'audit complète",
-        "auditDesc": "Chaque action financière est enregistrée, traçable et vérifiable.",
-        "residencyTitle": "Contrôles de résidence des données",
-        "residencyDesc": "Alignez les données financières sur les exigences régionales de conformité."
+        "auditDesc": "Chaque action financière est enregistrée, traçable et vérifiable."
       },
       "credibility": {
         "headline": "Conçu par des professionnels de la finance qui maîtrisent la trésorerie",

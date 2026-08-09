@@ -1,7 +1,15 @@
 import { Injectable, Logger } from '@nestjs/common';
+import { createHash } from 'node:crypto';
 import { DEFAULT_DEMO_COMPANY_ID } from '@liqvia2/shared';
 import { PrismaService } from '../prisma/prisma.service';
 import { AiDataService } from './ai-data.service';
+import {
+  AiPayloadRejectedError,
+  AiPrivacyGatewayService,
+  type AiPayload,
+  type GatewayResult,
+} from '../ai-gateway';
+import { describeErrorForLog } from '../security/log-redaction';
 import {
   buildCashDrivenBlock,
   buildSystemPrompt,
@@ -76,6 +84,50 @@ export interface WhyChangedResult {
   source: 'openai' | 'rule_based';
 }
 
+/**
+ * Bump when the shape written to `AiInsight.context` changes, so historic rows stay
+ * interpretable. v1 was the entire treasury context including the user's message.
+ */
+const AI_INSIGHT_CONTEXT_SCHEMA_VERSION = 2;
+
+/**
+ * What gets written to `AiInsight.context`.
+ *
+ * The previous implementation stored the whole treasury context — counterparty
+ * names, raw bank narratives and the user's verbatim question — on every single AI
+ * interaction, creating a second permanent copy of the customer's financial data
+ * inside AI history. Nothing read it back; it existed only as history.
+ *
+ * This shape keeps what history is actually for: which snapshot produced this
+ * answer, what kind of question it answered, which model, and whether the answer
+ * was live or a fallback. `payloadDigest` is a hash of the exact payload sent to
+ * the provider, so an answer can be tied to its inputs without duplicating them —
+ * the underlying records remain in their own tables, as the single source of truth.
+ */
+interface AiInsightAudit {
+  schemaVersion: number;
+  feature: string;
+  asOfDate: string;
+  currency: string;
+  /** SHA-256 (first 16 hex) of the serialised gateway payload. Not reversible. */
+  payloadDigest: string | null;
+  /** Headline figures the answer was based on — for troubleshooting "why did it say that?". */
+  metrics: {
+    openingCash: number;
+    week13ClosingCash: number | null;
+    runwayWeeks: number | null;
+    liquidityStatus: string;
+  } | null;
+  /** Classification of the user's question. The question text itself is never stored. */
+  questionCategory: string | null;
+  /** Counts by type of what redaction removed from free text. Contains no values. */
+  redactionCounts: Record<string, number> | null;
+  scenarioIncluded: boolean;
+  model: string;
+  source: 'openai' | 'rule_based';
+  latencyMs: number;
+}
+
 @Injectable()
 export class AiService {
   private readonly logger = new Logger(AiService.name);
@@ -85,6 +137,7 @@ export class AiService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly aiData: AiDataService,
+    private readonly gateway: AiPrivacyGatewayService,
   ) {}
 
   /**
@@ -119,46 +172,38 @@ export class AiService {
       explicitIntent,
     );
 
-    const apiKey = process.env.OPENAI_API_KEY;
-    let reply: string;
-    let source: AiInsightResponse['source'];
-    let model: string;
-
-    if (apiKey) {
-      try {
-        const result = await this.callOpenAiChat(apiKey, context, history, input.locale);
-        reply = result.text;
-        model = result.model;
-        source = 'openai';
-      } catch (err) {
-        this.logger.error(`OpenAI chat failed, using rule-based fallback: ${String(err)}`);
-        reply = this.ruleBasedChatReply(context, history, explicitIntent);
-        model = 'rule-based-fallback:api-error';
-        source = 'rule_based';
-      }
-    } else {
-      this.warnMissingApiKey(companyId);
-      reply = this.ruleBasedChatReply(context, history, explicitIntent);
-      model = 'rule-based-fallback:no-api-key';
-      source = 'rule_based';
-    }
+    const outcome = await this.viaGateway({
+      companyId,
+      context,
+      feature: 'chat',
+      systemPrompt: buildSystemPrompt(
+        input.locale,
+        context.businessMode,
+        context.receivablesDetail.length > 0,
+        context.payablesDetail.length > 0,
+      ),
+      locale: input.locale,
+      question: lastUser?.content,
+      // The last user turn already travels as `question`; sending it again as
+      // history would duplicate it, so only earlier turns are forwarded.
+      history: history.slice(0, -1),
+      fallback: () => this.ruleBasedChatReply(context, history, explicitIntent),
+    });
 
     const messages = pruneMessageHistory<ChatMessage>([
       ...history,
-      { role: 'assistant' as const, content: reply },
+      { role: 'assistant' as const, content: outcome.text },
     ]);
 
-    await this.audit(companyId, model, Date.now() - start);
-    await this.prisma.aiInsight.create({
-      data: {
-        companyId,
-        insightType: 'chat',
-        content: reply,
-        context: { ...context, lastUserMessage: lastUser?.content } as unknown as object,
-      },
-    });
+    await this.persist(companyId, 'chat', outcome, context, start);
 
-    return { reply, messages, context, model, source };
+    return {
+      reply: outcome.text,
+      messages,
+      context,
+      model: outcome.model,
+      source: outcome.source,
+    };
   }
 
   async generateInsight(
@@ -171,53 +216,44 @@ export class AiService {
     const explicitIntent = this.resolveExplicitIntent(intent);
     const context = await this.aiData.buildContext(companyId, userQuestion, explicitIntent);
 
-    const apiKey = process.env.OPENAI_API_KEY;
-    let insight: string;
-    let source: AiInsightResponse['source'];
-    let model: string;
-
-    if (apiKey) {
-      try {
-        const result = await this.callOpenAi(apiKey, context, userQuestion, locale);
-        insight = result.text;
-        model = result.model;
-        source = 'openai';
-      } catch (err) {
-        this.logger.error(`OpenAI insight failed, using rule-based fallback: ${String(err)}`);
-        insight = userQuestion
+    const outcome = await this.viaGateway({
+      companyId,
+      context,
+      feature: userQuestion ? 'qa' : 'dashboard.summary',
+      systemPrompt: buildSystemPrompt(
+        locale,
+        context.businessMode,
+        context.receivablesDetail.length > 0,
+        context.payablesDetail.length > 0,
+      ),
+      locale,
+      question:
+        userQuestion ??
+        'Provide a concise executive cash-flow briefing with 2-3 recommended actions based strictly on the structured data provided.',
+      fallback: () =>
+        userQuestion
           ? this.ruleBasedChatReply(
               context,
               [{ role: 'user', content: userQuestion }],
               explicitIntent,
             )
-          : this.ruleBasedInsight(context);
-        model = 'rule-based-fallback:api-error';
-        source = 'rule_based';
-      }
-    } else {
-      this.warnMissingApiKey(companyId);
-      insight = userQuestion
-        ? this.ruleBasedChatReply(
-            context,
-            [{ role: 'user', content: userQuestion }],
-            explicitIntent,
-          )
-        : this.ruleBasedInsight(context);
-      model = 'rule-based-fallback:no-api-key';
-      source = 'rule_based';
-    }
-
-    await this.audit(companyId, model, Date.now() - start);
-    await this.prisma.aiInsight.create({
-      data: {
-        companyId,
-        insightType: userQuestion ? 'qa' : 'dashboard.summary',
-        content: insight,
-        context: context as unknown as object,
-      },
+          : this.ruleBasedInsight(context),
     });
 
-    return { insight, context, model, source };
+    await this.persist(
+      companyId,
+      userQuestion ? 'qa' : 'dashboard.summary',
+      outcome,
+      context,
+      start,
+    );
+
+    return {
+      insight: outcome.text,
+      context,
+      model: outcome.model,
+      source: outcome.source,
+    };
   }
 
   /** Phase 1 "Business Pulse" — a ≤120-word, plain-English daily briefing, distinct
@@ -229,76 +265,26 @@ export class AiService {
     const start = Date.now();
     const context = await this.aiData.buildContext(companyId);
 
-    const apiKey = process.env.OPENAI_API_KEY;
-    let text: string;
-    let model: string;
-    let source: BusinessPulseBriefing['source'];
-
-    if (apiKey) {
-      try {
-        const result = await this.callOpenAiBusinessPulse(apiKey, context, locale);
-        text = result.text;
-        model = result.model;
-        source = 'openai';
-      } catch (err) {
-        this.logger.error(`Business Pulse briefing failed, using rule-based fallback: ${String(err)}`);
-        text = this.ruleBasedBusinessPulse(context);
-        model = 'rule-based-fallback:api-error';
-        source = 'rule_based';
-      }
-    } else {
-      this.warnMissingApiKey(companyId);
-      text = this.ruleBasedBusinessPulse(context);
-      model = 'rule-based-fallback:no-api-key';
-      source = 'rule_based';
-    }
-
-    await this.audit(companyId, model, Date.now() - start);
-    await this.prisma.aiInsight.create({
-      data: { companyId, insightType: 'business_pulse', content: text, context: context as unknown as object },
-    });
-
-    return { text, model, source };
-  }
-
-  private async callOpenAiBusinessPulse(
-    apiKey: string,
-    context: TreasuryAiContext,
-    locale?: string,
-  ): Promise<{ text: string; model: string }> {
-    const model = process.env.OPENAI_MODEL ?? 'gpt-4o-mini';
-    const localeLine = locale
-      ? `\nRespond in ${locale === 'ru' ? 'Russian' : locale === 'es' ? 'Spanish' : locale === 'fr' ? 'French' : 'English'}.`
-      : '';
+    const localeLine = locale ? `\n${responseLanguageLine(locale)}` : '';
     const cashDrivenBlock = buildCashDrivenBlock(
       context.businessMode,
       context.receivablesDetail.length > 0,
       context.payablesDetail.length > 0,
     );
-    const res = await fetch('https://api.openai.com/v1/chat/completions', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        Authorization: `Bearer ${apiKey}`,
-      },
-      body: JSON.stringify({
-        model,
-        messages: [
-          { role: 'system', content: BUSINESS_PULSE_SYSTEM_PROMPT + localeLine + cashDrivenBlock },
-          { role: 'user', content: this.buildContextMessage(context) },
-        ],
-        temperature: 0.2,
-        max_tokens: 220,
-      }),
+
+    const outcome = await this.viaGateway({
+      companyId,
+      context,
+      feature: 'business_pulse',
+      systemPrompt: BUSINESS_PULSE_SYSTEM_PROMPT + localeLine + cashDrivenBlock,
+      locale,
+      maxTokens: 220,
+      fallback: () => this.ruleBasedBusinessPulse(context),
     });
 
-    if (!res.ok) throw new Error(`OpenAI request failed: ${res.status}`);
-    const data = (await res.json()) as {
-      choices?: Array<{ message?: { content?: string } }>;
-    };
-    const text = data.choices?.[0]?.message?.content?.trim();
-    if (!text) throw new Error('Empty AI response');
-    return { text, model };
+    await this.persist(companyId, 'business_pulse', outcome, context, start);
+
+    return { text: outcome.text, model: outcome.model, source: outcome.source };
   }
 
   /** Deterministic fallback matching the Business Pulse prompt's 4-part structure. */
@@ -356,80 +342,25 @@ export class AiService {
     const start = Date.now();
     const context = await this.aiData.buildContext(companyId, question);
 
-    const apiKey = process.env.OPENAI_API_KEY;
-    let text: string;
-    let model: string;
-    let source: DecisionCentreResult['source'];
+    const scenarioNote = scenario
+      ? ''
+      : '\n\nNo scenario was modelled for this question — answer using current data only.';
 
-    if (apiKey) {
-      try {
-        const result = await this.callOpenAiDecision(apiKey, context, question, scenario, locale);
-        text = result.text;
-        model = result.model;
-        source = 'openai';
-      } catch (err) {
-        this.logger.error(`Decision Centre failed, using rule-based fallback: ${String(err)}`);
-        text = this.ruleBasedDecision(context, scenario);
-        model = 'rule-based-fallback:api-error';
-        source = 'rule_based';
-      }
-    } else {
-      this.warnMissingApiKey(companyId);
-      text = this.ruleBasedDecision(context, scenario);
-      model = 'rule-based-fallback:no-api-key';
-      source = 'rule_based';
-    }
-
-    await this.audit(companyId, model, Date.now() - start);
-    await this.prisma.aiInsight.create({
-      data: {
-        companyId,
-        insightType: 'decision_centre',
-        content: text,
-        context: { ...context, question, scenario } as unknown as object,
-      },
+    const outcome = await this.viaGateway({
+      companyId,
+      context,
+      feature: 'decision_centre',
+      systemPrompt: DECISION_CENTRE_SYSTEM_PROMPT + scenarioNote,
+      locale,
+      question,
+      scenario,
+      maxTokens: 400,
+      fallback: () => this.ruleBasedDecision(context, scenario),
     });
 
-    return { text, model, source };
-  }
+    await this.persist(companyId, 'decision_centre', outcome, context, start);
 
-  private async callOpenAiDecision(
-    apiKey: string,
-    context: TreasuryAiContext,
-    question: string,
-    scenario: DecisionScenarioSummary | null,
-    locale?: string,
-  ): Promise<{ text: string; model: string }> {
-    const model = process.env.OPENAI_MODEL ?? 'gpt-4o-mini';
-    const scenarioLine = scenario
-      ? `\n\nScenario comparison (JSON):\n${JSON.stringify(scenario, null, 2)}`
-      : '\n\nNo scenario was modeled for this question — answer using current data only.';
-    const userContent = `Business question: ${question}\n\n${this.buildContextMessage(context, locale)}${scenarioLine}`;
-
-    const res = await fetch('https://api.openai.com/v1/chat/completions', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        Authorization: `Bearer ${apiKey}`,
-      },
-      body: JSON.stringify({
-        model,
-        messages: [
-          { role: 'system', content: DECISION_CENTRE_SYSTEM_PROMPT },
-          { role: 'user', content: userContent },
-        ],
-        temperature: 0.2,
-        max_tokens: 400,
-      }),
-    });
-
-    if (!res.ok) throw new Error(`OpenAI request failed: ${res.status}`);
-    const data = (await res.json()) as {
-      choices?: Array<{ message?: { content?: string } }>;
-    };
-    const text = data.choices?.[0]?.message?.content?.trim();
-    if (!text) throw new Error('Empty AI response');
-    return { text, model };
+    return { text: outcome.text, model: outcome.model, source: outcome.source };
   }
 
   /** Deterministic fallback matching the Decision Centre prompt's 5-section structure. */
@@ -481,72 +412,25 @@ export class AiService {
       return { text, model: 'rule-based-no-movements', source: 'rule_based' };
     }
 
-    const apiKey = process.env.OPENAI_API_KEY;
-    let text: string;
-    let model: string;
-    let source: WhyChangedResult['source'];
+    // Context is built here so the movements arrive with the liquidity picture that
+    // explains them. Movement labels come from Liqvia's own KPI vocabulary.
+    const context = await this.aiData.buildContext(companyId);
+    const localeLine = locale ? `\n${responseLanguageLine(locale)}` : '';
 
-    if (apiKey) {
-      try {
-        const result = await this.callOpenAiWhyChanged(apiKey, movements, locale);
-        text = result.text;
-        model = result.model;
-        source = 'openai';
-      } catch (err) {
-        this.logger.error(`Why Changed failed, using rule-based fallback: ${String(err)}`);
-        text = this.ruleBasedWhyChanged(movements);
-        model = 'rule-based-fallback:api-error';
-        source = 'rule_based';
-      }
-    } else {
-      this.warnMissingApiKey(companyId);
-      text = this.ruleBasedWhyChanged(movements);
-      model = 'rule-based-fallback:no-api-key';
-      source = 'rule_based';
-    }
-
-    await this.audit(companyId, model, Date.now() - start);
-    await this.prisma.aiInsight.create({
-      data: { companyId, insightType: 'why_changed', content: text, context: { movements } as unknown as object },
+    const outcome = await this.viaGateway({
+      companyId,
+      context,
+      feature: 'why_changed',
+      systemPrompt: WHY_CHANGED_SYSTEM_PROMPT + localeLine,
+      locale,
+      movements,
+      maxTokens: 320,
+      fallback: () => this.ruleBasedWhyChanged(movements),
     });
 
-    return { text, model, source };
-  }
+    await this.persist(companyId, 'why_changed', outcome, context, start);
 
-  private async callOpenAiWhyChanged(
-    apiKey: string,
-    movements: WhyChangedMovement[],
-    locale?: string,
-  ): Promise<{ text: string; model: string }> {
-    const model = process.env.OPENAI_MODEL ?? 'gpt-4o-mini';
-    const localeLine = locale
-      ? `\nRespond in ${locale === 'ru' ? 'Russian' : locale === 'es' ? 'Spanish' : locale === 'fr' ? 'French' : 'English'}.`
-      : '';
-
-    const res = await fetch('https://api.openai.com/v1/chat/completions', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        Authorization: `Bearer ${apiKey}`,
-      },
-      body: JSON.stringify({
-        model,
-        messages: [
-          { role: 'system', content: WHY_CHANGED_SYSTEM_PROMPT + localeLine },
-          { role: 'user', content: `Material movements (JSON):\n${JSON.stringify(movements, null, 2)}` },
-        ],
-        temperature: 0.2,
-        max_tokens: 320,
-      }),
-    });
-
-    if (!res.ok) throw new Error(`OpenAI request failed: ${res.status}`);
-    const data = (await res.json()) as {
-      choices?: Array<{ message?: { content?: string } }>;
-    };
-    const text = data.choices?.[0]?.message?.content?.trim();
-    if (!text) throw new Error('Empty AI response');
-    return { text, model };
+    return { text: outcome.text, model: outcome.model, source: outcome.source };
   }
 
   /** Deterministic fallback — one bullet per movement, citing the same numbers the
@@ -572,49 +456,121 @@ export class AiService {
     return isAiReplyIntent(intent) ? intent : undefined;
   }
 
-  private buildContextMessage(context: TreasuryAiContext, locale?: string): string {
-    return `Treasury context (JSON) for ${context.companyName} — cite only these figures. Locale: ${locale ?? 'en'}.\n${JSON.stringify(context, null, 2)}`;
+  /**
+   * Single path from an AI feature to an external model.
+   *
+   * Every failure mode — no key, rejected payload, provider error — lands on the
+   * feature's deterministic fallback. The product never breaks because the AI is
+   * unavailable, and it never leaks because the gateway said no.
+   */
+  private async viaGateway(options: {
+    companyId: string;
+    context: TreasuryAiContext;
+    feature: string;
+    systemPrompt: string;
+    locale?: string;
+    question?: string;
+    history?: Array<{ role: 'user' | 'assistant'; content: string }>;
+    scenario?: DecisionScenarioSummary | null;
+    movements?: WhyChangedMovement[];
+    maxTokens?: number;
+    fallback: () => string;
+  }): Promise<GatewayOutcome> {
+    if (!this.gateway.isConfigured()) {
+      this.warnMissingApiKey(options.companyId);
+      return {
+        text: options.fallback(),
+        model: 'rule-based-fallback:no-api-key',
+        source: 'rule_based',
+        result: null,
+      };
+    }
+
+    try {
+      const result = await this.gateway.run({
+        companyId: options.companyId,
+        context: options.context,
+        feature: options.feature,
+        systemPrompt: options.systemPrompt,
+        locale: options.locale,
+        question: options.question,
+        history: options.history,
+        scenario: options.scenario,
+        movements: options.movements,
+        maxTokens: options.maxTokens,
+      });
+      return { text: result.text, model: result.model, source: 'openai', result };
+    } catch (err) {
+      if (err instanceof AiPayloadRejectedError) {
+        // A rejection means Liqvia tried to send something the allowlist forbids.
+        // That is a defect in this codebase, not a provider outage — log it as such.
+        this.logger.error(
+          `AI privacy gateway blocked the "${options.feature}" payload; serving rule-based fallback. Violations: ${err.violations.slice(0, 5).join('; ')}`,
+        );
+        return {
+          text: options.fallback(),
+          model: 'rule-based-fallback:payload-rejected',
+          source: 'rule_based',
+          result: null,
+        };
+      }
+      this.logger.error(
+        `AI call for "${options.feature}" failed, using rule-based fallback: ${describeErrorForLog(err)}`,
+      );
+      return {
+        text: options.fallback(),
+        model: 'rule-based-fallback:api-error',
+        source: 'rule_based',
+        result: null,
+      };
+    }
   }
 
-  private async callOpenAiChat(
-    apiKey: string,
+  /** Writes the AI log row and the minimised insight-history row. */
+  private async persist(
+    companyId: string,
+    feature: string,
+    outcome: GatewayOutcome,
     context: TreasuryAiContext,
-    history: Array<{ role: 'user' | 'assistant'; content: string }>,
-    locale?: string,
-  ): Promise<{ text: string; model: string }> {
-    const model = process.env.OPENAI_MODEL ?? 'gpt-4o-mini';
-    const res = await fetch('https://api.openai.com/v1/chat/completions', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        Authorization: `Bearer ${apiKey}`,
-      },
-      body: JSON.stringify({
-        model,
-        messages: [
-          {
-            role: 'system',
-            content: buildSystemPrompt(
-              locale,
-              context.businessMode,
-              context.receivablesDetail.length > 0,
-              context.payablesDetail.length > 0,
-            ),
-          },
-          { role: 'user', content: this.buildContextMessage(context, locale) },
-          ...history.map((m) => ({ role: m.role, content: m.content })),
-        ],
-        temperature: 0.2,
-      }),
-    });
+    startedAt: number,
+  ): Promise<void> {
+    const latencyMs = Date.now() - startedAt;
+    await this.audit(companyId, outcome.model, latencyMs);
 
-    if (!res.ok) throw new Error(`OpenAI request failed: ${res.status}`);
-    const data = (await res.json()) as {
-      choices?: Array<{ message?: { content?: string } }>;
+    const payload = outcome.result?.payload ?? null;
+    const audit: AiInsightAudit = {
+      schemaVersion: AI_INSIGHT_CONTEXT_SCHEMA_VERSION,
+      feature,
+      asOfDate: context.asOfDate,
+      currency: context.currency,
+      payloadDigest: payload ? digestPayload(payload) : null,
+      metrics: {
+        openingCash: context.currentCash,
+        week13ClosingCash: context.week13ClosingCash,
+        runwayWeeks: context.runwayWeeks,
+        liquidityStatus: context.liquidityStatus,
+      },
+      questionCategory: payload?.question?.category ?? context.queryAnalysis?.intent ?? null,
+      redactionCounts: outcome.result?.redactionCounts ?? null,
+      scenarioIncluded: Boolean(payload?.scenario),
+      model: outcome.model,
+      source: outcome.source,
+      latencyMs,
     };
-    const text = data.choices?.[0]?.message?.content?.trim();
-    if (!text) throw new Error('Empty AI response');
-    return { text, model };
+
+    await this.prisma.aiInsight.create({
+      data: {
+        companyId,
+        insightType: feature,
+        content: outcome.text,
+        context: audit as unknown as object,
+      },
+    });
+  }
+
+  /** Deterministic executive briefing used when no OpenAI key is configured. */
+  ruleBasedInsight(c: TreasuryAiContext): string {
+    return ruleBasedReplyByIntent(c, 'cash_position', c.queryAnalysis);
   }
 
   private ruleBasedChatReply(
@@ -638,65 +594,27 @@ export class AiService {
     return ruleBasedReplyByIntent(c, intent, analysis);
   }
 
-  private async callOpenAi(
-    apiKey: string,
-    context: TreasuryAiContext,
-    userQuestion?: string,
-    locale?: string,
-  ): Promise<{ text: string; model: string }> {
-    const model = process.env.OPENAI_MODEL ?? 'gpt-4o-mini';
-    const userContent = `[AI CFO Briefing Request]
-
-${this.buildContextMessage(context, locale)}
-
-${
-  userQuestion ??
-  'Provide a concise executive cash-flow briefing with 2-3 recommended actions based strictly on the injected data points above.'
-}`;
-
-    const res = await fetch('https://api.openai.com/v1/chat/completions', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        Authorization: `Bearer ${apiKey}`,
-      },
-      body: JSON.stringify({
-        model,
-        messages: [
-          {
-            role: 'system',
-            content: buildSystemPrompt(
-              locale,
-              context.businessMode,
-              context.receivablesDetail.length > 0,
-              context.payablesDetail.length > 0,
-            ),
-          },
-          { role: 'user', content: userContent },
-        ],
-        temperature: 0.2,
-      }),
-    });
-
-    if (!res.ok) {
-      throw new Error(`OpenAI request failed: ${res.status}`);
-    }
-    const data = (await res.json()) as {
-      choices?: Array<{ message?: { content?: string } }>;
-    };
-    const text = data.choices?.[0]?.message?.content?.trim();
-    if (!text) throw new Error('Empty AI response');
-    return { text, model };
-  }
-
-  /** Deterministic executive briefing used when no OpenAI key is configured. */
-  ruleBasedInsight(c: TreasuryAiContext): string {
-    return ruleBasedReplyByIntent(c, 'cash_position', c.queryAnalysis);
-  }
-
   private async audit(companyId: string, model: string, latencyMs: number) {
     await this.prisma.aiLog.create({
       data: { companyId, model, latencyMs },
     });
   }
+}
+
+interface GatewayOutcome {
+  text: string;
+  model: string;
+  source: 'openai' | 'rule_based';
+  result: GatewayResult | null;
+}
+
+function responseLanguageLine(locale: string): string {
+  const language =
+    locale === 'ru' ? 'Russian' : locale === 'es' ? 'Spanish' : locale === 'fr' ? 'French' : 'English';
+  return `Respond in ${language}.`;
+}
+
+/** Short, non-reversible fingerprint tying an answer to the exact payload behind it. */
+function digestPayload(payload: AiPayload): string {
+  return createHash('sha256').update(JSON.stringify(payload)).digest('hex').slice(0, 16);
 }

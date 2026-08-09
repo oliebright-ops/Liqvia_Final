@@ -20,7 +20,7 @@ Financial logic **must** be tested with known expected outputs before moving to 
 
 ## E2E (Later)
 
-- Clerk auth flow
+- Auth flow (register → login → JWT-protected request)
 - Upload center happy path
 - Dashboard data load
 

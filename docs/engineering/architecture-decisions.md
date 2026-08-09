@@ -12,7 +12,7 @@ Single deployable backend (NestJS) with Next.js frontend. Split services only wh
 
 ## ADR-003: Multi-Tenancy
 
-All domain tables scoped by `companyId`. Clerk user mapped to `UserProfile` with role per company.
+All domain tables scoped by `companyId`. Each authenticated user maps to a `UserProfile` with a role per company.
 
 ## ADR-004: Localization
 
@@ -20,7 +20,13 @@ No hardcoded UI strings. Translation keys in JSON; locale-aware dates, numbers, 
 
 ## ADR-005: Authentication
 
-Clerk for MVP auth; backend validates session / JWT and resolves company context.
+**Custom, in-house.** No third-party identity provider is used. Passwords are hashed with
+bcrypt (`bcryptjs`, cost 10) and stored as `UserProfile.passwordHash`; sessions are
+stateless JWTs issued by `@nestjs/jwt` and verified by `passport-jwt`, from which the
+backend resolves company context. See `backend/src/auth/`.
+
+_Superseded ADR-005 (MVP draft) proposed Clerk. Clerk was never installed and no Clerk
+code path has ever existed in this repository._
 
 ## ADR-006: Database
 
@@ -36,5 +42,5 @@ Reserve `externalSource`, `externalId` on sync-relevant entities. Event/webhook 
 | ------------ | ---------------------------- |
 | Frontend     | Next.js, Tailwind, shadcn/ui |
 | Backend      | NestJS, Prisma               |
-| Auth         | Clerk                        |
+| Auth         | Custom bcrypt + JWT          |
 | Shared types | `packages/shared`            |

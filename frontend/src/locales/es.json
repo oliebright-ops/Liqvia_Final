@@ -130,9 +130,7 @@
         "controlledAccessTitle": "Acceso controlado",
         "controlledAccessDesc": "Permisos basados en roles entre empresas, entidades y miembros del equipo.",
         "auditTitle": "Auditoría completa",
-        "auditDesc": "Cada acción financiera queda registrada, es trazable y revisable.",
-        "residencyTitle": "Control de residencia de datos",
-        "residencyDesc": "Mantenga los datos financieros alineados con los requisitos regionales de cumplimiento."
+        "auditDesc": "Cada acción financiera queda registrada, es trazable y revisable."
       },
       "credibility": {
         "headline": "Creado por profesionales financieros que entienden el flujo de caja",

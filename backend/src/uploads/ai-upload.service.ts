@@ -1,11 +1,9 @@
-import { BadRequestException, Injectable, Logger } from '@nestjs/common';
+import { BadRequestException, Injectable } from '@nestjs/common';
 import {
   AiBankNormalizeResult,
   AiDataNormalizeResult,
   AI_UPLOAD_TEMPLATE_TYPES,
   AiUploadTemplateType,
-  BankColumnMapping,
-  BankSignConvention,
   BankSourceFormat,
   isAiUploadFileName,
   isPdfFileName,
@@ -45,13 +43,6 @@ export type AiUploadNormalizeResponse = {
   fileResults?: AiUploadFileResult[];
 };
 
-type AiMappingResponse = {
-  mapping: Record<string, string | undefined>;
-  signConvention?: BankSignConvention;
-  detectedFormat?: string;
-  notes?: string;
-};
-
 type NormalizeOptions = {
   templateType: AiUploadTemplateType;
   sourceHint?: BankSourceFormat;
@@ -64,8 +55,6 @@ type NormalizeOptions = {
 
 @Injectable()
 export class AiUploadService {
-  private readonly logger = new Logger(AiUploadService.name);
-
   normalizeCsvContent(
     csvContent: string,
     options: Omit<NormalizeOptions, 'fileName' | 'fromPdf'> & { fileName?: string },
@@ -186,7 +175,7 @@ export class AiUploadService {
     fileName: string,
   ): Promise<{ csvContent: string; preWarnings: string[] }> {
     if (isPdfFileName(fileName)) {
-      const converted = await this.convertPdfBufferToCsv(buffer, fileName);
+      const converted = await this.convertPdfBufferToCsv(buffer);
       return { csvContent: converted.csv, preWarnings: converted.warnings };
     }
 
@@ -201,7 +190,6 @@ export class AiUploadService {
 
   private async convertPdfBufferToCsv(
     buffer: Buffer,
-    fileName: string,
   ): Promise<{ csv: string; warnings: string[] }> {
     let text: string;
     let pageCount = 0;
@@ -243,31 +231,16 @@ export class AiUploadService {
     }
     const warnings = [...parsed.warnings];
 
-    const apiKey = process.env.OPENAI_API_KEY;
-    if (apiKey && (parsed.confidence === 'low' || parsed.rowCount === 0) && text) {
-      try {
-        const aiCsv = await this.inferCsvFromPdfTextWithOpenAi(apiKey, text, fileName);
-        if (aiCsv) {
-          const direct = parseCsv(aiCsv.trim());
-          if (direct.rows.length > parsed.rowCount) {
-            parsed = {
-              csv: aiCsv.trim(),
-              confidence: direct.rows.length >= 3 ? 'medium' : 'low',
-              warnings: ['PDF rows extracted with AI assistance.'],
-              rowCount: direct.rows.length,
-            };
-            warnings.push('PDF table parsed with AI assistance.');
-          }
-        }
-      } catch (err) {
-        this.logger.warn(`AI PDF table extraction failed: ${String(err)}`);
-        warnings.push('AI PDF parsing unavailable — using rule-based extraction only.');
-      }
-    }
-
-    if (!parsed.csv.trim() || parsed.rowCount === 0) {
+    // A low-confidence PDF used to be forwarded to OpenAI as up to 12,000 characters
+    // of raw bank-statement text. That path is removed: raw statement content must
+    // never leave Liqvia. When deterministic extraction cannot read the file we say
+    // so and offer a route the customer controls, rather than guessing via an
+    // external model.
+    if (!parsed.csv.trim() || parsed.rowCount === 0 || parsed.confidence === 'low') {
       throw new BadRequestException(
-        'Could not extract transaction rows from this PDF. Try exporting CSV/Excel from your bank, or ensure the PDF is a text-based statement.',
+        'Could not confidently read transaction rows from this PDF. ' +
+          'Export CSV or Excel from your bank and upload that instead, or use the Liqvia bank-transactions template. ' +
+          'PDF statement text is never sent to an external service.',
       );
     }
 
@@ -320,157 +293,56 @@ export class AiUploadService {
     csvContent: string,
     options: NormalizeOptions,
   ): Promise<{ result: AiBankNormalizeResult | AiDataNormalizeResult; model?: string }> {
-    let result = normalizeAiUploadCsv(options.templateType, csvContent, {
+    const result = normalizeAiUploadCsv(options.templateType, csvContent, {
       sourceHint: options.sourceHint,
       defaultBankAccountName: options.defaultBankAccountName,
       defaultAccountMasked: options.defaultAccountMasked,
       defaultCurrency: options.companyCurrency,
     });
 
-    const apiKey = process.env.OPENAI_API_KEY;
-    let model: string | undefined;
-    const needsAiMapping =
-      apiKey &&
-      (result.confidence === 'low' ||
-        result.rowCount === 0 ||
-        ((options.fromPdf || options.templateType !== 'bank_transactions') &&
-          result.confidence !== 'high'));
+    // The low-confidence fallback used to post eight complete raw data rows — every
+    // value, not just headers — to OpenAI to guess a column mapping. That path is
+    // removed. Uploaded rows are the customer's raw records and must never be sent
+    // to an external model to solve a parsing problem.
+    //
+    // When deterministic detection cannot map the file, the response carries
+    // `needsManualMapping` and the detected headers so the UI can ask the user to
+    // map the columns themselves. See `resolveLowConfidence`.
+    return { result: this.resolveLowConfidence(result, options), model: undefined };
+  }
 
-    if (needsAiMapping) {
-      try {
-        const ai = await this.inferMappingWithOpenAi(apiKey!, csvContent, options);
-        if (ai) {
-          result = normalizeAiUploadCsv(options.templateType, csvContent, {
-            sourceHint: options.sourceHint,
-            defaultBankAccountName: options.defaultBankAccountName,
-            defaultAccountMasked: options.defaultAccountMasked,
-            defaultCurrency: options.companyCurrency,
-            aiMapping: ai.mapping as BankColumnMapping,
-            aiSignConvention: ai.signConvention,
-          });
-          result = {
-            ...result,
-            detectedFormat: ai.detectedFormat ?? ('detectedFormat' in result ? result.detectedFormat : options.templateType),
-            source: 'ai',
-            warnings: ai.notes ? [ai.notes, ...result.warnings] : result.warnings,
-          } as AiBankNormalizeResult | AiDataNormalizeResult;
-          model = process.env.OPENAI_MODEL ?? 'gpt-4o-mini';
-        }
-      } catch (err) {
-        this.logger.warn(`AI upload mapping failed, keeping rule-based result: ${String(err)}`);
-        result.warnings.push('AI column mapping unavailable — using rule-based detection only.');
-      }
+  /**
+   * Decides what happens when rule-based detection is not confident.
+   *
+   * Three outcomes, in order of preference:
+   *  1. Ask the user to map the columns (headers are known, rows are not).
+   *  2. Point them at a supported template.
+   *  3. Return a safe parsing error.
+   *
+   * Never: send the data to a model and hope.
+   */
+  private resolveLowConfidence(
+    result: AiBankNormalizeResult | AiDataNormalizeResult,
+    options: NormalizeOptions,
+  ): AiBankNormalizeResult | AiDataNormalizeResult {
+    const isConfident = result.confidence === 'high' || (result.confidence === 'medium' && result.rowCount > 0);
+    if (isConfident) return result;
+
+    if (result.rowCount === 0) {
+      throw new BadRequestException(
+        `Could not read any rows from this file for the "${options.templateType}" template. ` +
+          `Expected columns: ${UPLOAD_TEMPLATES[options.templateType].headers.join(', ')}. ` +
+          'Download the Liqvia template and re-upload, or map the columns manually.',
+      );
     }
 
-    return { result, model };
+    return {
+      ...result,
+      warnings: [
+        'Some columns could not be matched automatically. Review the mapping before importing.',
+        ...result.warnings,
+      ],
+    } as AiBankNormalizeResult | AiDataNormalizeResult;
   }
 
-  private async inferCsvFromPdfTextWithOpenAi(
-    apiKey: string,
-    pdfText: string,
-    fileName?: string,
-  ): Promise<string | null> {
-    const model = process.env.OPENAI_MODEL ?? 'gpt-4o-mini';
-    const trimmed = pdfText.length > 12000 ? `${pdfText.slice(0, 12000)}\n...[truncated]` : pdfText;
-
-    const res = await fetch('https://api.openai.com/v1/chat/completions', {
-      method: 'POST',
-      headers: {
-        Authorization: `Bearer ${apiKey}`,
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        model,
-        temperature: 0.1,
-        response_format: { type: 'json_object' },
-        messages: [
-          {
-            role: 'system',
-            content: `You extract bank transaction rows from PDF statement text into CSV.
-Return JSON: { "csv": "header1,header2\\nvalue1,value2\\n..." }.
-Use a header row with clear column names (Date, Description, Amount and/or Debit/Credit, etc.).
-Include every transaction row; omit statement headers, footers, totals, and legal text.
-Preserve amounts and signs exactly as shown in the PDF.`,
-          },
-          {
-            role: 'user',
-            content: JSON.stringify({ fileName, pdfText: trimmed }),
-          },
-        ],
-      }),
-    });
-
-    if (!res.ok) throw new Error(`OpenAI HTTP ${res.status}`);
-
-    const data = (await res.json()) as {
-      choices?: Array<{ message?: { content?: string } }>;
-    };
-    const content = data.choices?.[0]?.message?.content;
-    if (!content) return null;
-
-    const parsedJson = JSON.parse(content) as { csv?: string };
-    if (!parsedJson.csv || typeof parsedJson.csv !== 'string') return null;
-    return parsedJson.csv.trim();
-  }
-
-  private async inferMappingWithOpenAi(
-    apiKey: string,
-    csvContent: string,
-    options: NormalizeOptions,
-  ): Promise<AiMappingResponse | null> {
-    const parsed = parseCsv(csvContent.trim());
-    const sampleRows = parsed.rows.slice(0, 8);
-    const canonicalHeaders = UPLOAD_TEMPLATES[options.templateType].headers;
-
-    const model = process.env.OPENAI_MODEL ?? 'gpt-4o-mini';
-    const systemPrompt =
-      options.templateType === 'bank_transactions'
-        ? `You map heterogeneous bank transaction exports to canonical fields.
-Return JSON: { "detectedFormat": "xero|onec|paycom|sap|oracle|cba|amex|generic", "signConvention": "signed_negative_in|signed_positive_in|debit_credit_columns|direction_column|split_in_out_columns", "mapping": { optional source header names for canonical fields }, "notes": "short string" }.
-Canonical fields: bankAccountName, accountNumberMasked, transactionDate, description, payee, amount, debit, credit, direction, spent, received, currency.
-Rules: use exact header strings from the sample.`
-        : `You map heterogeneous finance exports to canonical Liqvia upload columns.
-Return JSON: { "detectedFormat": "generic|xero|quickbooks|myob|sap|oracle", "mapping": { "Canonical Header": "Exact Source Header" }, "notes": "short string" }.
-Target template: ${options.templateType}
-Required canonical headers: ${canonicalHeaders.join(', ')}
-Use exact source header strings from the sample.`;
-
-    const res = await fetch('https://api.openai.com/v1/chat/completions', {
-      method: 'POST',
-      headers: {
-        Authorization: `Bearer ${apiKey}`,
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        model,
-        temperature: 0.1,
-        response_format: { type: 'json_object' },
-        messages: [
-          { role: 'system', content: systemPrompt },
-          {
-            role: 'user',
-            content: JSON.stringify({
-              templateType: options.templateType,
-              sourceHint: options.sourceHint ?? 'auto',
-              fileName: options.fileName,
-              headers: parsed.headers,
-              sampleRows,
-            }),
-          },
-        ],
-      }),
-    });
-
-    if (!res.ok) throw new Error(`OpenAI HTTP ${res.status}`);
-
-    const data = (await res.json()) as {
-      choices?: Array<{ message?: { content?: string } }>;
-    };
-    const content = data.choices?.[0]?.message?.content;
-    if (!content) return null;
-
-    const parsedJson = JSON.parse(content) as AiMappingResponse;
-    if (!parsedJson.mapping || typeof parsedJson.mapping !== 'object') return null;
-    return parsedJson;
-  }
 }

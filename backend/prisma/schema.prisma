@@ -775,5 +775,53 @@ model CashOsLead {
   source         String?
   createdAt      DateTime @default(now())
 
+  consentRecords ConsentRecord[]
+
   @@index([createdAt])
+}
+
+/// Evidence that a specific person acknowledged specific wording at a specific
+/// moment. Kept as its own record — not a boolean column on the form data —
+/// so that (a) the exact wording and its version survive later copy changes, and
+/// (b) the evidence can be retained or erased on its own schedule.
+///
+/// `consentText` stores the wording verbatim rather than only a pointer, because
+/// a pointer into application code is not evidence once that code is redeployed.
+/// `consentTextSha256` lets integrity be checked without re-reading the text.
+model ConsentRecord {
+  id String @id @default(cuid())
+
+  /// Which notice this is, e.g. "cash-os-lead-form". Matches ConsentSubjectId in
+  /// packages/shared/src/consent.ts.
+  subjectId String
+  /// Version of that notice's wording, e.g. "2026-08-09.1".
+  version   String
+  /// Version of the privacy policy the wording referred to.
+  policyVersion String
+  /// Locale the wording was displayed in.
+  locale    String
+
+  /// The exact sentence displayed to the user at the time of acknowledgement.
+  consentText       String
+  /// SHA-256 of `consentText`, lowercase hex.
+  consentTextSha256 String
+
+  /// False when the submitted wording did not match the server-side registry for
+  /// this subjectId+version — the record is still kept, but flagged for review.
+  textVerified Boolean @default(true)
+
+  /// How the acknowledgement was given, e.g. "checkbox".
+  method String @default("checkbox")
+
+  /// When the user acknowledged, as recorded by the server.
+  acknowledgedAt DateTime @default(now())
+  createdAt      DateTime @default(now())
+
+  /// Optional link to the submission this consent belongs to.
+  cashOsLeadId String?
+  cashOsLead   CashOsLead? @relation(fields: [cashOsLeadId], references: [id], onDelete: Cascade)
+
+  @@index([subjectId, version])
+  @@index([cashOsLeadId])
+  @@index([acknowledgedAt])
 }
