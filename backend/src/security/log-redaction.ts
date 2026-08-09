@@ -65,6 +65,31 @@ export function describeErrorForLog(err: unknown, maxLength = 200): string {
   return '[non-error thrown]';
 }
 
+/**
+ * Reduces an unknown thrown value to its error class alone, discarding the message.
+ *
+ * `describeErrorForLog` redacts what it can *recognise* — emails, phone numbers, account
+ * numbers, long digit runs. It cannot recognise a name, a company name or free text, because
+ * those have no pattern: «Иван Петров» is indistinguishable from any other pair of words.
+ *
+ * That is fine for an SMTP driver error. It is not fine on a path that handles a whole row of
+ * personal data, because a Prisma write error embeds the row it failed to write:
+ *
+ *   Invalid `prisma.cashOsLead.create()` invocation: … data: { name: "Иван Петров", … }
+ *
+ * On such paths the message is not sanitisable and must not be logged at all. What survives is
+ * enough to identify the fault — the error class and, where the driver provides one, its code —
+ * and nothing that identifies a person. Correlate with the request ID for the rest.
+ */
+export function describeErrorClassForLog(err: unknown): string {
+  if (err instanceof Error) {
+    const code = (err as { code?: unknown }).code;
+    const suffix = typeof code === 'string' || typeof code === 'number' ? ` (code ${code})` : '';
+    return `${err.name}${suffix}`;
+  }
+  return '[non-error thrown]';
+}
+
 function countDigits(value: string): number {
   let n = 0;
   for (const ch of value) if (ch >= '0' && ch <= '9') n += 1;

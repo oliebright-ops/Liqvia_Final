@@ -3,6 +3,7 @@ import { INestApplication } from '@nestjs/common';
 import { NestFactory } from '@nestjs/core';
 import type { Express } from 'express';
 import { AppModule } from './app.module';
+import { assertResidency } from './residency/data-plane';
 import { runMigrations } from './run-migrations';
 import { runDemoSeedOnStartup } from './demo/demo-seed.runner';
 import { applySecurityMiddleware } from './security/apply-security-middleware';
@@ -26,6 +27,11 @@ export async function createNestApplication(
   const embedded = options.embedded ?? false;
   const migrate = options.migrate ?? true;
   const swagger = options.swagger ?? !embedded;
+
+  // Before migrations, before the container, before anything can accept a request: an RU
+  // deployment pointed at non-RU storage must not start at all. Running the migrations first
+  // would create the RU tables in the wrong database, which is the failure this prevents.
+  assertResidency();
 
   if (migrate) {
     runMigrations();

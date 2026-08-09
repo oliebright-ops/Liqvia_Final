@@ -1,4 +1,9 @@
-import { BadRequestException, Injectable, Logger } from '@nestjs/common';
+import {
+  BadRequestException,
+  Injectable,
+  Logger,
+  ServiceUnavailableException,
+} from '@nestjs/common';
 import {
   ACTIVE_CONSENT_VERSION,
   CONSENT_REQUIRED_MESSAGE_RU,
@@ -9,9 +14,22 @@ import {
 } from '@liqvia2/shared';
 import { PrismaService } from '../prisma/prisma.service';
 import { ConsentService } from '../consent/consent.service';
+import { currentDataPlane } from '../residency/data-plane';
+import { describeErrorClassForLog } from '../security/log-redaction';
 import { CreateCashOsLeadDto, LeadConsentDto } from './dto/create-cash-os-lead.dto';
 
 const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
+/**
+ * Shown when the lead cannot be stored.
+ *
+ * Deliberately says "try again later" rather than "we've received your request": a person who
+ * believes their enquiry arrived will not resend it, and the enquiry is gone. Russian, because
+ * the form is Russian.
+ */
+export const LEAD_STORAGE_UNAVAILABLE_MESSAGE_RU =
+  'Не удалось сохранить заявку из-за временной технической ошибки. ' +
+  'Пожалуйста, попробуйте отправить форму ещё раз через несколько минут.';
 
 @Injectable()
 export class CashOsLeadsService {
@@ -42,6 +60,35 @@ export class CashOsLeadsService {
 
     // Lead and consent records are written in one transaction: a lead must never
     // exist without its evidence, and evidence must never point at a missing lead.
+    try {
+      await this.writeLead(dto, name, companyName, email, marketingConsent);
+    } catch (err) {
+      // Fail closed. There is deliberately no second destination to try: on the RU
+      // plane the only correct outcome of an unavailable RU database is that no
+      // personal data is stored anywhere. Falling back to the global database would
+      // put Russian personal data outside Russia at exactly the moment nobody is
+      // watching, and would look like success.
+      //
+      // The error CLASS only, never its message. A Prisma write error embeds the row it
+      // failed to write — name, email, phone, comment — and pattern-based redaction
+      // cannot catch a name or free text. See describeErrorClassForLog.
+      this.logger.error(
+        `Lead submission could not be stored on the ${currentDataPlane()} data plane: ` +
+          `${describeErrorClassForLog(err)}. No personal data was stored.`,
+      );
+      throw new ServiceUnavailableException(LEAD_STORAGE_UNAVAILABLE_MESSAGE_RU);
+    }
+
+    return { status: 'ok' as const };
+  }
+
+  private async writeLead(
+    dto: CreateCashOsLeadDto,
+    name: string,
+    companyName: string,
+    email: string,
+    marketingConsent: LeadConsentDto | null,
+  ): Promise<void> {
     await this.prisma.$transaction(async (tx) => {
       const lead = await tx.cashOsLead.create({
         data: {
@@ -81,8 +128,6 @@ export class CashOsLeadsService {
         });
       }
     });
-
-    return { status: 'ok' as const };
   }
 
   /**
