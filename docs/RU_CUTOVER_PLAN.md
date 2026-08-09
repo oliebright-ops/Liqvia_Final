@@ -19,6 +19,32 @@ domain level.* Here is the comparison, and the recommendation.
 | **C. Application-level** — global app proxies RU submissions | Global Render app forwards `POST /api/cash-os-leads` to RU | Instant, a flag | **Sends every Russian lead through a US host in transit.** Defeats the purpose | ❌ Reject |
 | **D. Staged** — B, then A once stable | Origin switch first; DNS later as tidy-up | — | Lowest | ✅ **Recommended** |
 
+### Concrete values (§30)
+
+| | Current | Target |
+|---|---|---|
+| `liqvia.info` DNS | CNAME → `liqvia-landing.onrender.com` (Render, **US Oregon**) | unchanged at DNS level |
+| Cloudflare origin | Render service `liqvia-landing` | **`158.160.44.137`** — Yandex `liqvia-ru-app`, `ru-central1-a` |
+| Origin port | 443 | 443 |
+| Origin TLS | Render-managed certificate | **Caddy `tls internal`** (self-signed) → Cloudflare SSL mode **Full**, not Full (strict) |
+| Health check | `/api/health` | `/api/health` on the Yandex origin |
+| Expected downtime | — | **seconds** — control-plane change, reversible in seconds |
+| Rollback | — | repoint the Cloudflare origin back to the Render service |
+
+**Why self-signed on the origin is acceptable here, and what it costs.** Cloudflare "Full" encrypts
+the Cloudflare→origin hop but does not validate the origin certificate: it stops passive
+interception, not an active man-in-the-middle between Cloudflare and Yandex. The alternative,
+Full (strict), needs a publicly-trusted certificate on the origin, which needs the hostname already
+pointing at it — the very thing being cut over. Ordering is what makes self-signed the pragmatic
+first step, not indifference.
+
+**Follow-up, and not optional indefinitely:** once `liqvia.info` resolves to the Yandex origin, issue
+a real certificate (Caddy does this automatically given a public DNS name) and move Cloudflare to
+**Full (strict)**. Until then the Cloudflare↔origin hop is encrypted but unauthenticated. Recorded
+rather than glossed over.
+
+**The authenticated global Liqvia domain is not touched by any of this.**
+
 > ### Recommendation: **D — Cloudflare origin switch, then DNS later**
 >
 > Cloudflare already terminates TLS for `liqvia.info` (verified: `server: cloudflare`,
