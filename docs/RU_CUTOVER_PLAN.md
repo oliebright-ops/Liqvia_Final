@@ -82,6 +82,33 @@ that change the moment traffic arrives.
 - [ ] Confirm the Metrica console: Webvisor off, form analytics off, access list reviewed
 - [ ] Confirm no Yandex Direct campaign is live
 
+### 2.1 Backup restore test — operational control, **not** residency evidence
+
+An untested backup is a belief, not a backup. No restore has ever been performed on
+`c9q985emaom0p6128t5r`, so recoverability is currently unproven.
+
+This is deliberately **separate from U3**. Restoring successfully proves the backup is *usable*; it
+proves nothing about *where* the backup bytes live. Do not let a green restore close U3 — that
+needs the written vendor answer in
+[`RU_YANDEX_BACKUP_RESIDENCY_REQUEST.md`](RU_YANDEX_BACKUP_RESIDENCY_REQUEST.md).
+
+- [ ] Restore the most recent automated backup into a **new, temporary** cluster in `ru-central1`
+      — never over the live one
+- [ ] Create it private: no public IP, same security group and subnet as the source
+- [ ] Confirm the restored cluster reaches `RUNNING` / `ALIVE`
+- [ ] Confirm `CashOsLead` and `ConsentRecord` exist and row counts are plausible for the backup's
+      timestamp
+- [ ] Confirm consent rows still reference their leads — a restore that loses the FK loses the
+      evidence chain
+- [ ] Record: backup ID restored, start and finish times, **time to recover**, row counts, and who
+      performed it
+- [ ] **Delete the temporary cluster**, and confirm deletion — a forgotten restore is a second,
+      unmonitored copy of personal data, which is its own incident
+- [ ] Write the result into `RU_DATABASE_CONFIGURATION.md` §4, replacing **Restore test — NOT
+      PERFORMED**
+
+Repeat whenever the PostgreSQL major version changes or the backup configuration is altered.
+
 ## 3. Phase W — build and verify with synthetic data
 
 **No real traffic reaches the RU plane until all 16 checks pass.**
