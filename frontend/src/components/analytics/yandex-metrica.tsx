@@ -1,6 +1,5 @@
 'use client';
 
-import Script from 'next/script';
 import { useEffect, useRef } from 'react';
 import { trackCtaEvent } from '@/components/cash-os/analytics';
 
@@ -10,6 +9,30 @@ export function YandexMetrica() {
   const deepScrollTracked = useRef(false);
 
   useEffect(() => {
+    if (typeof window.ym !== 'function') {
+      const queuedYm = ((...args: unknown[]) => {
+        queuedYm.a = queuedYm.a ?? [];
+        queuedYm.a.push(args);
+      }) as NonNullable<Window['ym']>;
+      queuedYm.l = Date.now();
+      window.ym = queuedYm;
+    }
+
+    window.ym(Number(METRICA_ID), 'init', {
+      ssr: true,
+      clickmap: true,
+      accurateTrackBounce: true,
+      trackLinks: true,
+    });
+
+    const metricaSrc = `https://mc.yandex.ru/metrika/tag.js?id=${METRICA_ID}`;
+    if (!document.querySelector(`script[src="${metricaSrc}"]`)) {
+      const script = document.createElement('script');
+      script.async = true;
+      script.src = metricaSrc;
+      document.head.appendChild(script);
+    }
+
     function trackDeepScroll() {
       if (deepScrollTracked.current) return;
 
@@ -30,9 +53,6 @@ export function YandexMetrica() {
 
   return (
     <>
-      <Script id="yandex-metrica" strategy="afterInteractive">
-        {`(function(m,e,t,r,i,k,a){m[i]=m[i]||function(){(m[i].a=m[i].a||[]).push(arguments)};m[i].l=1*new Date();for(var j=0;j<document.scripts.length;j++){if(document.scripts[j].src===r){return;}}k=e.createElement(t),a=e.getElementsByTagName(t)[0],k.async=1,k.src=r,a.parentNode.insertBefore(k,a)})(window,document,'script','https://mc.yandex.ru/metrika/tag.js?id=${METRICA_ID}','ym');ym(${METRICA_ID},'init',{ssr:true,clickmap:true,accurateTrackBounce:true,trackLinks:true});`}
-      </Script>
       <noscript>
         <img
           src={`https://mc.yandex.ru/watch/${METRICA_ID}`}

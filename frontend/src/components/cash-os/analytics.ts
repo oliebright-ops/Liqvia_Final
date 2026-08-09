@@ -23,7 +23,10 @@ export type CtaEvent =
 
 declare global {
   interface Window {
-    ym?: (counterId: number, action: string, target: string) => void;
+    ym?: ((...args: unknown[]) => void) & {
+      a?: unknown[][];
+      l?: number;
+    };
   }
 }
 
