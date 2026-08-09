@@ -181,8 +181,12 @@ function buildArchive(): Record<string, ConsentTextEntry> {
     }),
   ];
 
-  // Registered only once a real opt-out address exists — see buildMarketingConsentText.
-  if (CASH_OS_LEAD_MARKETING_CONSENT_TEXT) {
+  // Registered only when marketing consent is genuinely enabled — not merely when
+  // an opt-out address exists. A verified operator mailbox is supplied for subject
+  // requests and consent withdrawal; it is not a decision to start marketing. While
+  // this stays unregistered the server rejects any marketing consent outright,
+  // rather than relying on a single downstream flag to drop it.
+  if (MARKETING_CONSENT_ENABLED && CASH_OS_LEAD_MARKETING_CONSENT_TEXT) {
     entries.push(
       registerEntry({
         id: 'cash-os-lead-marketing',

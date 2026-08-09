@@ -15,12 +15,17 @@ import {
   CONSENT_LINK_PHRASES,
   MARKETING_CONSENT_ENABLED,
   OPERATOR_IDENTIFICATION_RU,
+  isOperatorPostalAddressVerified,
   PRIVACY_POLICY_PATH,
   segmentConsentText,
 } from './consent';
 import {
+  EXTERNAL_LEGAL_REVIEW_COMPLETE,
+  LEGAL_REVIEW_STATUS,
+  OWNER_APPROVED_FOR_PUBLICATION,
   UNVERIFIED_PROCESSING_FACTS,
   isLegalPublicationReady,
+  openOwnerInputs,
   operatorContactBlock,
   publicationBlockers,
 } from './legal-publication';
@@ -50,9 +55,32 @@ test('the legal pages are not publishable while facts remain unverified', () => 
   assert.ok(UNVERIFIED_PROCESSING_FACTS.length > 0);
 });
 
-test('no contact block is produced while the contact details are unverified', () => {
-  // The pages must render "not established", never an invented address.
-  assert.equal(operatorContactBlock(), null);
+test('the verified email is offered even though no postal address exists', () => {
+  // Email and postal address are independent. Suppressing a mailbox that genuinely
+  // works, because a second channel is missing, tells the reader they cannot reach
+  // the operator when they can — which is its own false statement.
+  const contact = operatorContactBlock();
+  assert.ok(contact, 'a verified email must produce a contact block');
+  assert.equal(contact.email, 'olie.bright@gmail.com');
+});
+
+test('the postal address is omitted, never invented or placeholdered', () => {
+  const contact = operatorContactBlock();
+  assert.equal(contact?.address, null);
+  assert.equal(isOperatorPostalAddressVerified(), false);
+  // Callers render a null address by leaving the line out entirely.
+  assert.ok(openOwnerInputs().includes('OWNER INPUT REQUIRED — POSTAL ADDRESS'));
+});
+
+test('owner approval is recorded, and is never presented as legal review', () => {
+  assert.equal(OWNER_APPROVED_FOR_PUBLICATION, true);
+  assert.equal(EXTERNAL_LEGAL_REVIEW_COMPLETE, false);
+  assert.equal(
+    LEGAL_REVIEW_STATUS,
+    'OWNER-APPROVED FOR PUBLICATION — NOT EXTERNALLY LEGALLY REVIEWED',
+  );
+  assert.ok(!LEGAL_REVIEW_STATUS.includes('LEGAL VERIFIED'));
+  assert.ok(!LEGAL_REVIEW_STATUS.includes('LEGAL APPROVED'));
 });
 
 test('the consent checkbox links both documents by their exact referenced titles', () => {

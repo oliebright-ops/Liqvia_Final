@@ -775,9 +775,20 @@ model CashOsLead {
   source         String?
   createdAt      DateTime @default(now())
 
+  /// When the personal data in this row was erased under the retention policy.
+  /// Null means the row still holds personal data. The row itself is kept after
+  /// anonymisation so that the consent evidence pointing at it stays meaningful
+  /// and so that campaign counts survive; every identifying column is overwritten.
+  anonymisedAt   DateTime?
+  /// Why it was erased: "retention-expiry", "consent-withdrawn", "purpose-ended",
+  /// "subject-request". Never contains anything about the person.
+  anonymisedReason String?
+
   consentRecords ConsentRecord[]
 
   @@index([createdAt])
+  /// Drives the retention sweep: find rows that still hold personal data.
+  @@index([anonymisedAt, createdAt])
 }
 
 /// Evidence that a specific person acknowledged specific wording at a specific
@@ -818,8 +829,17 @@ model ConsentRecord {
   createdAt      DateTime @default(now())
 
   /// Optional link to the submission this consent belongs to.
+  ///
+  /// `SetNull`, deliberately, not `Cascade`. Consent evidence answers a different
+  /// question from the lead: "was this processing lawful when it happened?" — and
+  /// that question outlives the data it authorised. Under a cascade, the routine
+  /// one-month erasure of a lead would destroy the proof that collecting it was
+  /// lawful, which is precisely the record you need if it is ever challenged.
+  ///
+  /// The normal path does not delete leads at all — it anonymises them in place,
+  /// so the link survives. This is the backstop for a genuine hard delete.
   cashOsLeadId String?
-  cashOsLead   CashOsLead? @relation(fields: [cashOsLeadId], references: [id], onDelete: Cascade)
+  cashOsLead   CashOsLead? @relation(fields: [cashOsLeadId], references: [id], onDelete: SetNull)
 
   @@index([subjectId, version])
   @@index([cashOsLeadId])

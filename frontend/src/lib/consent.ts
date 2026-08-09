@@ -45,5 +45,7 @@ export {
   OPERATOR_STATUS_RU,
   assertOperatorDesignation,
   isOperatorContactVerified,
+  isOperatorEmailVerified,
+  isOperatorPostalAddressVerified,
   missingOperatorContactFacts,
 } from '@liqvia2/shared';

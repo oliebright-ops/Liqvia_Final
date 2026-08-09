@@ -78,46 +78,77 @@ export const OPERATOR_IDENTIFICATION_RU =
 /**
  * Contact email for personal-data requests and consent withdrawal.
  *
- * `null` until the operator confirms a mailbox that is actually monitored. A
- * privacy notice naming an address nobody reads is worse than one that is not
- * yet published, so publication is gated on this rather than defaulted.
+ * Verified by the operator on 2026-08-10. This is the channel through which a
+ * data subject exercises every right the published documents promise: access,
+ * correction, deletion, and withdrawal of consent.
  *
- * DO NOT put a placeholder here. Set the real, verified address.
+ * It is deliberately NOT used for marketing or promotional messages — see
+ * `MARKETING_CONSENT_ENABLED` in `consent.ts`, which remains false.
+ *
+ * DO NOT put a placeholder here. Only a real, monitored mailbox.
  */
-export const OPERATOR_CONTACT_EMAIL: string | null = null;
+export const OPERATOR_CONTACT_EMAIL: string | null = 'olie.bright@gmail.com';
 
 /**
- * Postal address for legally significant requests (statutory personal-data
- * requests must be deliverable in writing).
+ * Postal address for legally significant requests.
  *
- * `null` until the operator supplies an address they are willing to publish.
- * DO NOT put a placeholder here.
+ * Deliberately `null`, and deliberately load-bearing. No verified address has
+ * been supplied, and one must never be inferred from account details, Git
+ * history, registration records, WHOIS, tax data or any other personal source.
+ * Publishing a residential address that nobody chose to publish is a harm in
+ * itself, and an invented one is a false statement in a legal document.
+ *
+ * Its absence does not block publication — see `isOperatorContactVerified` — but
+ * it is tracked as an open owner input. 152-FZ does contemplate circumstances in
+ * which an operator's address must be disclosed, so whether the documents can
+ * stand indefinitely without one is a legal question, not a technical one.
+ *
+ * LEGAL REVIEW REQUIRED. Recorded as OWNER INPUT REQUIRED — POSTAL ADDRESS.
  */
 export const OPERATOR_REQUESTS_ADDRESS_RU: string | null = null;
 
-/**
- * True only when both contact channels are real values.
- *
- * Both legal pages refuse to present themselves as published documents while
- * this is false: they render a draft banner and are excluded from indexing.
- */
-export function isOperatorContactVerified(): boolean {
+/** Whether a real mailbox exists for subject requests and consent withdrawal. */
+export function isOperatorEmailVerified(): boolean {
+  return typeof OPERATOR_CONTACT_EMAIL === 'string' && OPERATOR_CONTACT_EMAIL.trim().length > 0;
+}
+
+/** Whether a postal address has been supplied for legally significant requests. */
+export function isOperatorPostalAddressVerified(): boolean {
   return (
-    typeof OPERATOR_CONTACT_EMAIL === 'string' &&
-    OPERATOR_CONTACT_EMAIL.trim().length > 0 &&
     typeof OPERATOR_REQUESTS_ADDRESS_RU === 'string' &&
     OPERATOR_REQUESTS_ADDRESS_RU.trim().length > 0
   );
 }
 
-/** Every contact fact that is still missing, for the draft banner and for tests. */
+/**
+ * True when the operator can actually be reached about their processing.
+ *
+ * A working email satisfies this. The postal address is intentionally NOT part
+ * of the condition: requiring both meant that supplying a verified mailbox
+ * changed nothing, and the documents went on rendering «НЕ УСТАНОВЛЕНО» over a
+ * channel that genuinely worked — which is its own kind of untrue statement.
+ *
+ * What matters for publication is that every right the documents promise is
+ * exercisable. Access, correction, deletion and withdrawal are all exercisable
+ * by email. See `isOperatorPostalAddressVerified` for the separate question.
+ */
+export function isOperatorContactVerified(): boolean {
+  return isOperatorEmailVerified();
+}
+
+/**
+ * Contact facts still missing.
+ *
+ * The postal address appears here — so it stays visible in internal tooling and
+ * in the publication blocker list — without gating publication.
+ */
 export function missingOperatorContactFacts(): string[] {
   const missing: string[] = [];
-  if (!OPERATOR_CONTACT_EMAIL?.trim()) {
+  if (!isOperatorEmailVerified()) {
     missing.push('подтверждённый адрес электронной почты для обращений');
   }
-  if (!OPERATOR_REQUESTS_ADDRESS_RU?.trim()) {
-    missing.push('почтовый адрес для юридически значимых обращений');
+  if (!isOperatorPostalAddressVerified()) {
+    missing.push('почтовый адрес для юридически значимых обращений (OWNER INPUT REQUIRED)');
   }
   return missing;
 }

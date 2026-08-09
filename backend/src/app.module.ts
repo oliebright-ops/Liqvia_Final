@@ -25,6 +25,7 @@ import { BusinessPulseModule } from './business-pulse/business-pulse.module';
 import { DecisionCentreModule } from './decision-centre/decision-centre.module';
 import { WhyChangedModule } from './why-changed/why-changed.module';
 import { CashOsLeadsModule } from './cash-os-leads/cash-os-leads.module';
+import { RetentionModule } from './retention/retention.module';
 
 @Module({
   imports: [
@@ -62,6 +63,7 @@ import { CashOsLeadsModule } from './cash-os-leads/cash-os-leads.module';
     DecisionCentreModule,
     WhyChangedModule,
     CashOsLeadsModule,
+    RetentionModule,
   ],
   controllers: [HealthController],
   providers: [{ provide: APP_GUARD, useClass: ThrottlerGuard }],
