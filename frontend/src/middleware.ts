@@ -7,11 +7,13 @@ function buildContentSecurityPolicy(): string {
     "base-uri 'self'",
     "form-action 'self'",
     "frame-ancestors 'none'",
-    "img-src 'self' data: blob:",
+    "img-src 'self' data: blob: https://mc.yandex.ru",
     "font-src 'self' data:",
     "style-src 'self' 'unsafe-inline'",
-    "script-src 'self' 'unsafe-inline'",
-    "connect-src 'self'",
+    "script-src 'self' 'unsafe-inline' https://mc.yandex.ru https://yastatic.net",
+    "connect-src 'self' https://mc.yandex.ru",
+    "child-src blob: https://mc.yandex.ru",
+    "frame-src blob: https://mc.yandex.ru",
   ].join('; ');
 }
 
