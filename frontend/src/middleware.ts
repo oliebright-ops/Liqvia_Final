@@ -1,19 +1,38 @@
 import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
 
+const YANDEX_METRICA_ORIGINS = [
+  'https://mc.yandex.ru',
+  'https://mc.yandex.com',
+  'https://mc.yandex.az',
+  'https://mc.yandex.by',
+  'https://mc.yandex.co.il',
+  'https://mc.yandex.com.am',
+  'https://mc.yandex.com.ge',
+  'https://mc.yandex.com.tr',
+  'https://mc.yandex.ee',
+  'https://mc.yandex.fr',
+  'https://mc.yandex.kg',
+  'https://mc.yandex.kz',
+  'https://mc.yandex.lt',
+  'https://mc.yandex.lv',
+  'https://mc.yandex.md',
+  'https://mc.yandex.tj',
+  'https://mc.yandex.tm',
+  'https://mc.yandex.uz',
+].join(' ');
+
 function buildContentSecurityPolicy(): string {
   return [
     "default-src 'self'",
     "base-uri 'self'",
     "form-action 'self'",
     "frame-ancestors 'none'",
-    "img-src 'self' data: blob: https://mc.yandex.ru",
+    `img-src 'self' data: blob: ${YANDEX_METRICA_ORIGINS}`,
     "font-src 'self' data:",
     "style-src 'self' 'unsafe-inline'",
-    "script-src 'self' 'unsafe-inline' https://mc.yandex.ru https://yastatic.net",
-    "connect-src 'self' https://mc.yandex.ru",
-    "child-src blob: https://mc.yandex.ru",
-    "frame-src blob: https://mc.yandex.ru",
+    `script-src 'self' 'unsafe-inline' ${YANDEX_METRICA_ORIGINS} https://yastatic.net`,
+    `connect-src 'self' ${YANDEX_METRICA_ORIGINS}`,
   ].join('; ');
 }
 
