@@ -151,10 +151,10 @@ The second failure is loud. The first would have been silent, and is the more da
 |---|---|---|
 | Encryption at rest (DB, disk, Lockbox) | **NOT VERIFIED** | The API exposes no encryption field for any of them. §17 says do not infer |
 | Backup location / region | **NOT VERIFIED** | No backup-region field exists in the API |
-| Restore test (§19) | **NOT PERFORMED** | |
+| Restore test (§19) | **PASS** — see §6 | |
 | Billing alerts (§20) | **NOT CONFIGURED** | No `yc billing` command exists; console only |
 | Lead notification / operator access (§23) | **NOT BUILT** | |
-| Metrica re-verification on the RU origin (§24) | **NOT DONE** | Requires public DNS pointing at the origin |
+| Metrica re-verification on the RU origin (§24) | **PASS** — see §7 | |
 | Cutover (§30–33) | **NOT DONE** | Requires Cloudflare access |
 | Global regression (§29) | **NOT RUN** | |
 
@@ -163,3 +163,58 @@ The second failure is loud. The first would have been silent, and is the more da
 Temporary SSH (`0.0.0.0/0`, key-only) was opened twice for deployment and **removed both times**.
 Final state verified from the internet: **port 22 closed, port 443 open**. The only ingress rule on
 the app security group is TCP 443.
+
+
+---
+
+## 6. §19 Restore test — **PASS**
+
+A manual backup was taken **after** synthetic data was written, then restored into a temporary,
+isolated cluster. Synthetic data only; no genuine lead or client data was involved.
+
+| Step | Result |
+|---|---|
+| Backup taken | `c9q985emaom0p6128t5r:mdbgckkakje9f77a6c71`, `DONE` |
+| Restored into | `liqvia-ru-restore-test` (`c9q9mac8rn8dup8728hg`), private, no public IP |
+| **Restore duration** | **413 seconds (~7 minutes)** to `RUNNING` |
+| Schema | `CashOsLead, ConsentRecord, _prisma_migrations` — exactly three, **no global tables** |
+| Table owners | `ru_migrator` — ownership survived the restore |
+| Migration ledger | `20260810130000_ru_lead_plane` |
+| `CashOsLead` rows | 2 |
+| `RU-RESTORE-PROBE` present | **yes**, `restore@example.invalid`, source `ru_restore_test` |
+| `ConsentRecord` rows | 3 |
+| Probe consent linked + wording | **yes** — `RESTORE TEST WORDING` |
+| Orphaned consent rows | **0** — referential integrity intact |
+| Anonymised row preserved | yes |
+| FK delete rule after restore | `confdeltype = n` — **SET NULL, not CASCADE** |
+
+That last row matters more than it looks: the non-cascading foreign key is what stops retention
+expiry destroying consent evidence, and it survived a full backup/restore cycle rather than
+reverting to a default.
+
+**The temporary cluster was deleted after verification** (`c9qmj8entdqi7bgcempa`). Only
+`liqvia-ru-leads` remains.
+
+**Recovery expectation:** with a single host, a host failure means roughly **7 minutes of restore
+time plus DNS/origin repointing**, not a failover. That is now a measured number rather than an
+assumption.
+
+## 7. §24 Metrica on the deployed RU bundle — **PASS**
+
+15 client chunks served by the RU origin were fetched and searched:
+
+| Check | Result |
+|---|---|
+| Counter `111417446` present | yes |
+| `webvisor` anywhere in the bundle | **absent** |
+| `setUserID` | **absent** |
+| `reachGoal` (goal-only events) | present |
+| Host gate references `liqvia.info` | yes |
+
+Consistent with the live measurement taken against the Render site earlier.
+
+## 8. §16 Audit Trails — **ACTIVE**
+
+`liqvia-ru-audit` (`cnpg1ab8v12r60aburtm`), folder-scoped, delivering to Cloud Logging group
+`liqvia-ru-logs` via a dedicated service account. Control-plane events only — application personal
+data is deliberately not routed here.
