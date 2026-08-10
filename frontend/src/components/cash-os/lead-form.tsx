@@ -1,34 +1,15 @@
 'use client';
 
-import { FormEvent, ReactNode, useEffect, useRef, useState } from 'react';
-import Link from 'next/link';
+import { FormEvent, ReactNode, useRef, useState } from 'react';
 import { apiPost } from '@/lib/api';
 import {
-  CASH_OS_LEAD_FORM_CONSENT_TEXT,
+  CASH_OS_LEAD_FORM_NOTICE_TEXT,
   CASH_OS_LEAD_MARKETING_CONSENT_TEXT,
-  CONSENT_DOCUMENT_PATH,
-  CONSENT_LINK_PHRASES,
-  CONSENT_REQUIRED_MESSAGE_RU,
   MARKETING_CONSENT_ENABLED,
-  PRIVACY_POLICY_PATH,
-  segmentConsentText,
-  type ConsentTextSegment,
 } from '@/lib/consent';
-import { buildLeadSubmission } from '@/lib/lead-submission';
+import { buildLeadPayload } from '@/lib/lead-submission';
 import { trackCtaEvent } from './analytics';
 import { Container, Section, SectionHeading } from './primitives';
-
-/**
- * The required notice, split so that «Согласием на обработку персональных данных»
- * and «Политикой обработки персональных данных» render as separate links while
- * the visible sentence stays character-for-character identical to the registry
- * wording that is sent as evidence. `segmentConsentText` throws at module load
- * if either phrase is ever edited out of the wording.
- */
-const CONSENT_SEGMENTS = segmentConsentText(CASH_OS_LEAD_FORM_CONSENT_TEXT, [
-  { phrase: CONSENT_LINK_PHRASES.consentDocument, href: CONSENT_DOCUMENT_PATH },
-  { phrase: CONSENT_LINK_PHRASES.privacyPolicy, href: PRIVACY_POLICY_PATH },
-]);
 
 const EMPLOYEE_COUNT_OPTIONS = ['До 20', '20–50', '51–100', '101–250', '251–500', 'Более 500'];
 
@@ -66,26 +47,13 @@ const EMPTY_FORM: FormState = {
 
 export function LeadFormSection() {
   const [form, setForm] = useState<FormState>(EMPTY_FORM);
-  const [consentGiven, setConsentGiven] = useState(false);
-  const [consentError, setConsentError] = useState(false);
-  /** Optional and entirely independent of the required consent above. */
+  /** Optional, never a condition of submitting, and currently never rendered. */
   const [marketingGiven, setMarketingGiven] = useState(false);
-  /** Captured the moment each box is ticked, not at submit — that is the acknowledgement. */
-  const consentAt = useRef<string | null>(null);
+  /** Captured the moment the box is ticked, not at submit — that is the acknowledgement. */
   const marketingAt = useRef<string | null>(null);
-  const consentInput = useRef<HTMLInputElement>(null);
   const [status, setStatus] = useState<'idle' | 'submitting' | 'success' | 'error'>('idle');
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const hasStarted = useRef(false);
-
-  /**
-   * Native constraint validation would otherwise show a browser-default message
-   * in the browser's own language. Setting a custom validity keeps the blocking
-   * behaviour and makes the message Russian, matching the rest of the form.
-   */
-  useEffect(() => {
-    consentInput.current?.setCustomValidity(consentGiven ? '' : CONSENT_REQUIRED_MESSAGE_RU);
-  }, [consentGiven, status]);
 
   function update<K extends keyof FormState>(key: K, value: FormState[K]) {
     if (!hasStarted.current) {
@@ -98,34 +66,19 @@ export function LeadFormSection() {
   async function onSubmit(e: FormEvent) {
     e.preventDefault();
 
-    // Second layer behind native validation: a submit can still be triggered
-    // programmatically, and the consent must block it in every path. The rule
-    // itself lives in buildLeadSubmission, which returns no payload to send while
-    // the box is unticked — so there is no path here that can send one.
-    const submission = buildLeadSubmission(form, {
-      consentGiven,
-      consentAcknowledgedAt: consentAt.current,
+    const payload = buildLeadPayload(form, {
       marketingGiven,
       marketingAcknowledgedAt: marketingAt.current,
     });
 
-    if (submission.blocked) {
-      setConsentError(true);
-      consentInput.current?.focus();
-      return;
-    }
-    setConsentError(false);
-
     setStatus('submitting');
     setErrorMessage(null);
     try {
-      await apiPost('/cash-os-leads', submission.payload);
+      await apiPost('/cash-os-leads', payload);
       trackCtaEvent('form_submit');
       setStatus('success');
       setForm(EMPTY_FORM);
-      setConsentGiven(false);
       setMarketingGiven(false);
-      consentAt.current = null;
       marketingAt.current = null;
       hasStarted.current = false;
     } catch (err) {
@@ -247,47 +200,6 @@ export function LeadFormSection() {
                 </p>
               )}
 
-              {/* Required consent. The wording is rendered from the shared consent
-                  registry and the same string is sent with the submission, so the
-                  stored evidence is provably what the user saw. Do not edit the
-                  sentence here — add a new version in packages/shared/src/consent.ts. */}
-              <div className="mt-6 flex items-start gap-3">
-                <input
-                  ref={consentInput}
-                  id="consent-personal-data"
-                  name="consentPersonalData"
-                  required
-                  type="checkbox"
-                  checked={consentGiven}
-                  aria-describedby={
-                    consentError ? 'consent-personal-data-error' : undefined
-                  }
-                  aria-invalid={consentError || undefined}
-                  onChange={(e) => {
-                    setConsentGiven(e.target.checked);
-                    setConsentError(false);
-                    consentAt.current = e.target.checked ? new Date().toISOString() : null;
-                  }}
-                  className="mt-0.5 h-4 w-4 shrink-0 cursor-pointer rounded border-slate-300 text-blue-600 focus:ring-blue-500"
-                />
-                <label
-                  htmlFor="consent-personal-data"
-                  className="cursor-pointer text-xs leading-relaxed text-slate-600"
-                >
-                  <ConsentSentence segments={CONSENT_SEGMENTS} />
-                </label>
-              </div>
-
-              {consentError && (
-                <p
-                  id="consent-personal-data-error"
-                  role="alert"
-                  className="mt-2 text-xs font-medium text-red-600"
-                >
-                  {CONSENT_REQUIRED_MESSAGE_RU}
-                </p>
-              )}
-
               {/* Optional marketing consent — separate box, separate record, never
                   a condition of submitting. Rendered only when promotional
                   messages are actually sent AND a verified opt-out address exists;
@@ -324,41 +236,22 @@ export function LeadFormSection() {
               >
                 {status === 'submitting' ? 'Отправляем…' : 'Подать заявку'}
               </button>
+
+              {/* Passive notice. Nothing to tick and nothing blocked — the act it
+                  refers to is pressing the button above, which is why it sits
+                  below it. Rendered from the shared registry, and the server
+                  stores that same registry entry as the record of what was
+                  displayed. Do not edit the sentence here: add a new version in
+                  packages/shared/src/consent.ts, or the stored evidence stops
+                  matching what this page actually showed. */}
+              <p id="lead-form-privacy-notice" className="mt-4 text-xs leading-relaxed text-slate-500">
+                {CASH_OS_LEAD_FORM_NOTICE_TEXT}
+              </p>
             </form>
           )}
         </div>
       </Container>
     </Section>
-  );
-}
-
-/**
- * Renders a registered consent wording with its linked phrases as anchors.
- *
- * Both links open in a new tab and stop the click from reaching the surrounding
- * label, so opening either document never toggles the checkbox and never
- * discards a partially filled form or the campaign parameters on the landing URL.
- */
-function ConsentSentence({ segments }: { segments: ConsentTextSegment[] }) {
-  return (
-    <>
-      {segments.map((segment, index) =>
-        segment.href ? (
-          <Link
-            key={index}
-            href={segment.href}
-            target="_blank"
-            rel="noopener noreferrer"
-            onClick={(event) => event.stopPropagation()}
-            className="font-medium text-blue-600 underline underline-offset-2 hover:text-blue-500"
-          >
-            {segment.text}
-          </Link>
-        ) : (
-          <span key={index}>{segment.text}</span>
-        ),
-      )}
-    </>
   );
 }
 

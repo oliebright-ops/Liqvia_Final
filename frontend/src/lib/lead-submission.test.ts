@@ -1,27 +1,28 @@
 /**
- * The rule that an unticked consent produces nothing to send.
+ * What the diagnosis form sends, and — just as importantly — what it does not.
  *
  * Run with:  pnpm --filter @liqvia2/frontend test
  *
- * These assertions are the client half of the pair; the server half lives in
- * `backend/src/cash-os-leads/cash-os-leads.service.spec.ts`, which rejects the
- * same submissions when they arrive by some other route. Neither is sufficient
- * alone: the browser guard protects the user, the server guard is the control.
+ * The form shows a passive notice, so there is no acknowledgement event to
+ * report and the payload must carry no affirmative consent at all. That absence
+ * is the point of most of these assertions: a client that invented an `accepted:
+ * true` would be fabricating an act the visitor never performed. The server half
+ * of the pair lives in `backend/src/cash-os-leads/cash-os-leads.service.spec.ts`.
  */
 import assert from 'node:assert/strict';
 import test from 'node:test';
 import {
-  ACTIVE_CONSENT_VERSION,
-  CASH_OS_LEAD_FORM_CONSENT_TEXT,
+  CASH_OS_LEAD_FORM_NOTICE_TEXT,
+  LEAD_NOTICE_SUBJECT,
+  LEAD_NOTICE_VERSION,
   MARKETING_CONSENT_ENABLED,
-  MARKETING_LEAD_CONSENT_SUBJECT,
-  REQUIRED_LEAD_CONSENT_SUBJECT,
+  lookupConsentText,
 } from './consent';
 import {
   LEAD_FORM_SOURCE,
-  buildLeadSubmission,
-  type ConsentState,
+  buildLeadPayload,
   type LeadFormValues,
+  type MarketingConsentState,
 } from './lead-submission';
 
 const FILLED: LeadFormValues = {
@@ -36,112 +37,63 @@ const FILLED: LeadFormValues = {
 
 const TICKED_AT = '2026-08-10T10:15:00.000Z';
 
-function consentState(overrides: Partial<ConsentState> = {}): ConsentState {
-  return {
-    consentGiven: false,
-    consentAcknowledgedAt: null,
-    marketingGiven: false,
-    marketingAcknowledgedAt: null,
-    ...overrides,
-  };
+function marketingState(overrides: Partial<MarketingConsentState> = {}): MarketingConsentState {
+  return { marketingGiven: false, marketingAcknowledgedAt: null, ...overrides };
 }
 
-test('an unticked consent produces no payload, however complete the rest of the form is', () => {
-  const result = buildLeadSubmission(FILLED, consentState({ consentGiven: false }));
+test('a complete form produces a payload — nothing has to be ticked first', () => {
+  const payload = buildLeadPayload(FILLED, marketingState());
 
-  assert.equal(result.blocked, true);
-  assert.equal(result.blocked && result.reason, 'consent-not-given');
-  // There is deliberately no payload on a blocked result: the caller cannot send
-  // one by mistake, because there is nothing to send.
-  assert.ok(!('payload' in result));
+  assert.equal(payload.name, 'Иван Петров');
+  assert.equal(payload.email, 'ivan@example.com');
 });
 
-test('a ticked consent produces a lead payload carrying its own evidence', () => {
-  const result = buildLeadSubmission(
-    FILLED,
-    consentState({ consentGiven: true, consentAcknowledgedAt: TICKED_AT }),
-  );
+test('the payload claims no affirmative consent, because none was given', () => {
+  const payload = buildLeadPayload(FILLED, marketingState());
 
-  assert.equal(result.blocked, false);
-  if (result.blocked) return;
-
-  assert.deepEqual(result.payload.consent, {
-    subjectId: REQUIRED_LEAD_CONSENT_SUBJECT,
-    version: ACTIVE_CONSENT_VERSION[REQUIRED_LEAD_CONSENT_SUBJECT],
-    consentText: CASH_OS_LEAD_FORM_CONSENT_TEXT,
-    locale: 'ru',
-    accepted: true,
-    acknowledgedAt: TICKED_AT,
-  });
+  // The visitor ticked nothing. A `consent` object here would be the client
+  // manufacturing an acknowledgement, which is exactly what the passive notice
+  // must not do. The notice is recorded server-side from the registry instead.
+  assert.ok(!('consent' in payload));
+  assert.equal(JSON.stringify(payload).includes('accepted'), false);
 });
 
-test('the wording sent as evidence is the registry wording, not a copy that can drift', () => {
-  const result = buildLeadSubmission(
-    FILLED,
-    consentState({ consentGiven: true, consentAcknowledgedAt: TICKED_AT }),
-  );
+test('the notice the form displays is registered, so the server can record it', () => {
+  const entry = lookupConsentText(LEAD_NOTICE_SUBJECT, LEAD_NOTICE_VERSION);
 
-  assert.equal(result.blocked, false);
-  if (result.blocked) return;
-  // Identity, not equality: the payload must reference the registry constant.
-  assert.equal(result.payload.consent.consentText, CASH_OS_LEAD_FORM_CONSENT_TEXT);
-  assert.equal(result.payload.consent.accepted, true);
+  assert.ok(entry, 'the displayed notice must exist in the shared registry');
+  assert.equal(entry.text, CASH_OS_LEAD_FORM_NOTICE_TEXT);
+  // Not `required` and not `optional`: nothing about it is an acknowledgement.
+  assert.equal(entry.obligation, 'notice');
+});
+
+test('the notice states a purpose and names no document the visitor must read', () => {
+  assert.match(CASH_OS_LEAD_FORM_NOTICE_TEXT, /Нажимая кнопку/);
+  assert.match(CASH_OS_LEAD_FORM_NOTICE_TEXT, /в целях обработки вашего обращения/);
+  // The consent and privacy documents are still drafts. A notice that asserts the
+  // visitor has read one of them would be evidence of something untrue.
+  assert.doesNotMatch(CASH_OS_LEAD_FORM_NOTICE_TEXT, /ознакомлен/);
+  assert.doesNotMatch(CASH_OS_LEAD_FORM_NOTICE_TEXT, /Политик/);
 });
 
 test('the lead records which form produced it', () => {
-  const result = buildLeadSubmission(FILLED, consentState({ consentGiven: true }));
+  const payload = buildLeadPayload(FILLED, marketingState());
 
-  assert.equal(result.blocked, false);
-  if (result.blocked) return;
-  assert.equal(result.payload.source, LEAD_FORM_SOURCE);
-  assert.equal(result.payload.source, 'cash-operating-system-landing');
-});
-
-test('the acknowledgement timestamp is when the box was ticked, not when the form was sent', () => {
-  const sentAt = '2026-08-10T18:00:00.000Z';
-  const result = buildLeadSubmission(
-    FILLED,
-    consentState({ consentGiven: true, consentAcknowledgedAt: TICKED_AT }),
-    () => sentAt,
-  );
-
-  assert.equal(result.blocked, false);
-  if (result.blocked) return;
-  assert.equal(result.payload.consent.acknowledgedAt, TICKED_AT);
-  assert.notEqual(result.payload.consent.acknowledgedAt, sentAt);
-});
-
-test('a tick with no recorded moment falls back to now rather than to no timestamp at all', () => {
-  const now = '2026-08-10T18:00:00.000Z';
-  const result = buildLeadSubmission(
-    FILLED,
-    consentState({ consentGiven: true, consentAcknowledgedAt: null }),
-    () => now,
-  );
-
-  assert.equal(result.blocked, false);
-  if (result.blocked) return;
-  assert.equal(result.payload.consent.acknowledgedAt, now);
+  assert.equal(payload.source, LEAD_FORM_SOURCE);
+  assert.equal(payload.source, 'cash-operating-system-landing');
 });
 
 test('empty optional fields are omitted rather than sent as empty strings', () => {
-  const result = buildLeadSubmission(FILLED, consentState({ consentGiven: true }));
+  const payload = buildLeadPayload(FILLED, marketingState());
 
-  assert.equal(result.blocked, false);
-  if (result.blocked) return;
-  assert.equal(result.payload.phone, undefined);
-  assert.equal(result.payload.comment, undefined);
+  assert.equal(payload.phone, undefined);
+  assert.equal(payload.comment, undefined);
 });
 
-test('marketing consent is never inferred from the required consent', () => {
-  const result = buildLeadSubmission(
-    FILLED,
-    consentState({ consentGiven: true, marketingGiven: false }),
-  );
+test('marketing consent is never inferred from the submission itself', () => {
+  const payload = buildLeadPayload(FILLED, marketingState({ marketingGiven: false }));
 
-  assert.equal(result.blocked, false);
-  if (result.blocked) return;
-  assert.equal(result.payload.marketingConsent, undefined);
+  assert.equal(payload.marketingConsent, undefined);
 });
 
 test('no marketing consent is produced while promotional messaging is disabled', () => {
@@ -150,17 +102,10 @@ test('no marketing consent is produced while promotional messaging is disabled',
   // ever flipped on purpose, this expectation must be changed on purpose too.
   assert.equal(MARKETING_CONSENT_ENABLED, false);
 
-  const result = buildLeadSubmission(
+  const payload = buildLeadPayload(
     FILLED,
-    consentState({
-      consentGiven: true,
-      marketingGiven: true,
-      marketingAcknowledgedAt: TICKED_AT,
-    }),
+    marketingState({ marketingGiven: true, marketingAcknowledgedAt: TICKED_AT }),
   );
 
-  assert.equal(result.blocked, false);
-  if (result.blocked) return;
-  assert.equal(result.payload.marketingConsent, undefined);
-  assert.notEqual(result.payload.consent.subjectId, MARKETING_LEAD_CONSENT_SUBJECT);
+  assert.equal(payload.marketingConsent, undefined);
 });

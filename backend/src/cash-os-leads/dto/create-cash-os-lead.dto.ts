@@ -53,12 +53,16 @@ export class CreateCashOsLeadDto {
   @ApiPropertyOptional({ description: 'Campaign/CTA tag the lead came from', example: 'pilot-programme' })
   source?: string;
 
-  @ApiProperty({
+  @ApiPropertyOptional({
     description:
-      'Evidence of the required personal-data consent the user ticked. Required — the submission is rejected without it.',
+      'Evidence of an affirmative personal-data consent the user ticked. Optional, because the ' +
+      'lead form now shows a passive notice and there is no tick to report; a client that omits ' +
+      'this gets the notice recorded server-side instead. When present it must be a genuine ' +
+      'acknowledgement — a registered required wording with `accepted: true` — or the submission ' +
+      'is rejected rather than downgraded to a notice.',
     type: () => LeadConsentDto,
   })
-  consent!: LeadConsentDto;
+  consent?: LeadConsentDto;
 
   @ApiPropertyOptional({
     description:

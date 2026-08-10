@@ -6,7 +6,10 @@ import {
 } from '@nestjs/common';
 import {
   ACTIVE_CONSENT_VERSION,
+  CASH_OS_LEAD_FORM_NOTICE_TEXT,
   CONSENT_REQUIRED_MESSAGE_RU,
+  LEAD_NOTICE_SUBJECT,
+  LEAD_NOTICE_VERSION,
   MARKETING_CONSENT_ENABLED,
   MARKETING_LEAD_CONSENT_SUBJECT,
   REQUIRED_LEAD_CONSENT_SUBJECT,
@@ -85,7 +88,9 @@ export class CashOsLeadsService {
     }
 
     this.assertWithinLengthLimits(dto);
-    this.assertRequiredConsent(dto.consent);
+    if (dto.consent) {
+      this.assertAffirmativeConsent(dto.consent);
+    }
     const marketingConsent = this.resolveMarketingConsent(dto.marketingConsent);
 
     // Lead and consent records are written in one transaction: a lead must never
@@ -134,16 +139,37 @@ export class CashOsLeadsService {
         },
       });
 
-      await this.consent.recordWithin(tx, {
-        subjectId: dto.consent.subjectId,
-        version: dto.consent.version,
-        consentText: dto.consent.consentText,
-        locale: dto.consent.locale,
-        acknowledgedAt: dto.consent.acknowledgedAt,
-        method: 'checkbox',
-        source: dto.source,
-        cashOsLeadId: lead.id,
-      });
+      if (dto.consent) {
+        // A real tick, from a client that still renders the checkbox.
+        await this.consent.recordWithin(tx, {
+          subjectId: dto.consent.subjectId,
+          version: dto.consent.version,
+          consentText: dto.consent.consentText,
+          locale: dto.consent.locale,
+          acknowledgedAt: dto.consent.acknowledgedAt,
+          method: 'checkbox',
+          source: dto.source,
+          cashOsLeadId: lead.id,
+        });
+      } else {
+        // No tick happened, so the record must not claim one. What it records is
+        // the true fact: this wording was displayed at the point of submission.
+        //
+        // Every field comes from the server's own registry rather than the
+        // request — a passive notice is a property of the page, not something the
+        // caller can report, so there is nothing here for a caller to forge. The
+        // timestamp is deliberately left to the server: submission time is when
+        // the notice was acted on, and there is no earlier moment to claim.
+        await this.consent.recordWithin(tx, {
+          subjectId: LEAD_NOTICE_SUBJECT,
+          version: LEAD_NOTICE_VERSION,
+          consentText: CASH_OS_LEAD_FORM_NOTICE_TEXT,
+          locale: 'ru',
+          method: 'passive-notice',
+          source: dto.source,
+          cashOsLeadId: lead.id,
+        });
+      }
 
       // A second, independent record. The marketing consent is never inferred
       // from the required one and never shares a row with it.
@@ -197,20 +223,27 @@ export class CashOsLeadsService {
   }
 
   /**
-   * Server-side enforcement of the required consent.
+   * Validates an affirmative consent when a client sends one.
    *
-   * The browser checkbox is a usability affordance, not a control: anything can
-   * POST to this endpoint. A submission is accepted only when it carries the
-   * required notice, a wording version that this server actually knows, and an
-   * affirmative acknowledgement.
+   * The form itself no longer shows a checkbox, so the shipped client sends
+   * nothing here and `create` records the passive notice instead. This path
+   * exists for the clients that still do: a browser holding a cached bundle from
+   * before the change, where a person genuinely ticked a box and that tick is
+   * evidence worth keeping.
    *
-   * Any *registered* version is accepted rather than only the active one, so a
-   * browser holding a cached bundle across a wording change still delivers its
-   * lead — the stored evidence records which version that person actually saw.
-   * A superseded version is logged so the rollout can be observed.
+   * It stays strict. An acknowledgement that arrives malformed is rejected rather
+   * than quietly downgraded to a notice, because "we could not make sense of your
+   * consent claim, so we filed it as something weaker" is how evidence silently
+   * becomes wrong. Anything can POST to this endpoint; a claim of an affirmative
+   * act is only stored as one when it holds up.
+   *
+   * Any *registered* required version is accepted rather than only the active
+   * one, so a stale bundle still delivers its lead against the wording that
+   * person actually saw. A superseded version is logged so the rollout can be
+   * observed.
    */
-  private assertRequiredConsent(consent: LeadConsentDto | undefined): void {
-    if (!consent?.subjectId || !consent?.version) {
+  private assertAffirmativeConsent(consent: LeadConsentDto): void {
+    if (!consent.subjectId || !consent.version) {
       throw new BadRequestException(CONSENT_REQUIRED_MESSAGE_RU);
     }
     if (consent.subjectId !== REQUIRED_LEAD_CONSENT_SUBJECT) {

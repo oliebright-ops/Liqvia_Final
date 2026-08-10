@@ -1,15 +1,24 @@
 /**
- * Server-side enforcement of the landing-page consent.
+ * What the lead endpoint accepts, and what it writes as evidence.
  *
- * The checkbox in the browser is a usability affordance, not a control — anything
- * can POST to this endpoint. These tests exercise the endpoint's own rules, with
- * no database: the transaction is faked so the assertions are about what the
- * service accepts and what it writes, not about Prisma.
+ * The form shows a passive notice, so the shipped client sends no consent object
+ * and the server records the notice itself. The central rule these tests hold in
+ * place is that the two cases stay distinguishable in the database: a submission
+ * where nobody ticked anything must never produce a row that looks like a tick.
+ *
+ * Anything can POST here, so the affirmative path — still reachable from a cached
+ * pre-change bundle — is exercised too, and stays strict.
+ *
+ * No database: the transaction is faked, so the assertions are about the
+ * service's own rules rather than about Prisma.
  */
 import { BadRequestException } from '@nestjs/common';
 import {
   ACTIVE_CONSENT_VERSION,
   CASH_OS_LEAD_FORM_CONSENT_TEXT,
+  CASH_OS_LEAD_FORM_NOTICE_TEXT,
+  LEAD_NOTICE_SUBJECT,
+  LEAD_NOTICE_VERSION,
   MARKETING_LEAD_CONSENT_SUBJECT,
   REQUIRED_LEAD_CONSENT_SUBJECT,
 } from '@liqvia2/shared';
@@ -51,25 +60,33 @@ function build() {
   return { service, written };
 }
 
+/** What the shipped client sends: a filled form and no consent claim of any kind. */
 function validDto(overrides: Partial<CreateCashOsLeadDto> = {}): CreateCashOsLeadDto {
   return {
     name: 'Иван Петров',
     companyName: 'ООО «Пример»',
     email: 'ivan@example.com',
-    consent: {
-      subjectId: REQUIRED_LEAD_CONSENT_SUBJECT,
-      version: ACTIVE_VERSION,
-      consentText: CASH_OS_LEAD_FORM_CONSENT_TEXT,
-      locale: 'ru',
-      accepted: true,
-      acknowledgedAt: new Date().toISOString(),
-    },
     ...overrides,
   } as CreateCashOsLeadDto;
 }
 
-describe('CashOsLeadsService — required consent', () => {
-  it('accepts a submission carrying the active consent and records both rows in one transaction', async () => {
+type Consent = NonNullable<CreateCashOsLeadDto['consent']>;
+
+/** A genuine tick, as a cached pre-change bundle still posts one. */
+function tickedConsent(overrides: Partial<Consent> = {}): Consent {
+  return {
+    subjectId: REQUIRED_LEAD_CONSENT_SUBJECT,
+    version: ACTIVE_VERSION,
+    consentText: CASH_OS_LEAD_FORM_CONSENT_TEXT,
+    locale: 'ru',
+    accepted: true,
+    acknowledgedAt: new Date().toISOString(),
+    ...overrides,
+  } as Consent;
+}
+
+describe('CashOsLeadsService — passive notice', () => {
+  it('accepts a submission with no consent object and records both rows in one transaction', async () => {
     const { service, written } = build();
 
     await expect(service.create(validDto())).resolves.toEqual({ status: 'ok' });
@@ -77,63 +94,57 @@ describe('CashOsLeadsService — required consent', () => {
     expect(written.leads).toHaveLength(1);
     expect(written.consents).toHaveLength(1);
     expect(written.consents[0]).toMatchObject({
-      subjectId: REQUIRED_LEAD_CONSENT_SUBJECT,
-      version: ACTIVE_VERSION,
+      subjectId: LEAD_NOTICE_SUBJECT,
+      version: LEAD_NOTICE_VERSION,
       locale: 'ru',
-      method: 'checkbox',
       textVerified: true,
       cashOsLeadId: 'lead-1',
     });
-    expect(written.consents[0].consentText).toBe(CASH_OS_LEAD_FORM_CONSENT_TEXT);
+    expect(written.consents[0].consentText).toBe(CASH_OS_LEAD_FORM_NOTICE_TEXT);
   });
 
-  it('records the acknowledgement timestamp the client reported when it is plausible', async () => {
-    const { service, written } = build();
-    const acknowledgedAt = new Date(Date.now() - 30_000).toISOString();
-
-    await service.create(validDto({ consent: { ...validDto().consent, acknowledgedAt } }));
-
-    expect((written.consents[0].acknowledgedAt as Date).toISOString()).toBe(acknowledgedAt);
-  });
-
-  it('rejects a submission with no consent at all', async () => {
+  it('records the notice as a notice, never as a tick', async () => {
+    // The whole point of the passive flow: the row must not claim an act the
+    // visitor did not perform, and must stay distinguishable from one that did.
     const { service, written } = build();
 
-    await expect(
-      service.create(validDto({ consent: undefined as unknown as CreateCashOsLeadDto['consent'] })),
-    ).rejects.toBeInstanceOf(BadRequestException);
-    expect(written.leads).toHaveLength(0);
+    await service.create(validDto());
+
+    expect(written.consents[0].method).toBe('passive-notice');
+    expect(written.consents[0].method).not.toBe('checkbox');
   });
 
-  it('rejects an explicit refusal even when the wording is present', async () => {
+  it('records the wording from the server registry, not from the request', async () => {
+    // A passive notice is a property of the page, so a caller cannot report one —
+    // and must not be able to substitute a wording of its own choosing.
     const { service, written } = build();
 
-    await expect(
-      service.create(validDto({ consent: { ...validDto().consent, accepted: false } })),
-    ).rejects.toThrow(/согласие на обработку персональных данных/i);
-    expect(written.leads).toHaveLength(0);
+    await service.create(
+      validDto({ consentText: 'что-то придуманное' } as Partial<CreateCashOsLeadDto>),
+    );
+
+    expect(written.consents[0].consentText).toBe(CASH_OS_LEAD_FORM_NOTICE_TEXT);
   });
 
-  it('rejects a consent whose `accepted` flag is missing rather than affirmative', async () => {
-    // An omitted flag is not a refusal, but it is not a conscious acknowledgement
-    // either. Silence must not be stored as evidence that someone agreed.
+  it('timestamps the notice at submission time rather than trusting the client', async () => {
     const { service, written } = build();
-    const { accepted: _omitted, ...withoutFlag } = validDto().consent;
+    const before = Date.now();
 
-    await expect(
-      service.create(validDto({ consent: withoutFlag as CreateCashOsLeadDto['consent'] })),
-    ).rejects.toBeInstanceOf(BadRequestException);
-    expect(written.leads).toHaveLength(0);
-    expect(written.consents).toHaveLength(0);
+    await service.create(validDto());
+
+    const acknowledgedAt = written.consents[0].acknowledgedAt as Date;
+    expect(acknowledgedAt.getTime()).toBeGreaterThanOrEqual(before);
+    expect(acknowledgedAt.getTime()).toBeLessThanOrEqual(Date.now());
   });
 
-  it('records which form the acknowledgement came from', async () => {
+  it('records which form displayed the notice, on both the lead and the evidence', async () => {
     // The consent link is SetNull, so a hard-deleted lead must not take the
     // answer to "obtained on which form?" with it.
     const { service, written } = build();
 
     await service.create(validDto({ source: 'cash-operating-system-landing' }));
 
+    expect(written.leads[0]).toMatchObject({ source: 'cash-operating-system-landing' });
     expect(written.consents[0]).toMatchObject({ source: 'cash-operating-system-landing' });
   });
 
@@ -142,14 +153,84 @@ describe('CashOsLeadsService — required consent', () => {
 
     await service.create(validDto({ source: undefined }));
 
+    expect(written.leads[0]).toMatchObject({ source: null });
     expect(written.consents[0]).toMatchObject({ source: null });
+  });
+});
+
+describe('CashOsLeadsService — affirmative consent from a cached client', () => {
+  it('accepts a genuine tick and records it as one', async () => {
+    const { service, written } = build();
+
+    await expect(service.create(validDto({ consent: tickedConsent() }))).resolves.toEqual({
+      status: 'ok',
+    });
+
+    expect(written.consents).toHaveLength(1);
+    expect(written.consents[0]).toMatchObject({
+      subjectId: REQUIRED_LEAD_CONSENT_SUBJECT,
+      version: ACTIVE_VERSION,
+      method: 'checkbox',
+      textVerified: true,
+    });
+  });
+
+  it('records the acknowledgement timestamp the client reported when it is plausible', async () => {
+    const { service, written } = build();
+    const acknowledgedAt = new Date(Date.now() - 30_000).toISOString();
+
+    await service.create(validDto({ consent: tickedConsent({ acknowledgedAt }) }));
+
+    expect((written.consents[0].acknowledgedAt as Date).toISOString()).toBe(acknowledgedAt);
+  });
+
+  it('rejects an explicit refusal rather than downgrading it to a notice', async () => {
+    // Someone who unticked the box on a cached bundle refused. Storing the passive
+    // notice instead would overwrite that refusal with something weaker.
+    const { service, written } = build();
+
+    await expect(
+      service.create(validDto({ consent: tickedConsent({ accepted: false }) })),
+    ).rejects.toThrow(/согласие на обработку персональных данных/i);
+    expect(written.leads).toHaveLength(0);
+  });
+
+  it('rejects a consent whose `accepted` flag is missing rather than affirmative', async () => {
+    // An omitted flag is not a refusal, but it is not a conscious acknowledgement
+    // either. Silence must not be stored as evidence that someone agreed.
+    const { service, written } = build();
+    const { accepted: _omitted, ...withoutFlag } = tickedConsent();
+
+    await expect(
+      service.create(validDto({ consent: withoutFlag as CreateCashOsLeadDto['consent'] })),
+    ).rejects.toBeInstanceOf(BadRequestException);
+    expect(written.leads).toHaveLength(0);
+    expect(written.consents).toHaveLength(0);
+  });
+
+  it('refuses to store the passive notice as though it were a tick', async () => {
+    // The notice is registered, so a caller can name it — but it is registered as
+    // `notice`, and the affirmative path accepts only `required` wordings.
+    const { service, written } = build();
+
+    await expect(
+      service.create(
+        validDto({
+          consent: tickedConsent({
+            version: LEAD_NOTICE_VERSION,
+            consentText: CASH_OS_LEAD_FORM_NOTICE_TEXT,
+          }),
+        }),
+      ),
+    ).rejects.toBeInstanceOf(BadRequestException);
+    expect(written.leads).toHaveLength(0);
   });
 
   it('rejects a consent version this server does not know', async () => {
     const { service } = build();
 
     await expect(
-      service.create(validDto({ consent: { ...validDto().consent, version: '1999-01-01.1' } })),
+      service.create(validDto({ consent: tickedConsent({ version: '1999-01-01.1' }) })),
     ).rejects.toBeInstanceOf(BadRequestException);
   });
 
@@ -158,9 +239,7 @@ describe('CashOsLeadsService — required consent', () => {
 
     await expect(
       service.create(
-        validDto({
-          consent: { ...validDto().consent, subjectId: MARKETING_LEAD_CONSENT_SUBJECT },
-        }),
+        validDto({ consent: tickedConsent({ subjectId: MARKETING_LEAD_CONSENT_SUBJECT }) }),
       ),
     ).rejects.toBeInstanceOf(BadRequestException);
   });
@@ -173,13 +252,10 @@ describe('CashOsLeadsService — required consent', () => {
     await expect(
       service.create(
         validDto({
-          consent: {
-            subjectId: REQUIRED_LEAD_CONSENT_SUBJECT,
+          consent: tickedConsent({
             version: '2026-08-09.1',
             consentText: 'что-то устаревшее',
-            locale: 'ru',
-            accepted: true,
-          },
+          }),
         }),
       ),
     ).resolves.toEqual({ status: 'ok' });

@@ -149,8 +149,8 @@ describe('RU lead personal data → never in logs', () => {
   it('logs nothing identifying when a superseded consent version is used', async () => {
     const { service } = buildService();
     const dto = validDto();
-    dto.consent.version = '2026-08-09.1';
-    dto.consent.consentText = 'Отправляя форму, вы соглашаетесь…';
+    dto.consent!.version = '2026-08-09.1';
+    dto.consent!.consentText = 'Отправляя форму, вы соглашаетесь…';
 
     await service.create(dto);
     assertNoIdentityLogged();

@@ -31,8 +31,15 @@ export type ConsentSubjectId = 'cash-os-lead-form' | 'cash-os-lead-marketing';
  * `required` notices block the submission they belong to. `optional` notices are
  * recorded separately and must never gate anything — mixing the two is precisely
  * the defect that makes a marketing consent unusable as evidence.
+ *
+ * `notice` is neither: nothing is ticked and nothing is blocked. It is a passive
+ * statement displayed at the point of submission, and the record of it says only
+ * "this wording was on the page when this lead was sent" — never that the person
+ * performed an affirmative act. Storing one as `required` would be manufacturing
+ * an acknowledgement that did not happen, which is the whole reason the three are
+ * distinguished here rather than at the call site.
  */
-export type ConsentObligation = 'required' | 'optional';
+export type ConsentObligation = 'required' | 'optional' | 'notice';
 
 export interface ConsentTextEntry {
   id: ConsentSubjectId;
@@ -100,6 +107,39 @@ export const CASH_OS_LEAD_FORM_CONSENT_TEXT =
   'со мной, организации и проведения консультации в соответствии с отдельным ' +
   `${CONSENT_LINK_PHRASES.consentDocument}. Я ознакомлен(а) с ` +
   `${CONSENT_LINK_PHRASES.privacyPolicy}.`;
+
+/**
+ * Passive notice shown immediately below the submit button.
+ *
+ * This is what the lead form actually displays. The affirmative checkbox above
+ * (`2026-08-10.1`) stays registered but is not rendered: it asked the visitor to
+ * confirm they had read `/consent` and `/privacy`, and those two documents are
+ * still drafts that render «НЕ УСТАНОВЛЕНО» markers behind a "not in force"
+ * banner. Asking someone to tick "I have read this" against an unfinished
+ * document produces evidence of something that cannot be true, which is worse
+ * than the passive notice it replaced.
+ *
+ * So the wording names no document and asks for no act. It states the purpose —
+ * handling the enquiry the visitor is sending — and nothing wider, because the
+ * purpose is the one part of the notice that must hold without the documents.
+ *
+ * The V1 wording above is the site's own earlier passive notice and was the
+ * obvious thing to restore, but it points at a «Политика конфиденциальности»
+ * that is exactly one of the drafts, and adds a third-party-transfer promise
+ * that belongs in a policy rather than in a one-line notice. Hence a new
+ * version rather than a revival of that one.
+ *
+ * Registered as a `notice`, so the server can store what was displayed without
+ * any code path being able to mistake it for a tick.
+ */
+export const CASH_OS_LEAD_FORM_NOTICE_TEXT =
+  'Нажимая кнопку, вы соглашаетесь на обработку персональных данных ' +
+  'в целях обработки вашего обращения.';
+
+/** Subject the passive lead-form notice is recorded under. */
+export const LEAD_NOTICE_SUBJECT: ConsentSubjectId = 'cash-os-lead-form';
+/** Version of the passive notice this build renders. */
+export const LEAD_NOTICE_VERSION = '2026-08-10.2';
 
 /**
  * Optional marketing consent.
@@ -179,6 +219,17 @@ function buildArchive(): Record<string, ConsentTextEntry> {
       policyVersion: CONSENT_POLICY_VERSION,
       obligation: 'required',
     }),
+    // The wording the form displays today. It supersedes 2026-08-10.1 on the page
+    // but not in the archive: a browser still holding the previous bundle posts a
+    // genuine tick against that version, and the server must keep accepting it.
+    registerEntry({
+      id: LEAD_NOTICE_SUBJECT,
+      version: LEAD_NOTICE_VERSION,
+      locale: 'ru',
+      text: CASH_OS_LEAD_FORM_NOTICE_TEXT,
+      policyVersion: CONSENT_POLICY_VERSION,
+      obligation: 'notice',
+    }),
   ];
 
   // Registered only when marketing consent is genuinely enabled — not merely when
@@ -207,7 +258,14 @@ export const CONSENT_TEXT_ARCHIVE: Readonly<Record<string, ConsentTextEntry>> = 
   buildArchive(),
 );
 
-/** The version currently in use for each consent subject. */
+/**
+ * The version currently in use for each *affirmative* consent subject.
+ *
+ * Not the same thing as "what the lead form shows": the form shows
+ * `LEAD_NOTICE_VERSION`, a passive notice. This map covers the versions a client
+ * may submit as an acknowledgement, and the lead-form entry is kept here so a
+ * stale bundle's genuine tick is still recognised as the current wording.
+ */
 export const ACTIVE_CONSENT_VERSION: Readonly<Record<ConsentSubjectId, string>> = Object.freeze({
   'cash-os-lead-form': '2026-08-10.1',
   'cash-os-lead-marketing': '2026-08-10.1',

@@ -29,6 +29,9 @@ import { PrismaClient } from '@prisma/client';
 import {
   ACTIVE_CONSENT_VERSION,
   CASH_OS_LEAD_FORM_CONSENT_TEXT,
+  CASH_OS_LEAD_FORM_NOTICE_TEXT,
+  LEAD_NOTICE_SUBJECT,
+  LEAD_NOTICE_VERSION,
   REQUIRED_LEAD_CONSENT_SUBJECT,
 } from '@liqvia2/shared';
 import { ConsentService, sha256Hex } from '../consent/consent.service';
@@ -143,9 +146,33 @@ describeIfConfigured('lead + consent persistence (real database)', () => {
     expect(consent.acknowledgedAt).toBeInstanceOf(Date);
   });
 
+  it('records the passive notice when the form sends no consent object', async () => {
+    // The path the shipped client actually takes. The row must exist — it is the
+    // record of what was displayed — and must be distinguishable from a tick.
+    const dto = validDto({ email: `notice-${Date.now()}@example.test` });
+    delete dto.consent;
+
+    await expect(service.create(dto)).resolves.toEqual({ status: 'ok' });
+
+    const lead = await prisma.cashOsLead.findFirst({ where: { email: dto.email } });
+    expect(lead).not.toBeNull();
+    createdLeadIds.push(lead!.id);
+
+    const consents = await prisma.consentRecord.findMany({ where: { cashOsLeadId: lead!.id } });
+    expect(consents).toHaveLength(1);
+    expect(consents[0]).toMatchObject({
+      subjectId: LEAD_NOTICE_SUBJECT,
+      version: LEAD_NOTICE_VERSION,
+      method: 'passive-notice',
+      textVerified: true,
+      source: 'cash-operating-system-landing',
+    });
+    expect(consents[0].consentText).toBe(CASH_OS_LEAD_FORM_NOTICE_TEXT);
+  });
+
   it('writes neither row when the consent was not given', async () => {
     const dto = validDto({ email: `refused-${Date.now()}@example.test` });
-    dto.consent.accepted = false;
+    dto.consent!.accepted = false;
 
     await expect(service.create(dto)).rejects.toThrow();
 
