@@ -31,14 +31,19 @@ import { LegalBackLink, LegalSection, OperatorIdentity } from '@/components/lega
  * them. `/consent` still uses it, and it stays in place unchanged.
  *
  * The wording is amended in place under `CONSENT_POLICY_VERSION` 2026-08-10.1
- * rather than under a new version, on the same basis as the one recorded in
- * `packages/shared/src/consent.ts`: at the time of the amendment no stored
- * `ConsentRecord` referenced that policy version (the sole record in the RU
- * database was a synthetic launch test, deleted 2026-08-10). Bumping the
- * constant would have rewritten the `policyVersion` of every archived consent
- * entry, which is the thing the append-only rule exists to prevent. From the
- * first real lead onwards, a material change here needs a new version and a
- * matching consent-text entry.
+ * rather than under a new version. That is a deliberate exception, not the rule,
+ * and the reason is mechanical: `policyVersion` on every entry in
+ * `CONSENT_TEXT_ARCHIVE` is the constant itself, so bumping it would rewrite the
+ * policy version of wordings already registered — the precise thing the
+ * append-only rule exists to prevent. Four `ConsentRecord` rows in the RU
+ * database do carry `policyVersion = 2026-08-10.1`; all four are `checkbox`
+ * records written during the 2026-08-09 migration and restore probes, none from
+ * a visitor acting on this page. The superseded text is preserved in Git at
+ * `4d917c3`. See `docs/legal/PRIVACY_POLICY_REVIEW_NOTES.md`.
+ *
+ * From the first real lead onwards this exception is spent: a material change
+ * here needs a new policy version, and the archive must be restructured so a
+ * bump cannot rewrite past entries.
  */
 
 export const metadata: Metadata = {
