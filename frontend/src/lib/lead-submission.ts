@@ -15,6 +15,7 @@
  * all, so it still travels as evidence — and it is currently never shown, because
  * `MARKETING_CONSENT_ENABLED` is false.
  */
+import type { LeadAttribution } from '@liqvia2/shared';
 import {
   ACTIVE_CONSENT_VERSION,
   CASH_OS_LEAD_MARKETING_CONSENT_TEXT,
@@ -66,6 +67,13 @@ export interface LeadPayload {
   comment?: string;
   source: string;
   marketingConsent?: ConsentEvidence;
+  /**
+   * Campaign metadata for the visit, omitted entirely when the visit carried no
+   * tags. Sent as a nested object rather than flattened into the lead's own
+   * fields, so that "what the person typed" and "what the advert was" stay
+   * visibly separate all the way down to the database.
+   */
+  attribution?: LeadAttribution;
 }
 
 /**
@@ -76,6 +84,7 @@ export function buildLeadPayload(
   values: LeadFormValues,
   marketing: MarketingConsentState,
   nowIso: () => string = () => new Date().toISOString(),
+  attribution: LeadAttribution = {},
 ): LeadPayload {
   const payload: LeadPayload = {
     name: values.name,
@@ -99,6 +108,12 @@ export function buildLeadPayload(
       accepted: true,
       acknowledgedAt: marketing.marketingAcknowledgedAt ?? nowIso(),
     };
+  }
+
+  // Omitted rather than sent empty, so an untagged visit is recorded as having no
+  // attribution rather than as having blank attribution.
+  if (Object.keys(attribution).length > 0) {
+    payload.attribution = attribution;
   }
 
   return payload;

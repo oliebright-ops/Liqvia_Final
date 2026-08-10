@@ -1,7 +1,8 @@
 'use client';
 
-import { FormEvent, ReactNode, useRef, useState } from 'react';
+import { FormEvent, ReactNode, useEffect, useRef, useState } from 'react';
 import { apiPost } from '@/lib/api';
+import { captureLeadAttribution, readLeadAttribution } from '@/lib/lead-attribution-capture';
 import {
   CASH_OS_LEAD_FORM_NOTICE_TEXT,
   CASH_OS_LEAD_MARKETING_CONSENT_TEXT,
@@ -55,6 +56,17 @@ export function LeadFormSection() {
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const hasStarted = useRef(false);
 
+  /**
+   * Record which advert brought this visitor, once, on arrival.
+   *
+   * It has to happen here rather than at submit time: the query string is gone
+   * by then if the visitor followed the privacy link and came back. See
+   * lead-attribution-capture.ts.
+   */
+  useEffect(() => {
+    captureLeadAttribution();
+  }, []);
+
   function update<K extends keyof FormState>(key: K, value: FormState[K]) {
     if (!hasStarted.current) {
       hasStarted.current = true;
@@ -66,10 +78,12 @@ export function LeadFormSection() {
   async function onSubmit(e: FormEvent) {
     e.preventDefault();
 
-    const payload = buildLeadPayload(form, {
-      marketingGiven,
-      marketingAcknowledgedAt: marketingAt.current,
-    });
+    const payload = buildLeadPayload(
+      form,
+      { marketingGiven, marketingAcknowledgedAt: marketingAt.current },
+      undefined,
+      readLeadAttribution(),
+    );
 
     setStatus('submitting');
     setErrorMessage(null);

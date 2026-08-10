@@ -14,12 +14,15 @@ import {
   MARKETING_LEAD_CONSENT_SUBJECT,
   REQUIRED_LEAD_CONSENT_SUBJECT,
   lookupConsentText,
+  normaliseLeadAttribution,
+  type LeadAttribution,
 } from '@liqvia2/shared';
 import { PrismaService } from '../prisma/prisma.service';
 import { ConsentService } from '../consent/consent.service';
 import { currentDataPlane } from '../residency/data-plane';
 import { describeErrorClassForLog } from '../security/log-redaction';
 import { CreateCashOsLeadDto, LeadConsentDto } from './dto/create-cash-os-lead.dto';
+import { LeadNotificationService } from './lead-notification.service';
 
 const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
@@ -70,6 +73,7 @@ export class CashOsLeadsService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly consent: ConsentService,
+    private readonly notifications: LeadNotificationService,
   ) {}
 
   async create(dto: CreateCashOsLeadDto) {
@@ -93,10 +97,16 @@ export class CashOsLeadsService {
     }
     const marketingConsent = this.resolveMarketingConsent(dto.marketingConsent);
 
+    // Re-sanitised server-side regardless of what the browser did: the values
+    // originate in a query string, so they are attacker-controlled. Never throws —
+    // unusable attribution yields {} and the lead proceeds without it.
+    const attribution = normaliseLeadAttribution(dto.attribution);
+
     // Lead and consent records are written in one transaction: a lead must never
     // exist without its evidence, and evidence must never point at a missing lead.
+    let lead: { id: string; createdAt: Date };
     try {
-      await this.writeLead(dto, name, companyName, email, marketingConsent);
+      lead = await this.writeLead(dto, name, companyName, email, marketingConsent, attribution);
     } catch (err) {
       // Fail closed. There is deliberately no second destination to try: on the RU
       // plane the only correct outcome of an unavailable RU database is that no
@@ -114,6 +124,37 @@ export class CashOsLeadsService {
       throw new ServiceUnavailableException(LEAD_STORAGE_UNAVAILABLE_MESSAGE_RU);
     }
 
+    // Deliberately not awaited. The lead is committed and the visitor is owed an
+    // answer now; an SMTP handshake can take seconds, and making someone watch a
+    // spinner while a mail server is contacted would be the wrong trade. The
+    // database row, not the message, is the record of the lead.
+    //
+    // The `.catch` is not redundant defensiveness: an un-awaited promise that
+    // rejects is an unhandled rejection, which on a modern Node default takes the
+    // whole process down. The notifier is written not to throw, but the lead path
+    // must not depend on that remaining true.
+    this.notifications
+      .notify({
+        leadId: lead.id,
+        name,
+        companyName,
+        email,
+        phone: dto.phone?.trim() || null,
+        role: dto.role?.trim() || null,
+        employeeCount: dto.employeeCount?.trim() || null,
+        industry: dto.industry?.trim() || null,
+        comment: dto.comment?.trim() || null,
+        source: dto.source?.trim() || null,
+        attribution,
+        receivedAt: lead.createdAt,
+      })
+      .catch((err: unknown) => {
+        this.logger.error(
+          `Lead notification threw unexpectedly: ${describeErrorClassForLog(err)}. ` +
+            'The lead itself is stored.',
+        );
+      });
+
     return { status: 'ok' as const };
   }
 
@@ -123,8 +164,9 @@ export class CashOsLeadsService {
     companyName: string,
     email: string,
     marketingConsent: LeadConsentDto | null,
-  ): Promise<void> {
-    await this.prisma.$transaction(async (tx) => {
+    attribution: LeadAttribution,
+  ): Promise<{ id: string; createdAt: Date }> {
+    return this.prisma.$transaction(async (tx) => {
       const lead = await tx.cashOsLead.create({
         data: {
           name,
@@ -136,6 +178,9 @@ export class CashOsLeadsService {
           industry: dto.industry?.trim() || null,
           comment: dto.comment?.trim() || null,
           source: dto.source?.trim() || null,
+          // Spread of an already-sanitised object with a closed set of keys, so a
+          // caller cannot reach any other column through it.
+          ...attribution,
         },
       });
 
@@ -185,6 +230,8 @@ export class CashOsLeadsService {
           cashOsLeadId: lead.id,
         });
       }
+
+      return { id: lead.id, createdAt: lead.createdAt };
     });
   }
 

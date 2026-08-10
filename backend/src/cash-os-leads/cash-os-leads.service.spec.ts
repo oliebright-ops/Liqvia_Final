@@ -26,6 +26,7 @@ import { ConsentService } from '../consent/consent.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { CashOsLeadsService } from './cash-os-leads.service';
 import { CreateCashOsLeadDto } from './dto/create-cash-os-lead.dto';
+import { stubNotifications } from './notification-double';
 
 const ACTIVE_VERSION = ACTIVE_CONSENT_VERSION[REQUIRED_LEAD_CONSENT_SUBJECT];
 
@@ -56,7 +57,11 @@ function build() {
     $transaction: jest.fn(async (fn: (client: typeof tx) => Promise<unknown>) => fn(tx)),
   } as unknown as PrismaService;
 
-  const service = new CashOsLeadsService(prisma, new ConsentService(prisma));
+  const service = new CashOsLeadsService(
+    prisma,
+    new ConsentService(prisma),
+    stubNotifications(),
+  );
   return { service, written };
 }
 

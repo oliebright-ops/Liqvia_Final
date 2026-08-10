@@ -25,6 +25,39 @@ export class LeadConsentDto {
   acknowledgedAt?: string;
 }
 
+/**
+ * Campaign metadata for the visit that produced the lead.
+ *
+ * Every field is attacker-controlled — anyone can craft a landing URL or POST
+ * here directly — so the server re-sanitises all of it through
+ * `normaliseLeadAttribution` and never stores what arrives verbatim.
+ */
+export class LeadAttributionDto {
+  @ApiPropertyOptional({ description: 'utm_source', example: 'yandex' })
+  utmSource?: string;
+
+  @ApiPropertyOptional({ description: 'utm_medium', example: 'cpc' })
+  utmMedium?: string;
+
+  @ApiPropertyOptional({ description: 'utm_campaign', example: 'ru_cash_visibility_01' })
+  utmCampaign?: string;
+
+  @ApiPropertyOptional({ description: 'utm_content — usually the ad id', example: '15382947361' })
+  utmContent?: string;
+
+  @ApiPropertyOptional({
+    description: 'utm_term — the matched search keyword, not anything the visitor typed',
+    example: 'кассовый разрыв прогноз',
+  })
+  utmTerm?: string;
+
+  @ApiPropertyOptional({
+    description: 'Yandex click identifier. Stored for attribution; never sent back to Yandex.',
+    example: '17395028461230004321',
+  })
+  yclid?: string;
+}
+
 export class CreateCashOsLeadDto {
   @ApiProperty({ example: 'Иван Петров' })
   name!: string;
@@ -70,4 +103,12 @@ export class CreateCashOsLeadDto {
     type: () => LeadConsentDto,
   })
   marketingConsent?: LeadConsentDto;
+
+  @ApiPropertyOptional({
+    description:
+      'Campaign metadata captured from the landing URL. Absent for organic or direct visits. ' +
+      'Never gates the submission: unusable attribution is dropped and the lead is still stored.',
+    type: () => LeadAttributionDto,
+  })
+  attribution?: LeadAttributionDto;
 }

@@ -38,6 +38,7 @@ import { ConsentService, sha256Hex } from '../consent/consent.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { CashOsLeadsService } from './cash-os-leads.service';
 import { CreateCashOsLeadDto } from './dto/create-cash-os-lead.dto';
+import { stubNotifications } from './notification-double';
 
 const TEST_DATABASE_URL = process.env.CONSENT_TEST_DATABASE_URL;
 
@@ -84,7 +85,9 @@ describeIfConfigured('lead + consent persistence (real database)', () => {
     }) as unknown as PrismaService;
 
     await prisma.$connect();
-    service = new CashOsLeadsService(prisma, new ConsentService(prisma));
+    // Notification delivery is not what this test is about, and a real notifier
+    // would try to open an SMTP connection from a test run.
+    service = new CashOsLeadsService(prisma, new ConsentService(prisma), stubNotifications());
   });
 
   afterAll(async () => {

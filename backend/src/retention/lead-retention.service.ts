@@ -152,6 +152,15 @@ export class LeadRetentionService implements OnModuleInit, OnModuleDestroy {
    * name of the business identifies the individual behind it. `source` and
    * `createdAt` are kept — a campaign tag and a timestamp identify nobody, and
    * they are what makes a funnel measurable after erasure.
+   *
+   * The UTM columns are kept for the same reason: "this campaign produced eleven
+   * leads" must still be answerable next quarter, and a campaign name, medium or
+   * matched keyword describes an advert, not a person.
+   *
+   * `yclid` is the exception, and is cleared. It identifies one particular click
+   * by one particular visitor, and Yandex holds the other half of that mapping —
+   * so it is the one attribution value that could help re-attach an erased row to
+   * the person it came from. Keeping it would make the erasure partly cosmetic.
    */
   private erasureData(reason: ErasureReason, now: Date) {
     return {
@@ -163,6 +172,7 @@ export class LeadRetentionService implements OnModuleInit, OnModuleDestroy {
       comment: null,
       employeeCount: null,
       industry: null,
+      yclid: null,
       anonymisedAt: now,
       anonymisedReason: reason,
     };

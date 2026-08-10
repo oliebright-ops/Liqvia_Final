@@ -1,60 +1,101 @@
 /**
- * The notification must never carry the lead's identity.
+ * What a lead notification carries.
  *
- * This is the test that stops the thirty-second "helpful" change: putting the
- * name and phone in the email so the operator can read it without logging in.
+ * This file twice asserted the opposite of what it asserts now, and the history
+ * is the point. It began by requiring that the body contain *no* identity at
+ * all, on the assumption that the operator would look the lead up in an
+ * RU-hosted view. That view was never built — the owner decided on 2026-08-10
+ * not to build one — which left a notification nobody could act on.
+ *
+ * So the body now carries the contact details deliberately. The closed-template
+ * assertion below is what keeps that a decision rather than a drift: any field
+ * added or removed in future fails this test and has to be argued for.
  */
 import { buildNotificationBody, leadReference } from './lead-notification.service';
 
-const IDENTITY = {
+const FULL = {
+  leadId: 'cmskfegc80000hp343rmbqymy',
   name: 'Иван Петров',
+  companyName: 'ООО «Ромашка»',
   email: 'ivan.petrov@example.com',
   phone: '+7 916 555 44 33',
-  company: 'ООО «Ромашка»',
-  comment: 'Хотим обсудить прогноз ДДС',
+  role: 'Финансовый директор',
+  employeeCount: '51–100',
+  industry: 'Строительство',
+  comment: 'Хотим обсудить прогноз ДДС на 13 недель',
+  source: 'cash-operating-system-landing',
+  attribution: {
+    utmSource: 'yandex',
+    utmMedium: 'cpc',
+    utmCampaign: 'ru_cash_visibility_01',
+    utmTerm: 'кассовый разрыв',
+    yclid: '17395028461230004321',
+  },
+  receivedAt: new Date('2026-08-14T09:22:00Z'),
 };
 
 describe('lead notification body', () => {
-  const body = buildNotificationBody(
-    { leadId: 'cmskfegc80000hp343rmbqymy', source: 'ru_cash_visibility_01', receivedAt: new Date('2026-08-14T09:22:00Z') },
-    'https://liqvia.info',
-  );
+  const body = buildNotificationBody(FULL);
 
-  it('carries a reference, a timestamp and a campaign tag', () => {
+  it('carries everything needed to follow the lead up', () => {
     expect(body).toContain('RU-MBQYMY');
     expect(body).toContain('2026-08-14 09:22');
+    expect(body).toContain('Иван Петров');
+    expect(body).toContain('ООО «Ромашка»');
+    expect(body).toContain('ivan.petrov@example.com');
+    expect(body).toContain('+7 916 555 44 33');
+    expect(body).toContain('Хотим обсудить прогноз ДДС на 13 недель');
+  });
+
+  it('names the campaign that produced the lead', () => {
     expect(body).toContain('ru_cash_visibility_01');
-    expect(body).toContain('https://liqvia.info/leads/');
+    expect(body).toContain('кассовый разрыв');
   });
 
-  it('contains none of the lead identity', () => {
-    for (const [field, value] of Object.entries(IDENTITY)) {
-      expect(body).not.toContain(value);
-      expect(`${field}:${body}`).not.toMatch(/ivan\.petrov/);
-    }
+  it('does not include the raw yclid', () => {
+    // Useful in the database, pointless in a message. Reporting that one exists
+    // keeps the summary honest without copying the click identifier around.
+    expect(body).not.toContain('17395028461230004321');
+    expect(body).toContain('yclid: есть');
   });
 
-  it('contains no email address', () => {
-    expect(body).not.toMatch(/[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}/i);
-  });
-
-  it('is exactly the fixed template — any added field breaks this', () => {
-    // Stronger than pattern-matching for contact details: the body is a closed
-    // template, so a future "just add the name so I can see it" change fails here
-    // rather than being caught by a regex that happens to cover that field.
+  it('is exactly the fixed template — any added or removed field breaks this', () => {
     expect(body.split('\n')).toEqual([
       'Новая заявка Liqvia (Россия).',
       'Идентификатор: RU-MBQYMY',
       'Получена: 2026-08-14 09:22 UTC',
-      'Кампания: ru_cash_visibility_01',
       '',
-      'Контактные данные не включены в это письмо намеренно.',
-      'Открыть заявку: https://liqvia.info/leads/RU-MBQYMY',
+      'Имя: Иван Петров',
+      'Компания: ООО «Ромашка»',
+      'Email: ivan.petrov@example.com',
+      'Телефон / Telegram: +7 916 555 44 33',
+      'Должность: Финансовый директор',
+      'Сотрудников: 51–100',
+      'Отрасль: Строительство',
+      '',
+      'Комментарий: Хотим обсудить прогноз ДДС на 13 недель',
+      '',
+      'Привлечение: источник: yandex · канал: cpc · кампания: ru_cash_visibility_01 · запрос: кассовый разрыв · yclid: есть',
+      'Форма: cash-operating-system-landing',
     ]);
   });
 
-  it('says explicitly that contact details were withheld on purpose', () => {
-    expect(body).toContain('намеренно');
+  it('omits optional fields rather than showing them empty', () => {
+    // A lead with only the three required fields must still produce a short,
+    // readable message — not a wall of blank labels on a phone screen.
+    const minimal = buildNotificationBody({
+      leadId: 'lead-000001',
+      name: 'Анна',
+      companyName: 'ИП Анна',
+      email: 'anna@example.com',
+      receivedAt: new Date('2026-08-14T09:22:00Z'),
+    });
+
+    expect(minimal).not.toContain('Телефон');
+    expect(minimal).not.toContain('Комментарий');
+    expect(minimal).not.toContain('Должность');
+    expect(minimal).toContain('без меток');
+    expect(minimal).toContain('Форма: не указана');
   });
 
   it('derives a stable, non-reversible reference from the internal id', () => {

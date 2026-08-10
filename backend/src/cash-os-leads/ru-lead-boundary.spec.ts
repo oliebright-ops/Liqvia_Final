@@ -16,6 +16,8 @@ import { ConsentService } from '../consent/consent.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { CashOsLeadsService } from './cash-os-leads.service';
 import { CreateCashOsLeadDto } from './dto/create-cash-os-lead.dto';
+import type { LeadNotificationService } from './lead-notification.service';
+import { stubNotifications } from './notification-double';
 
 const ACTIVE_VERSION = ACTIVE_CONSENT_VERSION[REQUIRED_LEAD_CONSENT_SUBJECT];
 
@@ -60,7 +62,10 @@ function buildService(overrides: { transaction?: jest.Mock } = {}) {
       jest.fn(async (fn: (client: typeof tx) => Promise<unknown>) => fn(tx)),
   } as unknown as PrismaService;
 
-  return { service: new CashOsLeadsService(prisma, new ConsentService(prisma)), prisma };
+  return {
+    service: new CashOsLeadsService(prisma, new ConsentService(prisma), stubNotifications()),
+    prisma,
+  };
 }
 
 /* ------------------------------------------------------------------------- */
@@ -86,10 +91,51 @@ describe('RU lead submission → zero AI calls', () => {
     }
   });
 
-  it('depends on nothing beyond Prisma and the consent registry', () => {
-    // A structural assertion: the constructor's shape is the dependency boundary. If a
-    // mail client, an HTTP client or an AI gateway is ever injected here, this fails.
-    expect(CashOsLeadsService.length).toBe(2);
+  it('has exactly one injected egress, and it is the notifier', () => {
+    // A structural assertion: the constructor's shape is the dependency boundary.
+    //
+    // This asserted 2 until 2026-08-10, when the owner asked to be notified of
+    // new leads and LeadNotificationService — which does speak SMTP and HTTPS —
+    // became the third dependency. That is a real widening and it is recorded
+    // here rather than absorbed silently.
+    //
+    // The number is what still does the work: a *fourth* dependency, an AI
+    // gateway or a CRM client, fails this test and has to be argued for.
+    expect(CashOsLeadsService.length).toBe(3);
+  });
+
+  it('notifies only after the lead is committed, and never lets a failed notification lose it', async () => {
+    // Ordering matters: notifying first and then failing to store would tell the
+    // operator about an enquiry that does not exist. A notifier that throws must
+    // also not surface as a failed submission — the row is the record.
+    const events: string[] = [];
+    const tx = {
+      cashOsLead: {
+        create: jest.fn(async ({ data }: { data: Record<string, unknown> }) => {
+          events.push('stored');
+          return { id: 'lead-1', createdAt: new Date(), ...data };
+        }),
+      },
+      consentRecord: { create: jest.fn(async ({ data }: { data: unknown }) => data) },
+    };
+    const prisma = {
+      $transaction: jest.fn(async (fn: (c: typeof tx) => Promise<unknown>) => fn(tx)),
+    } as unknown as PrismaService;
+
+    const notifier = {
+      notify: jest.fn(async () => {
+        events.push('notified');
+        throw new Error('mail server unreachable');
+      }),
+    } as unknown as LeadNotificationService;
+
+    const service = new CashOsLeadsService(prisma, new ConsentService(prisma), notifier);
+
+    await expect(service.create(validDto())).resolves.toEqual({ status: 'ok' });
+
+    // The notification is deliberately not awaited, so let the microtask run.
+    await Promise.resolve();
+    expect(events).toEqual(['stored', 'notified']);
   });
 });
 

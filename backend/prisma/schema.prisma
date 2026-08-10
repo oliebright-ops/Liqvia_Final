@@ -775,6 +775,19 @@ model CashOsLead {
   source         String?
   createdAt      DateTime @default(now())
 
+  /// Paid-traffic attribution parsed from named query parameters on the landing
+  /// URL. Campaign metadata, not personal data. Kept in typed columns so that
+  /// `source` never has to hold a raw URL or query string.
+  /// Mirrors backend/prisma/ru/schema.prisma — keep the two in step.
+  utmSource      String?
+  utmMedium      String?
+  utmCampaign    String?
+  utmContent     String?
+  utmTerm        String?
+  /// Yandex click identifier. Survives nothing: cleared on anonymisation, because
+  /// unlike the UTM fields it is a handle on one person's individual ad click.
+  yclid          String?
+
   /// When the personal data in this row was erased under the retention policy.
   /// Null means the row still holds personal data. The row itself is kept after
   /// anonymisation so that the consent evidence pointing at it stays meaningful

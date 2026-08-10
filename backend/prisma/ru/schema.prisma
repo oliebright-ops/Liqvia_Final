@@ -49,8 +49,34 @@ model CashOsLead {
 
   /// Non-identifying campaign tag, e.g. "ru_cash_visibility_01".
   /// NEVER a URL, a query string or a yclid — see docs/RU_METRICA_VERIFICATION.md §5.2.
+  /// The paid-traffic attribution below lives in its own typed columns precisely so
+  /// that this field never has to absorb them.
   source    String?
   createdAt DateTime @default(now())
+
+  /// Paid-traffic attribution, captured from the landing URL's query string.
+  ///
+  /// These answer "which campaign, ad and search term produced this lead?" — the
+  /// question Yandex Direct spend cannot be judged without. They are campaign
+  /// metadata, not personal data: `utmTerm` is the matched keyword, not anything
+  /// the visitor typed into the form.
+  ///
+  /// Each is parsed out of a named parameter and length-capped before storage, so
+  /// no raw URL, fragment or unrecognised parameter is ever persisted. That keeps
+  /// the guarantee `source` has always carried — nothing from the address bar
+  /// arrives here wholesale — while still recording attribution.
+  ///
+  /// `yclid` is Yandex's click identifier. It is a pseudonymous handle on an ad
+  /// click, not on a person, and it stays inside the RU plane: it is never sent
+  /// back to Yandex and never leaves the database. Storing it is what makes
+  /// offline-conversion reporting possible later, should that be decided — that
+  /// decision is NOT taken here, and nothing in this codebase uploads it.
+  utmSource   String?
+  utmMedium   String?
+  utmCampaign String?
+  utmContent  String?
+  utmTerm     String?
+  yclid       String?
 
   /// When the personal data in this row was erased. Null means it still holds
   /// personal data. The row survives erasure so the consent evidence pointing at
