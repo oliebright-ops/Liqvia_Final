@@ -44,6 +44,35 @@ import { LegalBackLink, LegalSection, OperatorIdentity } from '@/components/lega
  * From the first real lead onwards this exception is spent: a material change
  * here needs a new policy version, and the archive must be restructured so a
  * bump cannot rewrite past entries.
+ *
+ * ## Second in-place amendment — 2026-08-10, lead notifications
+ *
+ * Sections 5, 6 and 8 were corrected when operator notifications were switched
+ * on. Until that deploy this page stated, in §6, that «письма не отправляются —
+ * ни вам, ни оператору» and that Yandex Cloud was the only processor. Both
+ * became untrue the moment the notification path went live: lead details are now
+ * sent to the operator by email through IONOS and as a Telegram message, so the
+ * contact details a visitor types do leave the Russian Federation, even though
+ * the lead itself is still stored only in the RU database.
+ *
+ * The correction was published **before any real member of the public submitted
+ * a lead**, so no visitor ever acted on the superseded wording. `CashOsLead`
+ * held four rows at the time: three infrastructure probes from the cutover and
+ * one operator-run production verification. The one `passive-notice`
+ * `ConsentRecord` carrying `policyVersion = 2026-08-10.1` is that verification
+ * row, submitted by the operator, not by a visitor.
+ *
+ * That is the whole basis for amending in place a second time, and it is the
+ * last time it can be relied on. The exception is spent at the first genuine
+ * lead — which is expected imminently, since this correction exists precisely to
+ * unblock a Yandex Direct campaign. The superseded text is preserved in Git at
+ * `3cc7ae1`.
+ *
+ * §8 now records that the one-month ceiling is enforced automatically only
+ * against the database row; the copies sitting in the operator's mailbox and
+ * Telegram are outside the retention sweep and are a manual obligation. That is
+ * a commitment the operator has to actually keep — nothing in this repository
+ * can enforce it.
  */
 
 export const metadata: Metadata = {
@@ -162,10 +191,16 @@ export default function PrivacyPolicyPage() {
             российской зоне.
           </p>
           <p>
-            Заявка, отправленная через форму на <code>liqvia.info</code>, записывается
-            исключительно в эту российскую базу данных. Если база данных недоступна, заявка не
-            сохраняется вовсе и вам предлагается отправить её позже — она никогда не
-            перенаправляется в инфраструктуру за пределами Российской Федерации.
+            Заявка, отправленная через форму на <code>liqvia.info</code>, <strong>хранится</strong>{' '}
+            исключительно в этой российской базе данных. Если база данных недоступна, заявка не
+            сохраняется вовсе и вам предлагается отправить её позже — в другое хранилище, в том
+            числе за пределами Российской Федерации, она не записывается.
+          </p>
+          <p>
+            Отдельно от хранения оператору направляется <strong>уведомление</strong> о поступившей
+            заявке, чтобы он мог вам ответить. Оно содержит ваши контактные данные и передаётся по
+            каналам связи, расположенным за пределами Российской Федерации. Состав уведомления и
+            задействованные поставщики перечислены в разделе 6.
           </p>
           <p>
             Прямой доступ к базе данных из сети Интернет отключён: обращаться к ней может только
@@ -175,17 +210,41 @@ export default function PrivacyPolicyPage() {
 
         <LegalSection titleRu="6. Кому передаются данные" titleEn="6. Who receives the data">
           <p>
-            Заявка, отправленная через форму, не передаётся никому, кроме оператора. В связи с ней:
+            Сведения из заявки получает только оператор. Третьим лицам для их собственных целей
+            заявка не передаётся и не продаётся.
+          </p>
+          <p>
+            Чтобы оператор узнал о вашем обращении и мог на него ответить, при отправке формы ему
+            направляется уведомление по двум каналам:
           </p>
           <ul>
-            <li>письма не отправляются — ни вам, ни оператору;</li>
-            <li>отдельная CRM-система не используется;</li>
-            <li>данные не передаются во внешние сервисы искусственного интеллекта;</li>
-            <li>интеграции с иными внешними системами отсутствуют.</li>
+            <li>
+              <strong>электронной почтой</strong> — через почтового провайдера{' '}
+              <strong>IONOS</strong> (1&amp;1 IONOS SE, Германия);
+            </li>
+            <li>
+              <strong>сообщением в мессенджере Telegram</strong> (Telegram Messenger Inc.).
+            </li>
           </ul>
           <p>
-            К обработке привлечён только поставщик инфраструктуры — Yandex Cloud (Российская
-            Федерация), который размещает сайт и базу данных. Веб-аналитика описана в разделе 7.
+            Уведомление содержит имя, название компании, адрес электронной почты, телефон,
+            должность, количество сотрудников, отрасль и комментарий — то есть те сведения из
+            заявки, которые вы заполнили, — а также сведения о рекламной кампании, по которой вы
+            перешли на сайт. <strong>Оба канала расположены за пределами Российской Федерации</strong>,
+            поэтому указанные данные передаются за границу. Сама заявка при этом продолжает
+            храниться только в российской базе данных (раздел 5).
+          </p>
+          <p>Вам письма не отправляются: уведомление получает только оператор.</p>
+          <p>Помимо этого:</p>
+          <ul>
+            <li>отдельная CRM-система не используется;</li>
+            <li>данные не передаются во внешние сервисы искусственного интеллекта;</li>
+            <li>иных интеграций с внешними системами нет.</li>
+          </ul>
+          <p>
+            К обработке привлечены: <strong>Yandex Cloud</strong> (Российская Федерация) —
+            размещение сайта и базы данных; <strong>IONOS</strong> и <strong>Telegram</strong> —
+            доставка уведомления оператору. Веб-аналитика описана в разделе 7.
           </p>
         </LegalSection>
 
@@ -216,6 +275,12 @@ export default function PrivacyPolicyPage() {
             срока, если цель обработки достигнута, если вы отозвали согласие или потребовали
             прекращения обработки. Один месяц — предельный срок, а не гарантированный срок
             хранения.
+          </p>
+          <p>
+            Автоматическое удаление по этому сроку применяется к записи в базе данных. Копии
+            сведений, полученные оператором в уведомлении по электронной почте и в мессенджере
+            (раздел 6), удаляются оператором в тот же срок вручную — автоматическим удалением они
+            не охвачены.
           </p>
           <p>
             Техническая запись об уведомлении (раздел 4) хранится отдельно от самой заявки и не
