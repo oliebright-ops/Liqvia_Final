@@ -56,6 +56,54 @@ Carried over unchanged, including `consentTextSha256`, `textVerified`, `policyVe
 `acknowledgedAt`. The `onDelete: Cascade` on `cashOsLeadId` is called out in §4 because it interacts
 with retention in a way that is easy to get wrong.
 
+### 1.3 Attribution columns on `CashOsLead` — added 2026-08-10
+
+Six nullable columns, added by migration `20260810160000_lead_attribution`. **No new table.** This
+section exists because the header of `prisma/ru/schema.prisma` requires anything added to the RU
+plane to be justified here rather than absorbed silently.
+
+| Column | Holds | Personal data? | Kept after erasure? |
+|---|---|---|---|
+| `utmSource` | `utm_source`, e.g. `yandex` | No — names an ad network | **Yes** |
+| `utmMedium` | `utm_medium`, e.g. `cpc` | No — names a channel | **Yes** |
+| `utmCampaign` | `utm_campaign` | No — names a campaign | **Yes** |
+| `utmContent` | `utm_content`, usually the ad id | No — names a creative | **Yes** |
+| `utmTerm` | `utm_term`, the **matched keyword** | No — see the caution below | **Yes** |
+| `yclid` | Yandex click identifier | **Treated as if it were** | **No — cleared** |
+
+**Why the RU plane needs them.** Before this, `source` was the hard-coded literal
+`cash-operating-system-landing` on every row, so every lead was indistinguishable from every other
+and there was no way to tell which campaign, advert or keyword had been paid for. That is not a
+reporting nicety once Yandex Direct spend is live: it is the difference between knowing which
+campaigns work and guessing.
+
+**Why they do not breach the minimum-schema principle.** The principle is that the RU plane holds
+only what the Russian lead funnel needs, and holds no more *personal data* than the funnel requires.
+These columns add no new subject, no new person and no new category of personal data — they describe
+the advert that was clicked. `source` explicitly could not absorb them: §1.1 records that it must
+never receive a URL or query string, and `ru-lead-boundary.spec.ts` asserts it. Typed columns fed by
+named parameters are how that guarantee is kept while still recording attribution.
+
+**Caution — `utmTerm` is the advertiser's keyword, not the visitor's query.** It is the term the
+campaign bid on and Yandex matched, substituted by Yandex into the URL. It is not free text the
+visitor typed and must not be read as such. If Yandex's substitution behaviour ever changed to
+deliver the user's literal search phrase, this column's classification would have to be revisited —
+a search phrase a person typed can contain anything, which would put it in the same risk class as
+`comment`.
+
+**Why `yclid` is cleared on erasure and the UTM fields are not.** A campaign name describes an
+advert and identifies nobody, so keeping it after anonymisation lets "this campaign produced eleven
+leads" stay answerable — which is exactly the kind of measurement that should survive erasure. A
+`yclid` is a handle on one particular click by one particular person, and **Yandex holds the other
+half of that mapping**. Retaining it after erasing the name and email would leave a value capable of
+re-attaching the row to the person, making the erasure partly cosmetic. Enforced in
+`LeadRetentionService.erasureData`.
+
+**Not decided here:** uploading conversions back to Yandex Direct. Storing a `yclid` makes offline
+conversion reporting *possible*; nothing in this codebase does it, and doing so would be a new
+processing purpose sending lead-derived data to Yandex, requiring its own decision and its own
+review. See `RU_MARKETING_DATA_FLOW.md` §7.
+
 ---
 
 ## 2. Tables that must NOT be copied
