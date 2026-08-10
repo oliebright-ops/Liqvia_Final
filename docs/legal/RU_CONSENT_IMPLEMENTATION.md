@@ -8,6 +8,36 @@
 
 ---
 
+> ## SUPERSEDED FOR THE LAUNCH FLOW — 2026-08-10
+>
+> **The lead form does not show a consent checkbox.** It shows a passive notice, registered as
+> `cash-os-lead-form@2026-08-10.2` with obligation `notice`:
+>
+> > Нажимая кнопку, вы соглашаетесь на обработку персональных данных в целях обработки вашего
+> > обращения.
+>
+> Everything below describing §2.1's checkbox as *implemented, blocking* now describes the
+> **affirmative path only** — still in the code, still validated strictly, but reached only by a
+> browser holding a pre-change bundle. Read §2.1 as a specification that is registered and
+> enforceable, not as a description of what a visitor sees today.
+>
+> **Why it was withdrawn.** The checkbox asked the visitor to confirm they had read `/consent` and
+> `/privacy`. Per §7 those two documents are still drafts — «НЕ УСТАНОВЛЕНО» markers, "not in
+> force" banner, `noindex`. A tick against them is evidence of something that cannot be true, and
+> it blocked every submission until the visitor produced it. The passive notice names no document
+> and asks for no act.
+>
+> **What is stored.** Still one `ConsentRecord` per lead, because the record of what was displayed
+> is worth keeping — with `method = 'passive-notice'`, never `'checkbox'`. The client sends no
+> consent object at all; the server fills the record from its own registry, so the stored wording
+> is provably the deployed wording. No schema change: `20260810140000_consent_source` stays
+> applied and `source` is populated on both paths.
+>
+> Deployed to `liqvia.info` on 2026-08-10 and verified end to end. This does **not** change §7:
+> `/privacy` and `/consent` remain unpublished drafts, and U1–U3 remain open.
+
+---
+
 ## 1. Operator details as implemented
 
 Single source of truth: [`packages/shared/src/operator.ts`](../../packages/shared/src/operator.ts).
