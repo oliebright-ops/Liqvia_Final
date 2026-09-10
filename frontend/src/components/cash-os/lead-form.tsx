@@ -269,8 +269,20 @@ export function LeadFormSection() {
   );
 }
 
+/**
+ * `text-base` below `sm`, not `text-sm`.
+ *
+ * iOS Safari zooms the page in whenever a focused field's font is smaller than
+ * 16px, and it does not zoom back out on blur. At 14px every tap on this form
+ * left the visitor pinching to recover, on the one screen where the page is
+ * asking them for effort — and most of this page's paid traffic arrives from
+ * Yandex search on a phone. 16px is the threshold, so `text-base` is the fix.
+ *
+ * Desktop keeps the original 14px through `sm:text-sm`, so nothing above the
+ * breakpoint changes appearance.
+ */
 const inputClass =
-  'w-full rounded-lg border border-slate-300 bg-white px-3.5 py-2.5 text-sm text-slate-900 shadow-sm outline-none transition-colors focus:border-blue-500 focus:ring-1 focus:ring-blue-500';
+  'w-full rounded-lg border border-slate-300 bg-white px-3.5 py-2.5 text-base sm:text-sm text-slate-900 shadow-sm outline-none transition-colors focus:border-blue-500 focus:ring-1 focus:ring-blue-500';
 
 function Field({
   label,
