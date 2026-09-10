@@ -1,0 +1,68 @@
+# External availability monitoring for the RU campaign landing page.
+#
+# Runs from GitHub's infrastructure, deliberately not from the server it watches:
+# the September 2026 outage was a whole-host stop (Yandex's billing actor shut
+# down the instance and the database), which anything running on that host would
+# have been unable to report. The campaign spent for nine days against a dead
+# page because nothing outside the box was looking.
+#
+# Two things to know about GitHub's scheduler:
+#   * `schedule` is best-effort. Runs are delayed or dropped when the platform is
+#     busy, so treat this as "checks roughly every 10 minutes", not a guarantee.
+#     That is still nine days down to minutes.
+#   * Scheduled workflows are disabled automatically after 60 days without any
+#     repository activity. If commits stop, re-enable this from the Actions tab.
+name: Landing uptime
+
+on:
+  schedule:
+    - cron: '*/10 * * * *'
+  workflow_dispatch:
+  # Guards against the monitor being broken by a change to itself.
+  pull_request:
+    paths:
+      - 'scripts/monitor/**'
+      - '.github/workflows/landing-uptime.yml'
+
+# A slow run must never overlap the next tick and double the load on a single
+# small instance. Newer runs wait rather than cancel, so a real outage is not
+# masked by a cancelled run reporting neither success nor failure.
+concurrency:
+  group: landing-uptime
+  cancel-in-progress: false
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      # Confirm before alerting. A single failed probe is usually a transient
+      # network blip on the runner or a moment of packet loss between Europe and
+      # Moscow, and an alert that fires on those gets muted within a week — at
+      # which point the monitor is worse than useless, because it is trusted and
+      # silent. Only a failure that survives a second look, 60 seconds later, is
+      # treated as an outage.
+      #
+      # Telegram is suppressed on the first attempt so the confirming run is the
+      # only one that can notify.
+      - name: Check landing availability
+        env:
+          MONITOR_TELEGRAM_TOKEN: ${{ secrets.MONITOR_TELEGRAM_TOKEN }}
+          MONITOR_TELEGRAM_CHAT_ID: ${{ secrets.MONITOR_TELEGRAM_CHAT_ID }}
+        run: |
+          if MONITOR_TELEGRAM_TOKEN= MONITOR_TELEGRAM_CHAT_ID= \
+             node scripts/monitor/check-landing.mjs; then
+            exit 0
+          fi
+
+          echo "::warning::First attempt failed; re-checking in 60s before alerting."
+          sleep 60
+
+          echo "--- confirming run ---"
+          node scripts/monitor/check-landing.mjs
